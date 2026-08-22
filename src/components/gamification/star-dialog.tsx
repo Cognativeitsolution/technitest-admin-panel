@@ -14,7 +14,7 @@ type StarDialogProps = {
 };
 
 const inputClassName =
-  "h-[54px] w-full rounded-[10px] border border-[#ebebeb] bg-white px-5 text-[15px] text-[#4b5563] shadow-[0_2px_10px_rgba(16,24,40,0.06)] outline-none transition placeholder:text-[#b0b0b0] focus:border-[#dcdcdc] focus:shadow-[0_2px_12px_rgba(16,24,40,0.08)] focus:ring-0";
+  "h-[54px] w-full rounded-2.5 border border-[#ebebeb] bg-white px-5 text-[15px] text-[#4b5563] shadow-[0_2px_10px_rgba(16,24,40,0.06)] outline-none transition placeholder:text-[#b0b0b0] focus:border-[#dcdcdc] focus:shadow-[0_2px_12px_rgba(16,24,40,0.08)] focus:ring-0";
 
 export function StarDialog({ open, onClose, rule, submitting, onSubmit }: StarDialogProps) {
   const [name, setName] = useState(rule?.name ?? "");
@@ -46,7 +46,7 @@ export function StarDialog({ open, onClose, rule, submitting, onSubmit }: StarDi
   return (
     <Dialog open={open} onClose={onClose} title={title} maxWidth="max-w-md">
       <div className="space-y-5">
-        <div className="flex flex-col gap-[10px]">
+        <div className="flex flex-col gap-2.5">
           <label className="text-[14px] font-medium text-[#111111]">
             Name<span className="ml-0.5 text-[#ff0000]">*</span>
           </label>
@@ -59,7 +59,7 @@ export function StarDialog({ open, onClose, rule, submitting, onSubmit }: StarDi
           />
         </div>
 
-        <div className="flex flex-col gap-[10px]">
+        <div className="flex flex-col gap-2.5">
           <label className="text-[14px] font-medium text-[#111111]">
             Star Count<span className="ml-0.5 text-[#ff0000]">*</span>
           </label>
@@ -74,7 +74,7 @@ export function StarDialog({ open, onClose, rule, submitting, onSubmit }: StarDi
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col gap-[10px]">
+          <div className="flex flex-col gap-2.5">
             <label className="text-[14px] font-medium text-[#111111]">
               Min %<span className="ml-0.5 text-[#ff0000]">*</span>
             </label>
@@ -88,7 +88,7 @@ export function StarDialog({ open, onClose, rule, submitting, onSubmit }: StarDi
               placeholder="e.g. 80"
             />
           </div>
-          <div className="flex flex-col gap-[10px]">
+          <div className="flex flex-col gap-2.5">
             <label className="text-[14px] font-medium text-[#111111]">
               Max %<span className="ml-0.5 text-[#ff0000]">*</span>
             </label>

@@ -22,7 +22,7 @@ export function BadgesTable({ badges, loading = false, onEdit }: BadgesTableProp
   return (
     <div className="overflow-hidden rounded-2xl border border-[#e8ecf2] bg-white shadow-[0_1px_3px_rgba(16,24,40,0.04)]">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[850px] border-collapse text-left">
+        <table className="w-full min-w-212.5 border-collapse text-left">
           <thead>
             <tr className="bg-[#eef5ff] text-[13px] font-semibold text-[#374151]">
               <th className="px-5 py-3.5">Badge Name</th>
