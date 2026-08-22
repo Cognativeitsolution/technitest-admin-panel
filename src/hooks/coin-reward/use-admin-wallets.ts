@@ -8,41 +8,62 @@ import type { PaginationMeta } from "@/types/api.types";
 import type { AdminWallet } from "@/types/coin-reward.types";
 
 type UseAdminWalletsOptions = {
-  page?: number;
   perPage?: number;
   enabled?: boolean;
 };
 
-export function useAdminWallets({ page = 1, perPage = 15, enabled = true }: UseAdminWalletsOptions = {}) {
+export function useAdminWallets({ perPage = 15, enabled = true }: UseAdminWalletsOptions = {}) {
+  const [page, setPage] = useState(1);
+  const [nonce, setNonce] = useState(0);
   const [items, setItems] = useState<AdminWallet[]>([]);
   const [pagination, setPagination] = useState<PaginationMeta>({ page: 1, perPage, totalItems: 0, totalPages: 1 });
-  const [loading, setLoading] = useState(enabled);
   const [error, setError] = useState<string | null>(null);
+  const [settledKey, setSettledKey] = useState<string | null>(null);
 
-  const fetchWallets = useCallback(async () => {
-    if (!enabled) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await coinRewardService.getAdminWallets({ page, per_page: perPage });
-      setItems(result.items);
-      setPagination({
-        page: result.page,
-        perPage: result.per_page,
-        totalItems: result.total,
-        totalPages: Math.max(1, result.total_pages),
-      });
-    } catch (err) {
-      setError(ApiError.fromAxiosError(err).message);
-      setItems([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [enabled, page, perPage]);
+  const queryKey = `${enabled ? "on" : "off"}|${page}|${perPage}|${nonce}`;
 
   useEffect(() => {
-    fetchWallets();
-  }, [fetchWallets]);
+    if (!enabled) return;
+    let cancelled = false;
+    coinRewardService
+      .getAdminWallets({ page, per_page: perPage })
+      .then((result) => {
+        if (cancelled) return;
+        setItems(result.items);
+        setPagination({
+          page: result.page,
+          perPage: result.per_page,
+          totalItems: result.total,
+          totalPages: Math.max(1, result.total_pages),
+        });
+        setError(null);
+        setSettledKey(queryKey);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setItems([]);
+        setError(ApiError.fromAxiosError(err).message);
+        setSettledKey(queryKey);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, page, perPage, nonce, queryKey]);
 
-  return { items, pagination, loading, error, refresh: fetchWallets };
+  const goToPage = useCallback((nextPage: number) => {
+    setPage(nextPage);
+  }, []);
+
+  const refresh = useCallback(() => {
+    setNonce((prev) => prev + 1);
+  }, []);
+
+  return {
+    items,
+    pagination,
+    loading: enabled ? settledKey !== queryKey : false,
+    error,
+    goToPage,
+    refresh,
+  };
 }
