@@ -7,27 +7,35 @@ import { coinRewardService } from "@/services/coin-reward.service";
 import type { MyWallet } from "@/types/coin-reward.types";
 
 export function useMyWallet() {
+  const [nonce, setNonce] = useState(0);
   const [wallet, setWallet] = useState<MyWallet | null>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const fetchWallet = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await coinRewardService.getMyWallet();
-      setWallet(result);
-    } catch (err) {
-      setError(ApiError.fromAxiosError(err).message);
-      setWallet(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const [settled, setSettled] = useState(false);
 
   useEffect(() => {
-    fetchWallet();
-  }, [fetchWallet]);
+    let cancelled = false;
+    coinRewardService
+      .getMyWallet()
+      .then((result) => {
+        if (cancelled) return;
+        setWallet(result);
+        setError(null);
+        setSettled(true);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setWallet(null);
+        setError(ApiError.fromAxiosError(err).message);
+        setSettled(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [nonce]);
 
-  return { wallet, loading, error, refresh: fetchWallet };
+  const refresh = useCallback(() => {
+    setNonce((prev) => prev + 1);
+  }, []);
+
+  return { wallet, loading: !settled, error, refresh };
 }

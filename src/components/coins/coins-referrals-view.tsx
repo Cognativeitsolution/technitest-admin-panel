@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import { Settings, Download, ChevronDown } from "lucide-react";
 
 import { Dialog } from "@/components/ui/dialog";
@@ -38,46 +38,42 @@ export function CoinsReferralsView({ initialTab = "coins" }: { initialTab?: stri
   const myWalletQuery = useMyWallet();
 
   // Wallets tab (paginated)
-  const [walletPage, setWalletPage] = useState(1);
-  const walletsQuery = useAdminWallets({ page: walletPage, perPage: PAGE_SIZE });
+  const walletsQuery = useAdminWallets({ perPage: PAGE_SIZE });
 
   // Full wallet list powers the user selector on the Coins tab
-  const userOptionsQuery = useAdminWallets({ page: 1, perPage: 100 });
+  const userOptionsQuery = useAdminWallets({ perPage: 100 });
 
   const [selectedUsername, setSelectedUsername] = useState<string>(USER_PLACEHOLDER);
-  const [historyPage, setHistoryPage] = useState(1);
 
-  useEffect(() => {
-    if (selectedUsername === USER_PLACEHOLDER && userOptionsQuery.items.length > 0) {
-      setSelectedUsername(userOptionsQuery.items[0].user.username);
-    }
-  }, [selectedUsername, userOptionsQuery.items]);
+  const usernames = userOptionsQuery.items.map((wallet) => wallet.user.username);
+  const activeUsername =
+    selectedUsername !== USER_PLACEHOLDER && usernames.includes(selectedUsername)
+      ? selectedUsername
+      : usernames[0] ?? null;
+  const selectedUserId = activeUsername
+    ? userOptionsQuery.items.find((wallet) => wallet.user.username === activeUsername)?.user.id ?? null
+    : null;
 
-  const selectedUserId = useMemo(
-    () =>
-      userOptionsQuery.items.find((wallet) => wallet.user.username === selectedUsername)?.user.id ?? null,
-    [userOptionsQuery.items, selectedUsername],
-  );
-
-  const historyQuery = useUserCoinHistory({ userId: selectedUserId, page: historyPage, perPage: PAGE_SIZE });
+  const historyQuery = useUserCoinHistory({ userId: selectedUserId, perPage: PAGE_SIZE });
 
   // Referrals tab (paginated)
-  const [referralPage, setReferralPage] = useState(1);
-  const referralsQuery = useReferralUsers({ page: referralPage, perPage: PAGE_SIZE });
+  const referralsQuery = useReferralUsers({ perPage: PAGE_SIZE });
 
   function handleSelectUser(username: string) {
-    if (username === selectedUsername) return;
+    if (username === USER_PLACEHOLDER || username === activeUsername) return;
     setSelectedUsername(username);
-    setHistoryPage(1);
+    historyQuery.goToPage(1);
   }
 
   function handleViewHistory(wallet: AdminWallet) {
-    setSelectedUsername(wallet.user.username);
-    setHistoryPage(1);
+    if (wallet.user.username !== activeUsername) {
+      setSelectedUsername(wallet.user.username);
+      historyQuery.goToPage(1);
+    }
     setActiveTab("coins");
   }
 
-  function handleExport(format: string) {
+  function handleExport() {
     setExportOpen(false);
   }
 
@@ -87,7 +83,7 @@ export function CoinsReferralsView({ initialTab = "coins" }: { initialTab?: stri
     { id: "referrals", label: "Referrals" },
   ];
 
-  const userOptions = [USER_PLACEHOLDER, ...userOptionsQuery.items.map((wallet) => wallet.user.username)];
+  const userOptions = [USER_PLACEHOLDER, ...usernames];
 
   return (
     <div className="space-y-5">
@@ -122,7 +118,7 @@ export function CoinsReferralsView({ initialTab = "coins" }: { initialTab?: stri
                     <li>
                       <button
                         type="button"
-                        onClick={() => handleExport("csv")}
+                        onClick={handleExport}
                         className="flex w-full px-4 py-3 text-sm font-medium text-[#111827] transition hover:bg-[#f8fafc]"
                       >
                         Export as CSV
@@ -132,7 +128,7 @@ export function CoinsReferralsView({ initialTab = "coins" }: { initialTab?: stri
                     <li>
                       <button
                         type="button"
-                        onClick={() => handleExport("pdf")}
+                        onClick={handleExport}
                         className="flex w-full px-4 py-3 text-sm font-medium text-[#111827] transition hover:bg-[#f8fafc]"
                       >
                         Export as PDF
@@ -185,7 +181,7 @@ export function CoinsReferralsView({ initialTab = "coins" }: { initialTab?: stri
             <DropdownMenu
               label={USER_PLACEHOLDER}
               options={userOptions}
-              value={selectedUsername}
+              value={activeUsername ?? USER_PLACEHOLDER}
               onChange={handleSelectUser}
             />
             {userOptionsQuery.error ? (
@@ -202,7 +198,7 @@ export function CoinsReferralsView({ initialTab = "coins" }: { initialTab?: stri
           <Pagination
             currentPage={historyQuery.pagination.page}
             totalPages={historyQuery.pagination.totalPages}
-            onPageChange={setHistoryPage}
+            onPageChange={historyQuery.goToPage}
           />
         </div>
       ) : null}
@@ -223,7 +219,7 @@ export function CoinsReferralsView({ initialTab = "coins" }: { initialTab?: stri
           <Pagination
             currentPage={walletsQuery.pagination.page}
             totalPages={walletsQuery.pagination.totalPages}
-            onPageChange={setWalletPage}
+            onPageChange={walletsQuery.goToPage}
           />
         </div>
       ) : null}
@@ -240,7 +236,7 @@ export function CoinsReferralsView({ initialTab = "coins" }: { initialTab?: stri
           <Pagination
             currentPage={referralsQuery.pagination.page}
             totalPages={referralsQuery.pagination.totalPages}
-            onPageChange={setReferralPage}
+            onPageChange={referralsQuery.goToPage}
           />
         </div>
       ) : null}
