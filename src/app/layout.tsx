@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Urbanist } from "next/font/google";
 
 import { AdminShell } from "@/components/layout/admin-shell";
+import { Providers } from "./providers";
 
 import "./globals.css";
 
@@ -24,7 +25,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${urbanist.variable} h-full antialiased`}>
       <body className="min-h-full font-sans">
-        <AdminShell>{children}</AdminShell>
+        <Providers>
+          <AdminShell>{children}</AdminShell>
+        </Providers>
       </body>
     </html>
   );
