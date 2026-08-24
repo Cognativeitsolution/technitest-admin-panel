@@ -20,6 +20,7 @@ import type {
   StarRuleRecord,
   TopScorerEntry,
 } from "@/types/gamification.types";
+import { difficultyLevelOptions } from "@/types/gamification.types";
 
 const PAGE_SIZE = 10;
 
@@ -31,6 +32,10 @@ export function GamificationView({ initialTab = "badges" }: { initialTab?: strin
   const badgesQuery = useBadges();
   const starsQuery = useStars({ perPage: PAGE_SIZE });
   const topScorersQuery = useTopScorers({ perPage: PAGE_SIZE });
+
+  const takenBadgeLevels = new Set(badgesQuery.items.map((badge) => badge.difficulty_level));
+  const allBadgeLevelsTaken =
+    difficultyLevelOptions.every((level) => takenBadgeLevels.has(level));
 
   const [badgeDialogOpen, setBadgeDialogOpen] = useState(false);
   const [badgeDialogMode, setBadgeDialogMode] = useState<"create" | "edit">("create");
@@ -97,7 +102,7 @@ export function GamificationView({ initialTab = "badges" }: { initialTab?: strin
         <h1 className="text-[28px] font-bold tracking-tight text-[#111827]">
           Gamification
         </h1>
-        {activeTab !== "top-scorer" ? (
+        {activeTab === "badges" && allBadgeLevelsTaken ? null : activeTab !== "top-scorer" ? (
           <button
             type="button"
             onClick={() => (activeTab === "badges" ? openCreateBadge() : openCreateStar())}
@@ -216,6 +221,7 @@ export function GamificationView({ initialTab = "badges" }: { initialTab?: strin
 
       {/* Badge Dialog */}
       <BadgeDialog
+        key={`badge-${badgeDialogMode}-${badgeDialogTarget?.id ?? "new"}-${badgeDialogOpen}`}
         open={badgeDialogOpen}
         onClose={() => setBadgeDialogOpen(false)}
         mode={badgeDialogMode}
@@ -226,6 +232,7 @@ export function GamificationView({ initialTab = "badges" }: { initialTab?: strin
 
       {/* Star Dialog */}
       <StarDialog
+        key={`star-${starDialogTarget?.id ?? "new"}-${starDialogOpen}`}
         open={starDialogOpen}
         onClose={() => setStarDialogOpen(false)}
         rule={starDialogTarget}

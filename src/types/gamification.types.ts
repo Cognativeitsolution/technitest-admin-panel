@@ -1,7 +1,7 @@
-export type BadgeDifficultyLevel = "beginner" | "intermediate" | "advanced";
+export type BadgeDifficultyLevel = "beginner" | "intermediate" | "advance";
 export type BadgeType = "free" | "paid";
 
-export const difficultyLevelOptions: BadgeDifficultyLevel[] = ["beginner", "intermediate", "advanced"];
+export const difficultyLevelOptions: BadgeDifficultyLevel[] = ["beginner", "intermediate", "advance"];
 export const badgeTypeOptions: BadgeType[] = ["free", "paid"];
 
 export type BadgeRule = {

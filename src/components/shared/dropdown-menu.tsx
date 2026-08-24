@@ -33,8 +33,6 @@ export function DropdownMenu({
     value: opt,
   }));
 
-  const displayLabel = value === options[0] ? label : value;
-
   useEffect(() => {
     if (!open) return;
 
@@ -66,7 +64,7 @@ export function DropdownMenu({
         onClick={() => setOpen((prev) => !prev)}
         className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#e5e7eb] bg-white px-3.5 text-sm font-medium text-[#374151] shadow-sm transition hover:bg-[#f9fafb]"
       >
-        {displayLabel}
+        {value}
         <ChevronDown
           className={cn(
             "size-4 text-[#9ca3af] transition",
@@ -79,7 +77,7 @@ export function DropdownMenu({
         <div
           role="listbox"
           aria-label={label}
-          className="absolute top-[calc(100%+8px)] left-0 z-50 w-full min-w-[180px]"
+          className="absolute top-[calc(100%+8px)] left-0 z-50 w-full min-w-45"
         >
           <div className="overflow-hidden rounded-2xl border border-[#eef1f6] bg-white shadow-[0_12px_30px_rgba(16,24,40,0.14)]">
             <ul className="py-1.5">
@@ -100,7 +98,7 @@ export function DropdownMenu({
                         setOpen(false);
                       }}
                       className={cn(
-                        "flex w-full items-center gap-3 px-4 py-3 text-sm font-medium transition",
+                        "flex w-full items-center gap-3 px-4 py-3 text-sm font-medium transition capitalize",
                         isSelected
                           ? "bg-[#f0f5ff] text-[#2563eb]"
                           : "text-[#111827] hover:bg-[#f8fafc]"

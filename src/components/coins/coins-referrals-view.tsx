@@ -1,18 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Settings, Download, ChevronDown } from "lucide-react";
+import { toast } from "sonner";
 
-import { Dialog } from "@/components/ui/dialog";
 import { DropdownMenu } from "@/components/shared/dropdown-menu";
 import { Pagination } from "@/components/shared/pagination";
 import { CoinHistoryTable } from "@/components/coins/coin-history-table";
+import { buildCoinLogsExport } from "@/components/coins/export-coin-logs";
 import { ReferralUsersTable } from "@/components/coins/referral-users-table";
+import { RewardRulesDialog } from "@/components/coins/reward-rules-dialog";
 import { WalletsTable } from "@/components/coins/wallets-table";
 import { useAdminWallets } from "@/hooks/coin-reward/use-admin-wallets";
 import { useMyWallet } from "@/hooks/coin-reward/use-my-wallet";
 import { useReferralUsers } from "@/hooks/coin-reward/use-referral-users";
 import { useUserCoinHistory } from "@/hooks/coin-reward/use-user-coin-history";
+import { downloadCsv, downloadPdf } from "@/lib/export-file";
+import { ApiError } from "@/lib/api-error";
 import type { AdminWallet } from "@/types/coin-reward.types";
 
 const PAGE_SIZE = 10;
@@ -27,13 +31,8 @@ export function CoinsReferralsView({ initialTab = "coins" }: { initialTab?: stri
 
   const [rewardRulesOpen, setRewardRulesOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
-
-  // Reward rules state
-  const [rules, setRules] = useState([
-    { label: "Referral Bonus", value: "100", unit: "Coins per referral", enabled: true },
-    { label: "Quiz Completion Bonus", value: "10", unit: "Coins per quiz", enabled: false },
-    { label: "Certificate Bonus", value: "50", unit: "Coins per certificate", enabled: true },
-  ]);
+  const [exporting, setExporting] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
 
   const myWalletQuery = useMyWallet();
 
@@ -73,8 +72,57 @@ export function CoinsReferralsView({ initialTab = "coins" }: { initialTab?: stri
     setActiveTab("coins");
   }
 
-  function handleExport() {
+  useEffect(() => {
+    if (!exportOpen) return;
+
+    function handlePointerDown(event: MouseEvent) {
+      if (!exportMenuRef.current?.contains(event.target as Node)) {
+        setExportOpen(false);
+      }
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setExportOpen(false);
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [exportOpen]);
+
+  async function handleExport(format: "csv" | "pdf") {
+    if (exporting) return;
     setExportOpen(false);
+    setExporting(true);
+    const toastId = toast.loading(`Preparing ${format.toUpperCase()} export...`);
+
+    try {
+      const table = await buildCoinLogsExport({
+        tab: activeTab,
+        userId: selectedUserId,
+        username: activeUsername,
+      });
+
+      if (table.rows.length === 0) {
+        toast.error("No data available to export.", { id: toastId });
+        return;
+      }
+
+      if (format === "csv") {
+        downloadCsv(`${table.filename}.csv`, table.headers, table.rows);
+      } else {
+        downloadPdf(`${table.filename}.pdf`, table.title, table.headers, table.rows);
+      }
+
+      toast.success(`Exported as ${format.toUpperCase()}`, { id: toastId });
+    } catch (err) {
+      toast.error(ApiError.fromAxiosError(err).message, { id: toastId });
+    } finally {
+      setExporting(false);
+    }
   }
 
   const tabs: { id: TabId; label: string }[] = [
@@ -101,14 +149,15 @@ export function CoinsReferralsView({ initialTab = "coins" }: { initialTab?: stri
             <Settings className="size-4" />
             Reward Rules
           </button>
-          <div className="relative">
+          <div className="relative" ref={exportMenuRef}>
             <button
               type="button"
               onClick={() => setExportOpen((prev) => !prev)}
-              className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#f0a500] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d99400]"
+              disabled={exporting}
+              className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#f0a500] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d99400] disabled:pointer-events-none disabled:opacity-60"
             >
               <Download className="size-4" />
-              Export Logs
+              {exporting ? "Exporting..." : "Export Logs"}
               <ChevronDown className="size-4" />
             </button>
             {exportOpen ? (
@@ -118,18 +167,17 @@ export function CoinsReferralsView({ initialTab = "coins" }: { initialTab?: stri
                     <li>
                       <button
                         type="button"
-                        onClick={handleExport}
+                        onClick={() => void handleExport("csv")}
                         className="flex w-full px-4 py-3 text-sm font-medium text-[#111827] transition hover:bg-[#f8fafc]"
                       >
                         Export as CSV
                       </button>
                     </li>
-                    <div className="mx-3 h-px bg-[#eef1f6]" />
                     <li>
                       <button
                         type="button"
-                        onClick={handleExport}
-                        className="flex w-full px-4 py-3 text-sm font-medium text-[#111827] transition hover:bg-[#f8fafc]"
+                        onClick={() => void handleExport("pdf")}
+                        className="flex w-full border-t border-[#eef1f6] px-4 py-3 text-sm font-medium text-[#111827] transition hover:bg-[#f8fafc]"
                       >
                         Export as PDF
                       </button>
@@ -241,98 +289,7 @@ export function CoinsReferralsView({ initialTab = "coins" }: { initialTab?: stri
         </div>
       ) : null}
 
-      {/* Reward Rules Dialog */}
-      <Dialog
-        open={rewardRulesOpen}
-        onClose={() => setRewardRulesOpen(false)}
-        title="Reward Rules"
-        maxWidth="max-w-xl"
-      >
-        <div className="space-y-4">
-          {rules.map((rule, idx) => (
-            <div key={idx} className="flex items-center gap-4 rounded-xl border border-[#e5e7eb] px-4 py-3">
-              <div className="flex-1 space-y-2">
-                <div className="flex flex-col gap-1">
-                  <label className="text-[13px] font-medium text-[#6b7280]">Rule Name</label>
-                  <input
-                    type="text"
-                    value={rule.label}
-                    onChange={(e) => {
-                      const next = [...rules];
-                      next[idx] = { ...next[idx], label: e.target.value };
-                      setRules(next);
-                    }}
-                    className="h-9 rounded-lg border border-[#e5e7eb] px-3 text-sm text-[#111827] outline-none focus:border-[#2563eb]"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <div className="flex-1">
-                    <label className="text-[13px] font-medium text-[#6b7280]">Value</label>
-                    <input
-                      type="number"
-                      value={rule.value}
-                      onChange={(e) => {
-                        const next = [...rules];
-                        next[idx] = { ...next[idx], value: e.target.value };
-                        setRules(next);
-                      }}
-                      className="mt-1 h-9 w-full rounded-lg border border-[#e5e7eb] px-3 text-sm text-[#111827] outline-none focus:border-[#2563eb]"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <label className="text-[13px] font-medium text-[#6b7280]">Unit</label>
-                    <input
-                      type="text"
-                      value={rule.unit}
-                      onChange={(e) => {
-                        const next = [...rules];
-                        next[idx] = { ...next[idx], unit: e.target.value };
-                        setRules(next);
-                      }}
-                      className="mt-1 h-9 w-full rounded-lg border border-[#e5e7eb] px-3 text-sm text-[#111827] outline-none focus:border-[#2563eb]"
-                    />
-                  </div>
-                </div>
-              </div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={rule.enabled}
-                onClick={() => {
-                  const next = [...rules];
-                  next[idx] = { ...next[idx], enabled: !next[idx].enabled };
-                  setRules(next);
-                }}
-                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
-                  rule.enabled ? "bg-[#2563eb]" : "bg-[#d1d5db]"
-                }`}
-              >
-                <span
-                  className={`inline-block size-4 rounded-full bg-white shadow-sm transition-transform ${
-                    rule.enabled ? "translate-x-6" : "translate-x-1"
-                  }`}
-                />
-              </button>
-            </div>
-          ))}
-        </div>
-        <div className="mt-6 flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={() => setRewardRulesOpen(false)}
-            className="inline-flex h-10 items-center justify-center rounded-xl border border-[#e5e7eb] bg-white px-5 text-sm font-medium text-[#374151] transition hover:bg-[#f9fafb]"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={() => setRewardRulesOpen(false)}
-            className="inline-flex h-10 items-center justify-center rounded-xl bg-[#f0a500] px-5 text-sm font-semibold text-white transition hover:bg-[#d99400]"
-          >
-            Save Rules
-          </button>
-        </div>
-      </Dialog>
+      <RewardRulesDialog open={rewardRulesOpen} onClose={() => setRewardRulesOpen(false)} />
     </div>
   );
 }
