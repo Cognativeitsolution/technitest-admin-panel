@@ -71,7 +71,7 @@ export function CertificatesManagementView() {
         <button
           type="button"
           onClick={() => router.push("/certificates/template")}
-          className="inline-flex h-11 w-fit items-center gap-2 rounded-xl bg-[#111827] px-4 text-sm font-semibold text-white transition hover:bg-black"
+          className="inline-flex h-11 w-fit items-center gap-2 rounded-xl bg-[#f0a500] px-4 text-sm font-semibold text-white transition hover:bg-[#d99400]"
         >
           <Pencil className="size-4" />
           Modify Certificate Template
