@@ -1,20 +1,66 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Pencil } from "lucide-react";
 
 import { CertificatesTable } from "@/components/certificates/certificates-table";
 import { Dialog } from "@/components/ui/dialog";
+import { DateRangePicker, type DateRange } from "@/components/ui/date-range-picker";
+import { DropdownMenu } from "@/components/shared/dropdown-menu";
 import { Pagination } from "@/components/shared/pagination";
 import { useAdminCertificates } from "@/hooks/certificates/use-admin-certificates";
 import { useCertificateDetail } from "@/hooks/certificates/use-certificate-detail";
+import { useCertificateFilterOptions } from "@/hooks/certificates/use-certificate-filter-options";
 import { useVerifyCertificate } from "@/hooks/certificates/use-verify-certificate";
 import { formatDateTime } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import type { UserCertificateItem } from "@/types/certificate.types";
 
 const PAGE_SIZE = 10;
+const STATUS_PLACEHOLDER = "Status";
+const LEVEL_PLACEHOLDER = "Level";
+const CATEGORY_PLACEHOLDER = "Category";
+
+function toIsoDate(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function matchesDateRange(issuedAt: string | null, range: DateRange) {
+  if (!range.start && !range.end) return true;
+  if (!issuedAt) return false;
+  const issued = new Date(issuedAt);
+  if (Number.isNaN(issued.getTime())) return false;
+
+  const issuedTime = new Date(
+    issued.getFullYear(),
+    issued.getMonth(),
+    issued.getDate(),
+  ).getTime();
+
+  if (range.start) {
+    const startTime = new Date(
+      range.start.getFullYear(),
+      range.start.getMonth(),
+      range.start.getDate(),
+    ).getTime();
+    if (issuedTime < startTime) return false;
+  }
+
+  if (range.end) {
+    const endTime = new Date(
+      range.end.getFullYear(),
+      range.end.getMonth(),
+      range.end.getDate(),
+    ).getTime();
+    if (issuedTime > endTime) return false;
+  }
+
+  return true;
+}
 
 export function CertificatesManagementView() {
   const router = useRouter();
@@ -22,9 +68,22 @@ export function CertificatesManagementView() {
     useState<UserCertificateItem | null>(null);
   const [verifyTarget, setVerifyTarget] =
     useState<UserCertificateItem | null>(null);
+  const [status, setStatus] = useState(STATUS_PLACEHOLDER);
+  const [level, setLevel] = useState(LEVEL_PLACEHOLDER);
+  const [category, setCategory] = useState(CATEGORY_PLACEHOLDER);
+  const [dateRange, setDateRange] = useState<DateRange>({ start: null, end: null });
+
+  const filterOptions = useCertificateFilterOptions();
+  const dateFrom = dateRange.start && dateRange.end ? toIsoDate(dateRange.start) : undefined;
+  const dateTo = dateRange.start && dateRange.end ? toIsoDate(dateRange.end) : undefined;
 
   const { items, pagination, loading, error, goToPage } = useAdminCertificates({
     perPage: PAGE_SIZE,
+    status: status === STATUS_PLACEHOLDER ? undefined : status,
+    category: category === CATEGORY_PLACEHOLDER ? undefined : category,
+    level: level === LEVEL_PLACEHOLDER ? undefined : level,
+    dateFrom,
+    dateTo,
   });
   const {
     detail,
@@ -61,6 +120,38 @@ export function CertificatesManagementView() {
   const verifying =
     verifyTarget != null && verifyingNumber === verifyTarget.certificate_number;
 
+  const visibleCertificates = useMemo(() => {
+    return items.filter((certificate) => {
+      if (
+        status !== STATUS_PLACEHOLDER &&
+        (certificate.status ?? "").toLowerCase() !== status.toLowerCase()
+      ) {
+        return false;
+      }
+      if (
+        level !== LEVEL_PLACEHOLDER &&
+        (certificate.level ?? "").toLowerCase() !== level.toLowerCase()
+      ) {
+        return false;
+      }
+      if (
+        category !== CATEGORY_PLACEHOLDER &&
+        (certificate.category ?? "").toLowerCase() !== category.toLowerCase()
+      ) {
+        return false;
+      }
+      if (!matchesDateRange(certificate.issued_at, dateRange)) return false;
+      return true;
+    });
+  }, [items, status, level, category, dateRange]);
+
+  function handleFilterChange(setter: (value: string) => void) {
+    return (value: string) => {
+      setter(value);
+      goToPage(1);
+    };
+  }
+
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -80,8 +171,40 @@ export function CertificatesManagementView() {
 
       {error ? <p className="text-sm text-[#ef4444]">{error}</p> : null}
 
+      <div className="flex flex-wrap items-center gap-3">
+        <DropdownMenu
+          label="Status"
+          options={[STATUS_PLACEHOLDER, ...filterOptions.statuses]}
+          value={status}
+          onChange={handleFilterChange(setStatus)}
+        />
+        <DateRangePicker
+          placeholder="Date"
+          value={dateRange}
+          onChange={(range) => {
+            setDateRange(range);
+            if ((range.start && range.end) || (!range.start && !range.end)) {
+              goToPage(1);
+            }
+          }}
+        />
+        <DropdownMenu
+          label="Level"
+          options={[LEVEL_PLACEHOLDER, ...filterOptions.levels]}
+          value={level}
+          onChange={handleFilterChange(setLevel)}
+        />
+        <DropdownMenu
+          label="Category"
+          options={[CATEGORY_PLACEHOLDER, ...filterOptions.categories]}
+          value={category}
+          onChange={handleFilterChange(setCategory)}
+          searchable
+        />
+      </div>
+
       <CertificatesTable
-        certificates={items}
+        certificates={visibleCertificates}
         loading={loading}
         onView={openDetail}
         onVerify={openVerify}

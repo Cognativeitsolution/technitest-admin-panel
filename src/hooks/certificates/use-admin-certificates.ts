@@ -9,9 +9,21 @@ import type { UserCertificateItem } from "@/types/certificate.types";
 
 type UseAdminCertificatesOptions = {
   perPage?: number;
+  status?: string;
+  category?: string;
+  level?: string;
+  dateFrom?: string;
+  dateTo?: string;
 };
 
-export function useAdminCertificates({ perPage = 10 }: UseAdminCertificatesOptions = {}) {
+export function useAdminCertificates({
+  perPage = 10,
+  status,
+  category,
+  level,
+  dateFrom,
+  dateTo,
+}: UseAdminCertificatesOptions = {}) {
   const [page, setPage] = useState(1);
   const [nonce, setNonce] = useState(0);
   const [items, setItems] = useState<UserCertificateItem[]>([]);
@@ -24,15 +36,23 @@ export function useAdminCertificates({ perPage = 10 }: UseAdminCertificatesOptio
   const [error, setError] = useState<string | null>(null);
   const [settledKey, setSettledKey] = useState<string | null>(null);
 
-  const queryKey = `${page}|${perPage}|${nonce}`;
+  const queryKey = `${page}|${perPage}|${status ?? ""}|${category ?? ""}|${level ?? ""}|${dateFrom ?? ""}|${dateTo ?? ""}|${nonce}`;
 
   useEffect(() => {
     let cancelled = false;
     certificateService
-      .getAdminCertificates({ page, per_page: perPage })
+      .getAdminCertificates({
+        page,
+        per_page: perPage,
+        status,
+        category,
+        level,
+        date_from: dateFrom,
+        date_to: dateTo,
+      })
       .then((result) => {
         if (cancelled) return;
-        setItems(result.items);
+        setItems(result.items ?? []);
         setPagination({
           page: result.page ?? page,
           perPage: result.per_page ?? perPage,
@@ -53,7 +73,7 @@ export function useAdminCertificates({ perPage = 10 }: UseAdminCertificatesOptio
     return () => {
       cancelled = true;
     };
-  }, [page, perPage, nonce, queryKey]);
+  }, [page, perPage, nonce, queryKey, status, category, level, dateFrom, dateTo]);
 
   return {
     items,

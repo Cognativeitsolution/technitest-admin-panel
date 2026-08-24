@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -15,6 +15,7 @@ type DateRangePickerProps = {
   onChange?: (range: DateRange) => void;
   className?: string;
   dualMonth?: boolean;
+  placeholder?: string;
 };
 
 const WEEKDAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
@@ -56,7 +57,9 @@ function formatDate(date: Date | null) {
   return `${day}/${month}/${year}`;
 }
 
-function formatRange(range: DateRange) {
+function formatRange(range: DateRange, placeholder = "Select dates") {
+  if (!range.start && !range.end) return placeholder;
+  if (range.start && !range.end) return `${formatDate(range.start)} — Select end`;
   return `${formatDate(range.start)} - ${formatDate(range.end)}`;
 }
 
@@ -132,7 +135,7 @@ function MonthCalendar({
   const cells = useMemo(() => getMonthMatrix(year, month), [year, month]);
 
   return (
-    <div className="min-w-[280px] rounded-xl border border-[#e8ecf2] p-4">
+    <div className="w-64 max-w-full rounded-xl border border-[#e8ecf2] p-3 sm:p-4">
       <div className="mb-3 flex items-center justify-between">
         <p className="text-sm font-semibold text-[#111827]">
           {MONTH_NAMES[month]} {year}
@@ -223,18 +226,20 @@ export function DateRangePicker({
   onChange,
   className,
   dualMonth = true,
+  placeholder,
 }: DateRangePickerProps) {
-  const defaultStart = new Date(2025, 6, 1);
-  const defaultEnd = new Date(2025, 6, 31);
+  const today = new Date();
 
   const [open, setOpen] = useState(false);
   const [range, setRange] = useState<DateRange>(
-    value ?? { start: defaultStart, end: defaultEnd }
+    value ?? { start: null, end: null },
   );
   const [viewDate, setViewDate] = useState(
-    () => value?.start ?? defaultStart
+    () => value?.start ?? today,
   );
   const containerRef = useRef<HTMLDivElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const [placement, setPlacement] = useState<"start" | "end">("start");
 
   useEffect(() => {
     if (value) setRange(value);
@@ -261,6 +266,30 @@ export function DateRangePicker({
       document.removeEventListener("keydown", handleEscape);
     };
   }, [open]);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+
+    function updatePlacement() {
+      const trigger = containerRef.current;
+      const popover = popoverRef.current;
+      if (!trigger || !popover) return;
+
+      const triggerRect = trigger.getBoundingClientRect();
+      const width = popover.offsetWidth;
+      const margin = 16;
+      const overflowsRight = triggerRect.left + width > window.innerWidth - margin;
+      const fitsLeft = triggerRect.right - width >= margin;
+      setPlacement(overflowsRight && fitsLeft ? "end" : "start");
+    }
+
+    const frame = window.requestAnimationFrame(updatePlacement);
+    window.addEventListener("resize", updatePlacement);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", updatePlacement);
+    };
+  }, [open, dualMonth, range.start, range.end]);
 
   const leftYear = viewDate.getFullYear();
   const leftMonth = viewDate.getMonth();
@@ -299,21 +328,31 @@ export function DateRangePicker({
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="inline-flex h-11 items-center gap-2.5 rounded-xl border border-[#e5e7eb] bg-white px-3.5 text-sm font-medium text-[#374151] shadow-sm transition hover:bg-[#f9fafb]"
+        className="inline-flex h-10 items-center gap-2.5 rounded-xl border border-[#e5e7eb] bg-white px-3.5 text-sm font-medium text-[#374151] shadow-sm transition hover:bg-[#f9fafb]"
       >
         <CalendarDays className="size-4 text-[#111827]" />
-        <span>{formatRange(range)}</span>
+        <span>
+          {!range.start && !range.end && placeholder
+            ? placeholder
+            : formatRange(range, placeholder)}
+        </span>
       </button>
 
       {open ? (
-        <div className="absolute top-[calc(100%+10px)] right-0 z-50 w-max rounded-2xl border border-[#e8ecf2] bg-white p-4 shadow-[0_16px_40px_rgba(16,24,40,0.14)]">
-          <div className="mb-4 flex items-center gap-2.5 px-1 text-sm font-medium text-[#111827]">
-            <CalendarDays className="size-4" />
-            <span>{formatRange(range)}</span>
+        <div
+          ref={popoverRef}
+          className={cn(
+            "absolute top-[calc(100%+10px)] z-50 max-h-[min(36rem,calc(100vh-8rem))] w-max max-w-[calc(100vw-1.5rem)] overflow-auto rounded-2xl border border-[#e8ecf2] bg-white p-3 shadow-[0_16px_40px_rgba(16,24,40,0.14)] sm:p-4",
+            placement === "end" ? "right-0" : "left-0",
+          )}
+        >
+          <div className="mb-3 flex items-center gap-2.5 px-1 text-sm font-medium text-[#111827] sm:mb-4">
+            <CalendarDays className="size-4 shrink-0" />
+            <span className="truncate">{formatRange(range, placeholder ?? "Select dates")}</span>
           </div>
 
           {dualMonth ? (
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-stretch">
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-stretch">
               <MonthCalendar
                 year={leftYear}
                 month={leftMonth}
@@ -322,7 +361,7 @@ export function DateRangePicker({
                 onPrev={() => shiftMonths(-1)}
                 onNext={() => shiftMonths(1)}
               />
-              <div className="hidden w-px bg-[#eef1f6] lg:block" />
+              <div className="hidden w-px bg-[#eef1f6] xl:block" />
               <MonthCalendar
                 year={rightDate.getFullYear()}
                 month={rightDate.getMonth()}

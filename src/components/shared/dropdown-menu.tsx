@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, ChevronDown } from "lucide-react";
+import { Check, ChevronDown, Search } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -16,6 +16,7 @@ type DropdownMenuProps = {
   value: string;
   onChange: (value: string) => void;
   className?: string;
+  searchable?: boolean;
 };
 
 export function DropdownMenu({
@@ -24,17 +25,30 @@ export function DropdownMenu({
   value,
   onChange,
   className,
+  searchable = false,
 }: DropdownMenuProps) {
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
   const ref = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   const items: DropdownOption[] = options.map((opt) => ({
     label: opt,
     value: opt,
   }));
 
+  const query = search.trim().toLowerCase();
+  const filteredItems = query
+    ? items.filter((item) => item.label.toLowerCase().includes(query))
+    : items;
+
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setSearch("");
+      return;
+    }
+
+    if (searchable) searchRef.current?.focus();
 
     function handlePointerDown(event: MouseEvent) {
       if (!ref.current?.contains(event.target as Node)) {
@@ -53,7 +67,7 @@ export function DropdownMenu({
       document.removeEventListener("mousedown", handlePointerDown);
       document.removeEventListener("keydown", handleEscape);
     };
-  }, [open]);
+  }, [open, searchable]);
 
   return (
     <div className={cn("relative inline-flex", className)} ref={ref}>
@@ -75,17 +89,35 @@ export function DropdownMenu({
 
       {open ? (
         <div
-          role="listbox"
-          aria-label={label}
           className="absolute top-[calc(100%+8px)] left-0 z-50 w-full min-w-45"
         >
           <div className="overflow-hidden rounded-2xl border border-[#eef1f6] bg-white shadow-[0_12px_30px_rgba(16,24,40,0.14)]">
-            <ul className="py-1.5">
-              {items.map((item, index) => {
+            {searchable ? (
+              <div className="border-b border-[#eef1f6] p-3">
+                <div className="relative">
+                  <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-[#9ca3af]" />
+                  <input
+                    ref={searchRef}
+                    type="text"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder={`Search ${label.toLowerCase()}...`}
+                    aria-label={`Search ${label}`}
+                    className="h-8 w-full rounded-lg border border-[#e5e7eb] bg-[#f9fafb] pr-2 pl-8 text-xs text-[#374151] outline-none placeholder:text-[#9ca3af] focus:border-[#3b82f6]"
+                  />
+                </div>
+              </div>
+            ) : null}
+            <ul
+              role="listbox"
+              aria-label={label}
+              className="max-h-72 overflow-y-auto py-1.5"
+            >
+              {filteredItems.map((item, index) => {
                 const isSelected = item.value === value;
 
                 return (
-                  <li key={item.value}>
+                  <li key={`${item.value}-${index}`}>
                     {index > 0 ? (
                       <div className="mx-3 h-px bg-[#eef1f6]" />
                     ) : null}
@@ -121,6 +153,11 @@ export function DropdownMenu({
                   </li>
                 );
               })}
+              {filteredItems.length === 0 ? (
+                <li className="px-4 py-3 text-center text-xs text-[#9ca3af]">
+                  No results
+                </li>
+              ) : null}
             </ul>
           </div>
         </div>

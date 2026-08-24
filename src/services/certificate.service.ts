@@ -11,6 +11,11 @@ import type {
 export type CertificateListQuery = {
   page?: number;
   per_page?: number;
+  status?: string;
+  category?: string;
+  level?: string;
+  date_from?: string;
+  date_to?: string;
 };
 
 export type UpsertTemplateInput = CertificateTemplatePayload & {
