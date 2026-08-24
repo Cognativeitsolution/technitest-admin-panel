@@ -4,22 +4,22 @@ const REFRESH_TOKEN_KEY = "technitest_refresh_token";
 export const authStorage = {
   getAccessToken: (): string | null => {
     if (typeof window === "undefined") return null;
-    return localStorage.getItem(ACCESS_TOKEN_KEY);
+    return sessionStorage.getItem(ACCESS_TOKEN_KEY);
   },
 
   setAccessToken: (token: string): void => {
     if (typeof window === "undefined") return;
-    localStorage.setItem(ACCESS_TOKEN_KEY, token);
+    sessionStorage.setItem(ACCESS_TOKEN_KEY, token);
   },
 
   getRefreshToken: (): string | null => {
     if (typeof window === "undefined") return null;
-    return localStorage.getItem(REFRESH_TOKEN_KEY);
+    return sessionStorage.getItem(REFRESH_TOKEN_KEY);
   },
 
   setRefreshToken: (token: string): void => {
     if (typeof window === "undefined") return;
-    localStorage.setItem(REFRESH_TOKEN_KEY, token);
+    sessionStorage.setItem(REFRESH_TOKEN_KEY, token);
   },
 
   setTokens: (accessToken: string, refreshToken: string): void => {
@@ -29,7 +29,7 @@ export const authStorage = {
 
   clear: (): void => {
     if (typeof window === "undefined") return;
-    localStorage.removeItem(ACCESS_TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    sessionStorage.removeItem(ACCESS_TOKEN_KEY);
+    sessionStorage.removeItem(REFRESH_TOKEN_KEY);
   },
 };

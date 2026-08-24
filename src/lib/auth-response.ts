@@ -4,30 +4,50 @@ export function parseLoginResponse(raw: any): {
   tokens: AuthTokens;
   user: User | null;
 } {
-  const data = raw?.data?.data || raw?.data || raw?.response || raw || {};
-  const tokens = data.tokens || data;
-  const accessToken = tokens.accessToken || tokens.access_token;
-  const refreshToken = tokens.refreshToken || tokens.refresh_token;
+  console.log("RAW LOGIN RESPONSE:", raw);
+
+  // Try to find the tokens object in various possible nested locations
+  let tokensObj =
+    raw?.tokens ||
+    raw?.data?.tokens ||
+    raw?.data?.data?.tokens ||
+    raw?.response?.data?.tokens ||
+    raw?.response?.tokens ||
+    raw?.response?.data ||
+    raw || {};
+
+  const accessToken = tokensObj?.accessToken || tokensObj?.access_token || tokensObj?.token;
+  const refreshToken = tokensObj?.refreshToken || tokensObj?.refresh_token;
 
   if (!accessToken) {
+    console.error("Failed to parse access token. tokensObj was:", tokensObj);
     throw new Error("Invalid login response: missing token");
   }
 
-  const rawUser = data.user || {};
+  // Same for user object
+  let rawUser =
+    raw?.user ||
+    raw?.data?.user ||
+    raw?.data?.data?.user ||
+    raw?.response?.data?.user ||
+    raw?.response?.user ||
+    raw?.response?.data ||
+    {};
+
   const user: User | null = rawUser.id || rawUser.email
     ? {
-        id: String(rawUser.id || ""),
-        fullName: String(rawUser.fullName || rawUser.full_name || rawUser.username || "Admin"),
-        email: String(rawUser.email || ""),
-        avatar: rawUser.avatar ? String(rawUser.avatar) : undefined,
-      }
+      id: String(rawUser.i || ""),
+      fullName: String(rawUser.fullName || rawUser.full_name || rawUser.username || "Admin"),
+      email: String(rawUser.email || ""),
+      avatar: rawUser.avatar ? String(rawUser.avatar) : undefined,
+    }
     : null;
 
   return {
     tokens: {
       accessToken,
       refreshToken: refreshToken || "",
-      expiresIn: Number(tokens.expiresIn || tokens.expires_in || 0),
+      expiresIn: Number(tokensObj?.expiresIn || tokensObj?.expires_in || 0),
     },
     user,
   };

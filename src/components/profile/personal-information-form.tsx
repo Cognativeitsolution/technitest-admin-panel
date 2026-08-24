@@ -4,15 +4,18 @@ import Image from "next/image";
 import { Camera } from "lucide-react";
 
 import { TextField } from "@/components/ui/text-field";
+import { useAuthStore } from "@/store/auth-store";
 
 export function PersonalInformationForm() {
+  const user = useAuthStore((s) => s.user);
+
   return (
     <div className="space-y-10">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
         <div className="relative size-[110px] shrink-0">
           <Image
-            src="https://i.pravatar.cc/220?img=12"
-            alt="Ammad Aslam"
+            src={user?.avatar || "https://i.pravatar.cc/220?img=12"}
+            alt={user?.fullName || "Admin"}
             width={110}
             height={110}
             className="size-[110px] rounded-full object-cover"
@@ -26,7 +29,7 @@ export function PersonalInformationForm() {
           </button>
         </div>
         <div>
-          <h2 className="text-[22px] font-bold text-[#1e40af]">Ammad Aslam</h2>
+          <h2 className="text-[22px] font-bold text-[#1e40af]">{user?.fullName || "Admin"}</h2>
           <p className="mt-1.5 text-[13px] text-[#9ca3af]">
             Supported Formats: PNG, JPG, JPEG. Max File Size: 2 MB.
           </p>
@@ -37,21 +40,21 @@ export function PersonalInformationForm() {
         <TextField
           label="Full Name"
           required
-          defaultValue="Ammad Aslam"
-          placeholder="Ammad Aslam"
+          defaultValue={user?.fullName || ""}
+          placeholder="Full Name"
         />
         <TextField
           label="Email Address"
           required
           type="email"
-          defaultValue="ammadaslam@gmail.com"
-          placeholder="ammadaslam@gmail.com"
+          defaultValue={user?.email || ""}
+          placeholder="Email Address"
         />
         <TextField
           label="Phone No"
           required
-          defaultValue="0300-1234567"
-          placeholder="0300-1234567"
+          defaultValue=""
+          placeholder="Phone Number"
         />
       </div>
 
@@ -62,18 +65,18 @@ export function PersonalInformationForm() {
         <div className="grid gap-x-8 gap-y-6 md:grid-cols-2">
           <TextField
             label="Country Or Region"
-            defaultValue="Pakistan"
+            defaultValue=""
             placeholder="Country Or Region"
           />
-          <TextField label="City" defaultValue="Karachi" placeholder="City" />
+          <TextField label="City" defaultValue="" placeholder="City" />
           <TextField
             label="Address"
-            defaultValue="Street 12, Block A"
+            defaultValue=""
             placeholder="Address"
           />
           <TextField
             label="Postal Code"
-            defaultValue="75500"
+            defaultValue=""
             placeholder="Postal Code"
           />
         </div>
@@ -86,22 +89,22 @@ export function PersonalInformationForm() {
         <div className="grid gap-x-8 gap-y-6 md:grid-cols-2">
           <TextField
             label="Facebook"
-            defaultValue="facebook.com/username"
+            defaultValue=""
             placeholder="Facebook"
           />
           <TextField
             label="X"
-            defaultValue="x.com/username"
+            defaultValue=""
             placeholder="X"
           />
           <TextField
             label="Linkedin"
-            defaultValue="linkedin.com/in/username"
+            defaultValue=""
             placeholder="Linkedin"
           />
           <TextField
             label="Instagram"
-            defaultValue="instagram.com/username"
+            defaultValue=""
             placeholder="Instagram"
           />
         </div>
