@@ -8,6 +8,7 @@ const API_BASE_URL =
 const apiUrl = new URL(API_BASE_URL);
 
 const nextConfig: NextConfig = {
+  skipTrailingSlashRedirect: true,
   images: {
     remotePatterns: [
       {
@@ -23,6 +24,10 @@ const nextConfig: NextConfig = {
   },
   async rewrites() {
     return [
+      {
+        source: "/api/:path*/",
+        destination: `${API_BASE_URL}/api/:path*/`,
+      },
       {
         source: "/api/:path*",
         destination: `${API_BASE_URL}/api/:path*`,

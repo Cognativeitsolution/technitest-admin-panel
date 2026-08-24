@@ -6,6 +6,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { FileUpload } from "@/components/ui/file-upload";
 import type { BadgePayload, BadgeRule } from "@/types/gamification.types";
 import { badgeTypeOptions, difficultyLevelOptions } from "@/types/gamification.types";
+import { DropdownMenu } from "@/components/shared/dropdown-menu";
 
 type BadgeDialogProps = {
   open: boolean;
@@ -17,7 +18,10 @@ type BadgeDialogProps = {
 };
 
 const inputClassName =
-  "h-[54px] w-full rounded-2.5 border border-[#ebebeb] bg-white px-5 text-[15px] text-[#4b5563] shadow-[0_2px_10px_rgba(16,24,40,0.06)] outline-none transition placeholder:text-[#b0b0b0] focus:border-[#dcdcdc] focus:shadow-[0_2px_12px_rgba(16,24,40,0.08)] focus:ring-0";
+  "h-[54px] w-full rounded-2.5 border border-[#ebebeb] bg-white px-5 text-[15px] text-[#4b5563] shadow-[0_2px_10px_rgba(16,24,40,0.06)] outline-none transition placeholder:text-[#b0b0b0] focus:border-[#dcdcdc] focus:shadow-[0_2px_12px_rgba(16,24,40,0.08)] focus:ring-0 capitalize";
+
+const dropdownClassName =
+  "w-full [&>button]:h-[54px] [&>button]:w-full [&>button]:justify-between [&>button]:rounded-2.5 [&>button]:border-[#ebebeb] [&>button]:px-5 [&>button]:text-[15px] [&>button]:font-normal [&>button]:capitalize [&>button]:shadow-[0_2px_10px_rgba(16,24,40,0.06)]";
 
 export function BadgeDialog({ open, onClose, mode, badge, submitting, onSubmit }: BadgeDialogProps) {
   const [name, setName] = useState(badge?.badge_name ?? "");
@@ -66,33 +70,29 @@ export function BadgeDialog({ open, onClose, mode, badge, submitting, onSubmit }
           <label className="text-[14px] font-medium text-[#111111]">
             Difficulty Level<span className="ml-0.5 text-[#ff0000]">*</span>
           </label>
-          <select
+          <DropdownMenu
+            label="Difficulty Level"
+            options={difficultyLevelOptions}
             value={difficultyLevel}
-            onChange={(e) => setDifficultyLevel(e.target.value)}
-            className={inputClassName}
-          >
-            {difficultyLevelOptions.map((opt) => (
-              <option key={opt} value={opt} className="capitalize">{opt}</option>
-            ))}
-          </select>
+            onChange={setDifficultyLevel}
+            className={dropdownClassName}
+          />
         </div>
 
         <div className="flex flex-col gap-2.5">
           <label className="text-[14px] font-medium text-[#111111]">
             Type<span className="ml-0.5 text-[#ff0000]">*</span>
           </label>
-          <select
+          <DropdownMenu
+            label="Type"
+            options={badgeTypeOptions}
             value={type}
-            onChange={(e) => setType(e.target.value)}
-            className={inputClassName}
-          >
-            {badgeTypeOptions.map((opt) => (
-              <option key={opt} value={opt} className="capitalize">{opt}</option>
-            ))}
-          </select>
+            onChange={setType}
+            className={dropdownClassName}
+          />
         </div>
 
-        <div className="flex flex-col gap-2.5">
+        {type !== "free" && <div className="flex flex-col gap-2.5">
           <label className="text-[14px] font-medium text-[#111111]">Price ($)</label>
           <input
             type="number"
@@ -104,7 +104,7 @@ export function BadgeDialog({ open, onClose, mode, badge, submitting, onSubmit }
             className={`${inputClassName} disabled:bg-[#f9fafb] disabled:text-[#6b7280]`}
             placeholder="Enter price"
           />
-        </div>
+        </div>}
 
         <div className="flex flex-col gap-2.5">
           <label className="text-[14px] font-medium text-[#111111]">
