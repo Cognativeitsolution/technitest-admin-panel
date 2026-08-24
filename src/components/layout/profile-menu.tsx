@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ChevronDown,
   Info,
@@ -12,33 +13,17 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-
-const menuItems = [
-  {
-    label: "Dashboard",
-    href: "/",
-    icon: LayoutDashboard,
-  },
-  {
-    label: "Profile",
-    href: "/profile",
-    icon: User,
-  },
-  {
-    label: "Help & Support",
-    href: "/support",
-    icon: Info,
-  },
-  {
-    label: "Logout",
-    href: "/logout",
-    icon: LogOut,
-  },
-] as const;
+import { useAuthStore } from "@/store/auth-store";
 
 export function ProfileMenu() {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
+
+  console.log("Profile User Data (from /api/v1/auth/me):", user);
 
   useEffect(() => {
     if (!open) return;
@@ -62,6 +47,30 @@ export function ProfileMenu() {
     };
   }, [open]);
 
+  const handleLogout = async () => {
+    setOpen(false);
+    await logout();
+    router.replace("/login");
+  };
+
+  const menuItems = [
+    {
+      label: "Dashboard",
+      href: "/",
+      icon: LayoutDashboard,
+    },
+    {
+      label: "Profile",
+      href: "/profile",
+      icon: User,
+    },
+    {
+      label: "Help & Support",
+      href: "/support",
+      icon: Info,
+    },
+  ] as const;
+
   return (
     <div className="relative" ref={menuRef}>
       <button
@@ -72,14 +81,14 @@ export function ProfileMenu() {
         className="inline-flex items-center gap-2.5 rounded-lg px-1.5 py-1 transition hover:bg-[#f3f4f6]"
       >
         <Image
-          src="https://i.pravatar.cc/80?img=12"
-          alt="Ammad Aslam"
+          src={user?.avatar || "https://i.pravatar.cc/80?img=12"}
+          alt={user?.fullName || "-"}
           width={36}
           height={36}
           className="size-9 rounded-full object-cover"
         />
         <span className="hidden text-sm font-semibold text-[#111827] md:inline">
-          Ammad Aslam
+          {user?.fullName || "-"}
         </span>
         <ChevronDown
           className={cn(
@@ -117,6 +126,17 @@ export function ProfileMenu() {
                   </li>
                 );
               })}
+              <li>
+                <div className="h-px bg-[#eef1f6]" />
+                <button
+                  onClick={handleLogout}
+                  role="menuitem"
+                  className="flex w-full items-center gap-3 px-4 py-3.5 text-left text-sm font-medium text-[#111827] transition hover:bg-[#f8fafc]"
+                >
+                  <LogOut className="size-[18px] text-[#374151]" />
+                  Logout
+                </button>
+              </li>
             </ul>
           </div>
         </div>
