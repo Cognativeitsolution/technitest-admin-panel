@@ -4,46 +4,43 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 
 import { Dialog } from "@/components/ui/dialog";
+import { Pagination } from "@/components/shared/pagination";
 import { BadgesTable } from "@/components/gamification/badges-table";
 import { StarsTable } from "@/components/gamification/stars-table";
 import { TopScorersTable } from "@/components/gamification/top-scorers-table";
 import { BadgeDialog } from "@/components/gamification/badge-dialog";
 import { StarDialog } from "@/components/gamification/star-dialog";
-import { TopScorerDialog } from "@/components/gamification/top-scorer-dialog";
-import {
-  badges as initialBadges,
-  starRules as initialStarRules,
-  topScorers as initialTopScorers,
-} from "@/data/gamification";
-import type { GamificationBadge, GamificationTab, StarRule, TopScorer } from "@/data/gamification";
+import { useBadges } from "@/hooks/gamification/use-badges";
+import { useStars } from "@/hooks/gamification/use-stars";
+import { useTopScorers } from "@/hooks/gamification/use-top-scorers";
+import type {
+  BadgePayload,
+  BadgeRule,
+  StarPayload,
+  StarRuleRecord,
+  TopScorerEntry,
+} from "@/types/gamification.types";
+
+const PAGE_SIZE = 10;
 
 export function GamificationView({ initialTab = "badges" }: { initialTab?: string }) {
-  const [activeTab, setActiveTab] = useState<GamificationTab>(
+  const [activeTab, setActiveTab] = useState<"badges" | "stars" | "top-scorer">(
     initialTab === "stars" ? "stars" : initialTab === "top-scorer" ? "top-scorer" : "badges"
   );
 
-  const [badges, setBadges] = useState<GamificationBadge[]>(initialBadges);
-  const [starRules, setStarRules] = useState<StarRule[]>(initialStarRules);
-  const [topScorers, setTopScorers] = useState<TopScorer[]>(initialTopScorers);
+  const badgesQuery = useBadges();
+  const starsQuery = useStars({ perPage: PAGE_SIZE });
+  const topScorersQuery = useTopScorers({ perPage: PAGE_SIZE });
 
   const [badgeDialogOpen, setBadgeDialogOpen] = useState(false);
-  const [badgeDialogMode, setBadgeDialogMode] = useState<"create" | "edit">("edit");
-  const [badgeDialogTarget, setBadgeDialogTarget] = useState<GamificationBadge | null>(null);
+  const [badgeDialogMode, setBadgeDialogMode] = useState<"create" | "edit">("create");
+  const [badgeDialogTarget, setBadgeDialogTarget] = useState<BadgeRule | null>(null);
 
   const [starDialogOpen, setStarDialogOpen] = useState(false);
-  const [starDialogTarget, setStarDialogTarget] = useState<StarRule | null>(null);
+  const [starDialogTarget, setStarDialogTarget] = useState<StarRuleRecord | null>(null);
 
-  const [scorerDialogOpen, setScorerDialogOpen] = useState(false);
-  const [scorerDialogMode, setScorerDialogMode] = useState<"create" | "edit">("edit");
-  const [scorerDialogTarget, setScorerDialogTarget] = useState<TopScorer | null>(null);
-
-  const [deleteTarget, setDeleteTarget] = useState<{ type: string; item: GamificationBadge | StarRule | TopScorer } | null>(null);
-
-  function openEditBadge(badge: GamificationBadge) {
-    setBadgeDialogMode("edit");
-    setBadgeDialogTarget(badge);
-    setBadgeDialogOpen(true);
-  }
+  const [deleteTarget, setDeleteTarget] = useState<StarRuleRecord | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   function openCreateBadge() {
     setBadgeDialogMode("create");
@@ -51,55 +48,40 @@ export function GamificationView({ initialTab = "badges" }: { initialTab?: strin
     setBadgeDialogOpen(true);
   }
 
-  function toggleBadgeStatus(id: string, enabled: boolean) {
-    setBadges((prev) =>
-      prev.map((b) =>
-        b.id === id ? { ...b, status: enabled ? "enabled" as const : "disabled" as const } : b
-      )
-    );
+  function openEditBadge(badge: BadgeRule) {
+    setBadgeDialogMode("edit");
+    setBadgeDialogTarget(badge);
+    setBadgeDialogOpen(true);
   }
 
-  function openEditStar(rule: StarRule) {
-    setStarDialogTarget(rule);
+  function openCreateStar() {
+    setStarDialogTarget(null);
     setStarDialogOpen(true);
   }
 
-  function openEditScorer(ts: TopScorer) {
-    setScorerDialogMode("edit");
-    setScorerDialogTarget(ts);
-    setScorerDialogOpen(true);
-  }
-
-  function openCreateScorer() {
-    setScorerDialogMode("create");
-    setScorerDialogTarget(null);
-    setScorerDialogOpen(true);
-  }
-
-  function confirmDelete(type: string, item: GamificationBadge | StarRule | TopScorer) {
-    setDeleteTarget({ type, item });
-  }
-
-  function handleDelete() {
-    if (!deleteTarget) return;
-    const { type, item } = deleteTarget;
-    if (type === "badge") {
-      setBadges((prev) => prev.filter((b) => b.id !== item.id));
-    } else if (type === "star") {
-      setStarRules((prev) => prev.filter((s) => s.id !== item.id));
-    } else if (type === "top-scorer") {
-      setTopScorers((prev) => prev.filter((ts) => ts.id !== item.id));
+  function handleBadgeSubmit(payload: BadgePayload, image: File | null) {
+    if (badgeDialogMode === "create") {
+      return badgesQuery.createBadge({ payload, image });
     }
+    return badgesQuery.updateBadge({ ruleId: badgeDialogTarget?.id as number, payload, image });
+  }
+
+  function handleStarSubmit(payload: StarPayload) {
+    return starDialogTarget
+      ? starsQuery.updateStar(starDialogTarget.id, payload)
+      : starsQuery.createStar(payload);
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    await starsQuery.deleteStar(deleteTarget.id);
+    setDeleting(false);
     setDeleteTarget(null);
   }
 
-  function deleteItemName() {
-    if (!deleteTarget) return "";
-    const { type, item } = deleteTarget;
-    if (type === "badge") return (item as GamificationBadge).name;
-    if (type === "star") return `${(item as StarRule).starCount} Stars`;
-    if (type === "top-scorer") return (item as TopScorer).userName;
-    return "";
+  function handleToggleFeatured(scorer: TopScorerEntry, isFeatured: boolean) {
+    void topScorersQuery.toggleFeatured(scorer.certificate_id, isFeatured);
   }
 
   const tabs = [
@@ -115,10 +97,10 @@ export function GamificationView({ initialTab = "badges" }: { initialTab?: strin
         <h1 className="text-[28px] font-bold tracking-tight text-[#111827]">
           Gamification
         </h1>
-        {activeTab === "top-scorer" ? (
+        {activeTab !== "top-scorer" ? (
           <button
             type="button"
-            onClick={openCreateScorer}
+            onClick={() => (activeTab === "badges" ? openCreateBadge() : openCreateStar())}
             className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#f0a500] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d99400]"
           >
             <Plus className="size-4" />
@@ -148,32 +130,32 @@ export function GamificationView({ initialTab = "badges" }: { initialTab?: strin
       {/* Badges Tab */}
       {activeTab === "badges" ? (
         <div className="space-y-4">
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={openCreateBadge}
-              className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#f0a500] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d99400]"
-            >
-              <Plus className="size-4" />
-              Create New
-            </button>
-          </div>
-          <BadgesTable
-            badges={badges}
-            onEdit={openEditBadge}
-            onDelete={(b) => confirmDelete("badge", b)}
-            onToggleStatus={toggleBadgeStatus}
-          />
+          {badgesQuery.error ? (
+            <p className="text-sm text-[#ef4444]">{badgesQuery.error}</p>
+          ) : null}
+
+          <BadgesTable badges={badgesQuery.items} loading={badgesQuery.loading} onEdit={openEditBadge} />
         </div>
       ) : null}
 
       {/* Stars Tab */}
       {activeTab === "stars" ? (
         <div className="space-y-4">
+          {starsQuery.error ? (
+            <p className="text-sm text-[#ef4444]">{starsQuery.error}</p>
+          ) : null}
+
           <StarsTable
-            rules={starRules}
-            onEdit={openEditStar}
-            onDelete={(s) => confirmDelete("star", s)}
+            rules={starsQuery.items}
+            loading={starsQuery.loading}
+            onEdit={(s) => { setStarDialogTarget(s); setStarDialogOpen(true); }}
+            onDelete={setDeleteTarget}
+          />
+
+          <Pagination
+            currentPage={starsQuery.pagination.page}
+            totalPages={starsQuery.pagination.totalPages}
+            onPageChange={starsQuery.goToPage}
           />
         </div>
       ) : null}
@@ -181,22 +163,37 @@ export function GamificationView({ initialTab = "badges" }: { initialTab?: strin
       {/* Top Scorer Tab */}
       {activeTab === "top-scorer" ? (
         <div className="space-y-4">
+          {topScorersQuery.error ? (
+            <p className="text-sm text-[#ef4444]">{topScorersQuery.error}</p>
+          ) : null}
+
           <TopScorersTable
-            scorers={topScorers}
-            onEdit={openEditScorer}
-            onDelete={(ts) => confirmDelete("top-scorer", ts)}
+            scorers={topScorersQuery.items}
+            loading={topScorersQuery.loading}
+            rankOffset={(topScorersQuery.pagination.page - 1) * PAGE_SIZE}
+            onToggleFeatured={handleToggleFeatured}
+          />
+
+          <Pagination
+            currentPage={topScorersQuery.pagination.page}
+            totalPages={topScorersQuery.pagination.totalPages}
+            onPageChange={topScorersQuery.goToPage}
           />
         </div>
       ) : null}
 
-      {/* Delete Confirmation */}
+      {/* Delete Star Confirmation */}
       <Dialog
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
-        title={`Delete ${deleteTarget?.type === "badge" ? "Badge" : deleteTarget?.type === "star" ? "Star Rule" : "Top Scorer"}`}
+        title="Delete Star Rule"
       >
         <p className="text-[15px] text-[#4b5563]">
-          Are you sure you want to delete <span className="font-semibold text-[#111827]">{deleteItemName()}</span>? This action cannot be undone.
+          Are you sure you want to delete{" "}
+          <span className="font-semibold text-[#111827]">
+            {deleteTarget ? `${deleteTarget.stars_count} Stars (${deleteTarget.criteria})` : ""}
+          </span>
+          ? This action cannot be undone.
         </p>
         <div className="mt-6 flex justify-end gap-3">
           <button
@@ -208,10 +205,11 @@ export function GamificationView({ initialTab = "badges" }: { initialTab?: strin
           </button>
           <button
             type="button"
-            onClick={handleDelete}
-            className="inline-flex h-10 items-center justify-center rounded-xl bg-[#ef4444] px-5 text-sm font-semibold text-white transition hover:bg-[#dc2626]"
+            onClick={confirmDelete}
+            disabled={deleting}
+            className="inline-flex h-10 items-center justify-center rounded-xl bg-[#ef4444] px-5 text-sm font-semibold text-white transition hover:bg-[#dc2626] disabled:pointer-events-none disabled:opacity-60"
           >
-            Delete
+            {deleting ? "Deleting..." : "Delete"}
           </button>
         </div>
       </Dialog>
@@ -222,6 +220,8 @@ export function GamificationView({ initialTab = "badges" }: { initialTab?: strin
         onClose={() => setBadgeDialogOpen(false)}
         mode={badgeDialogMode}
         badge={badgeDialogTarget}
+        submitting={badgesQuery.mutating}
+        onSubmit={handleBadgeSubmit}
       />
 
       {/* Star Dialog */}
@@ -229,14 +229,8 @@ export function GamificationView({ initialTab = "badges" }: { initialTab?: strin
         open={starDialogOpen}
         onClose={() => setStarDialogOpen(false)}
         rule={starDialogTarget}
-      />
-
-      {/* Top Scorer Dialog */}
-      <TopScorerDialog
-        open={scorerDialogOpen}
-        onClose={() => setScorerDialogOpen(false)}
-        mode={scorerDialogMode}
-        scorer={scorerDialogTarget}
+        submitting={starsQuery.mutating}
+        onSubmit={handleStarSubmit}
       />
     </div>
   );
