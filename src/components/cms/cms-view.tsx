@@ -9,12 +9,34 @@ import { PagesTable } from "@/components/cms/pages-table";
 import { AdvertisementsTable } from "@/components/cms/advertisements-table";
 import { BlogsTable } from "@/components/cms/blogs-table";
 import { AdvertisementDialog } from "@/components/cms/advertisement-dialog";
-import {
-  cmsPages as initialPages,
-  advertisementBanners as initialBanners,
-  blogPosts as initialBlogs,
-} from "@/data/cms";
-import type { CmsTab, CmsPage, AdvertisementBanner, BlogPost } from "@/data/cms";
+import { Pagination } from "@/components/shared/pagination";
+import { DropdownMenu } from "@/components/shared/dropdown-menu";
+import type { CmsTab } from "@/data/cms";
+import { useBanners } from "@/hooks/cms/use-banners";
+import { useBlogs } from "@/hooks/cms/use-blogs";
+import { usePages } from "@/hooks/cms/use-pages";
+import { usePagesDropdown } from "@/hooks/cms/use-pages-dropdown";
+import type { Banner, BannerPayload } from "@/types/banner.types";
+import { BANNER_STATUS_FILTERS } from "@/types/banner.types";
+import type { BlogListItem } from "@/types/blog.types";
+import { BLOG_PUBLISH_FILTERS, BLOG_STATUS_FILTERS } from "@/types/blog.types";
+import type { PageListItem } from "@/types/page.types";
+import { PAGE_PUBLISH_FILTERS, PAGE_STATUS_FILTERS } from "@/types/page.types";
+
+const PAGE_SIZE = 15;
+const PUBLISH_PLACEHOLDER = "Publish status";
+const STATUS_PLACEHOLDER = "Status";
+const PAGE_FILTER_PLACEHOLDER = "Page";
+
+type DeleteTarget =
+  | { type: "page"; item: PageListItem }
+  | { type: "banner"; item: Banner }
+  | { type: "blog"; item: BlogListItem };
+
+function pageEditorPath(page: PageListItem) {
+  if (page.slug === "homepage") return "/cms/homepage";
+  return `/cms/pages/${page.id}`;
+}
 
 export function CmsView({ initialTab = "pages" }: { initialTab?: string }) {
   const router = useRouter();
@@ -26,20 +48,44 @@ export function CmsView({ initialTab = "pages" }: { initialTab?: string }) {
         : "pages"
   );
 
-  const [pages] = useState<CmsPage[]>(initialPages);
-  const [banners, setBanners] = useState<AdvertisementBanner[]>(initialBanners);
-  const [blogs, setBlogs] = useState<BlogPost[]>(initialBlogs);
+  const [publishStatus, setPublishStatus] = useState(PUBLISH_PLACEHOLDER);
+  const [status, setStatus] = useState(STATUS_PLACEHOLDER);
+  const pagesQuery = usePages({
+    perPage: PAGE_SIZE,
+    publishStatus:
+      publishStatus === PUBLISH_PLACEHOLDER ? undefined : publishStatus,
+    status: status === STATUS_PLACEHOLDER ? undefined : status,
+    enabled: activeTab === "pages",
+  });
+
+  const [bannerStatus, setBannerStatus] = useState(STATUS_PLACEHOLDER);
+  const [bannerPageFilter, setBannerPageFilter] = useState(PAGE_FILTER_PLACEHOLDER);
+  const pagesDropdown = usePagesDropdown({ enabled: activeTab === "advertisements" });
+  const selectedBannerPage = pagesDropdown.items.find(
+    (item) => item.title === bannerPageFilter,
+  );
+  const bannersQuery = useBanners({
+    perPage: PAGE_SIZE,
+    status: bannerStatus === STATUS_PLACEHOLDER ? undefined : bannerStatus,
+    pageId: selectedBannerPage?.id,
+    enabled: activeTab === "advertisements",
+  });
+
+  const [blogPublishStatus, setBlogPublishStatus] = useState(PUBLISH_PLACEHOLDER);
+  const [blogStatus, setBlogStatus] = useState(STATUS_PLACEHOLDER);
+  const blogsQuery = useBlogs({
+    perPage: PAGE_SIZE,
+    publishStatus:
+      blogPublishStatus === PUBLISH_PLACEHOLDER ? undefined : blogPublishStatus,
+    status: blogStatus === STATUS_PLACEHOLDER ? undefined : blogStatus,
+    enabled: activeTab === "blogs",
+  });
 
   const [adDialogOpen, setAdDialogOpen] = useState(false);
   const [adDialogMode, setAdDialogMode] = useState<"create" | "edit">("edit");
-  const [adDialogTarget, setAdDialogTarget] = useState<AdvertisementBanner | null>(
-    null
-  );
+  const [adDialogTarget, setAdDialogTarget] = useState<Banner | null>(null);
 
-  const [deleteTarget, setDeleteTarget] = useState<{
-    type: string;
-    item: CmsPage | AdvertisementBanner | BlogPost;
-  } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
 
   function openCreateBanner() {
     setAdDialogMode("create");
@@ -47,45 +93,47 @@ export function CmsView({ initialTab = "pages" }: { initialTab?: string }) {
     setAdDialogOpen(true);
   }
 
-  function openEditBanner(banner: AdvertisementBanner) {
+  function openEditBanner(banner: Banner) {
     setAdDialogMode("edit");
     setAdDialogTarget(banner);
     setAdDialogOpen(true);
   }
 
-  function handleEditPage(page: CmsPage) {
-    if (page.slug === "/homepage" || page.title === "Homepage") {
-      router.push("/cms/homepage");
+  function handleEditPage(page: PageListItem) {
+    router.push(pageEditorPath(page));
+  }
+
+  function confirmDelete(target: DeleteTarget) {
+    setDeleteTarget(target);
+  }
+
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    if (deleteTarget.type === "page") {
+      const deleted = await pagesQuery.deletePage(deleteTarget.item.id);
+      if (deleted) setDeleteTarget(null);
       return;
     }
-    router.push(`/cms/pages/${page.id}`);
-  }
-
-  function confirmDelete(
-    type: string,
-    item: CmsPage | AdvertisementBanner | BlogPost
-  ) {
-    setDeleteTarget({ type, item });
-  }
-
-  function handleDelete() {
-    if (!deleteTarget) return;
-    const { type, item } = deleteTarget;
-    if (type === "banner") {
-      setBanners((prev) => prev.filter((b) => b.id !== item.id));
-    } else if (type === "blog") {
-      setBlogs((prev) => prev.filter((b) => b.id !== item.id));
+    if (deleteTarget.type === "banner") {
+      const deleted = await bannersQuery.deleteBanner(deleteTarget.item.id);
+      if (deleted) setDeleteTarget(null);
+      return;
     }
-    setDeleteTarget(null);
+    const deleted = await blogsQuery.deleteBlog(deleteTarget.item.id);
+    if (deleted) setDeleteTarget(null);
+  }
+
+  async function handleBannerSubmit(payload: BannerPayload, image: File | null) {
+    if (adDialogMode === "create") {
+      return bannersQuery.createBanner(payload, image);
+    }
+    if (!adDialogTarget) return false;
+    return bannersQuery.updateBanner(adDialogTarget.id, payload, image);
   }
 
   function deleteItemName() {
     if (!deleteTarget) return "";
-    const { type, item } = deleteTarget;
-    if (type === "page") return (item as CmsPage).title;
-    if (type === "banner") return (item as AdvertisementBanner).title;
-    if (type === "blog") return (item as BlogPost).title;
-    return "";
+    return deleteTarget.item.title;
   }
 
   const tabs = [
@@ -103,7 +151,7 @@ export function CmsView({ initialTab = "pages" }: { initialTab?: string }) {
 
   function handleAdd() {
     if (activeTab === "pages") {
-      router.push("/cms/homepage");
+      router.push("/cms/pages/new");
       return;
     }
     if (activeTab === "advertisements") {
@@ -112,6 +160,15 @@ export function CmsView({ initialTab = "pages" }: { initialTab?: string }) {
     }
     router.push("/blogs/new");
   }
+
+  const deleting =
+    deleteTarget?.type === "page"
+      ? pagesQuery.mutating
+      : deleteTarget?.type === "banner"
+        ? bannersQuery.mutating
+        : deleteTarget?.type === "blog"
+          ? blogsQuery.mutating
+          : false;
 
   return (
     <div className="space-y-5">
@@ -147,28 +204,128 @@ export function CmsView({ initialTab = "pages" }: { initialTab?: string }) {
       </div>
 
       {activeTab === "pages" ? (
-        <PagesTable
-          pages={pages}
-          onPreview={handleEditPage}
-          onEdit={handleEditPage}
-          onDelete={(p) => confirmDelete("page", p)}
-        />
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <DropdownMenu
+              label="Publish status"
+              value={publishStatus}
+              onChange={(value) => {
+                setPublishStatus(value);
+                pagesQuery.goToPage(1);
+              }}
+              options={[PUBLISH_PLACEHOLDER, ...PAGE_PUBLISH_FILTERS]}
+            />
+            <DropdownMenu
+              label="Status"
+              value={status}
+              onChange={(value) => {
+                setStatus(value);
+                pagesQuery.goToPage(1);
+              }}
+              options={[STATUS_PLACEHOLDER, ...PAGE_STATUS_FILTERS]}
+            />
+          </div>
+          {pagesQuery.error ? (
+            <p className="text-sm text-[#ef4444]">{pagesQuery.error}</p>
+          ) : null}
+          <PagesTable
+            pages={pagesQuery.items}
+            loading={pagesQuery.loading}
+            onPreview={handleEditPage}
+            onEdit={handleEditPage}
+            onDelete={(page) => confirmDelete({ type: "page", item: page })}
+          />
+          <Pagination
+            currentPage={pagesQuery.pagination.page}
+            totalPages={pagesQuery.pagination.totalPages}
+            onPageChange={pagesQuery.goToPage}
+          />
+        </div>
       ) : null}
 
       {activeTab === "advertisements" ? (
-        <AdvertisementsTable
-          banners={banners}
-          onEdit={openEditBanner}
-          onDelete={(b) => confirmDelete("banner", b)}
-        />
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <DropdownMenu
+              label="Status"
+              value={bannerStatus}
+              onChange={(value) => {
+                setBannerStatus(value);
+                bannersQuery.goToPage(1);
+              }}
+              options={[STATUS_PLACEHOLDER, ...BANNER_STATUS_FILTERS]}
+            />
+            <DropdownMenu
+              label="Page"
+              value={bannerPageFilter}
+              onChange={(value) => {
+                setBannerPageFilter(value);
+                bannersQuery.goToPage(1);
+              }}
+              options={[
+                PAGE_FILTER_PLACEHOLDER,
+                ...pagesDropdown.items.map((item) => item.title),
+              ]}
+              searchable
+            />
+          </div>
+          {bannersQuery.error ? (
+            <p className="text-sm text-[#ef4444]">{bannersQuery.error}</p>
+          ) : null}
+          <AdvertisementsTable
+            banners={bannersQuery.items}
+            loading={bannersQuery.loading}
+            onEdit={openEditBanner}
+            onDelete={(banner) => confirmDelete({ type: "banner", item: banner })}
+            onRestore={(banner) => void bannersQuery.restoreBanner(banner.id)}
+          />
+          <Pagination
+            currentPage={bannersQuery.pagination.page}
+            totalPages={bannersQuery.pagination.totalPages}
+            onPageChange={bannersQuery.goToPage}
+          />
+        </div>
       ) : null}
 
       {activeTab === "blogs" ? (
-        <BlogsTable
-          blogs={blogs}
-          onPreview={(b) => router.push(`/blogs/${b.id}`)}
-          onDelete={(b) => confirmDelete("blog", b)}
-        />
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <DropdownMenu
+              label="Publish status"
+              value={blogPublishStatus}
+              onChange={(value) => {
+                setBlogPublishStatus(value);
+                blogsQuery.goToPage(1);
+              }}
+              options={[PUBLISH_PLACEHOLDER, ...BLOG_PUBLISH_FILTERS]}
+            />
+            <DropdownMenu
+              label="Status"
+              value={blogStatus}
+              onChange={(value) => {
+                setBlogStatus(value);
+                blogsQuery.goToPage(1);
+              }}
+              options={[STATUS_PLACEHOLDER, ...BLOG_STATUS_FILTERS]}
+            />
+          </div>
+          {blogsQuery.error ? (
+            <p className="text-sm text-[#ef4444]">{blogsQuery.error}</p>
+          ) : null}
+          <BlogsTable
+            blogs={blogsQuery.items}
+            loading={blogsQuery.loading}
+            onPreview={(blog) => router.push(`/blogs/${blog.id}`)}
+            onEdit={(blog) => router.push(`/blogs/${blog.id}`)}
+            onDelete={(blog) => confirmDelete({ type: "blog", item: blog })}
+            onRestore={(blog) => void blogsQuery.restoreBlog(blog.id)}
+          />
+          <Pagination
+            currentPage={blogsQuery.pagination.page}
+            totalPages={blogsQuery.pagination.totalPages}
+            onPageChange={blogsQuery.goToPage}
+          />
+        </div>
       ) : null}
 
       <Dialog
@@ -191,25 +348,29 @@ export function CmsView({ initialTab = "pages" }: { initialTab?: string }) {
           <button
             type="button"
             onClick={() => setDeleteTarget(null)}
-            className="inline-flex h-10 items-center justify-center rounded-xl border border-[#e5e7eb] bg-white px-5 text-sm font-medium text-[#374151] transition hover:bg-[#f9fafb]"
+            className="inline-flex h-10 items-center justify-center rounded-xl border border-[#e5e7eb] bg-white px-5 text-sm font-semibold text-[#374151] transition hover:bg-[#f9fafb]"
           >
             Cancel
           </button>
           <button
             type="button"
-            onClick={handleDelete}
-            className="inline-flex h-10 items-center justify-center rounded-xl bg-[#ef4444] px-5 text-sm font-semibold text-white transition hover:bg-[#dc2626]"
+            onClick={() => void handleDelete()}
+            disabled={deleting}
+            className="inline-flex h-10 items-center justify-center rounded-xl bg-[#ef4444] px-5 text-sm font-semibold text-white transition hover:bg-[#dc2626] disabled:pointer-events-none disabled:opacity-60"
           >
-            Delete
+            {deleting ? "Deleting..." : "Delete"}
           </button>
         </div>
       </Dialog>
 
       <AdvertisementDialog
+        key={`banner-${adDialogMode}-${adDialogTarget?.id ?? "new"}-${adDialogOpen}`}
         open={adDialogOpen}
         onClose={() => setAdDialogOpen(false)}
         mode={adDialogMode}
         banner={adDialogTarget}
+        submitting={bannersQuery.mutating}
+        onSubmit={handleBannerSubmit}
       />
     </div>
   );
