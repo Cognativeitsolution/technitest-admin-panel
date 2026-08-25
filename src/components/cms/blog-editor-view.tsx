@@ -107,33 +107,56 @@ export function BlogEditorView({ blogId }: BlogEditorViewProps) {
   const [galleryTarget, setGalleryTarget] = useState<GalleryTarget>("cover");
   const lastAutosaveKey = useRef<string | null>(null);
 
+  const blogLoaded = useRef(false);
+
   useEffect(() => {
     if (!blog) return;
-    const nextForm: BlogFormState = {
-      title: blog.title ?? "",
-      slug: blog.slug ?? "",
-      authorName: blog.author_name ?? "",
-      shortDescription: blog.short_description ?? "",
-      longDescription: blog.long_description ?? "",
-      metaTitle: blog.meta_title ?? "",
-      keywords: keywordsToList(blog.meta_keyword),
-      metaDescription: blog.meta_description ?? "",
-      imageId: blog.image?.id ?? null,
-      imageUrl: blog.image?.url ?? null,
-      authorImageId: blog.author_image?.id ?? null,
-      authorImageUrl: blog.author_image?.url ?? null,
-    };
-    setForm(nextForm);
-    setSlugTouched(true);
-    lastAutosaveKey.current = JSON.stringify({
-      title: nextForm.title,
-      slug: nextForm.slug,
-      short_description: nextForm.shortDescription,
-      long_description: nextForm.longDescription,
-      meta_title: nextForm.metaTitle,
-      meta_keyword: keywordsToString(nextForm.keywords),
-      meta_description: nextForm.metaDescription,
-    });
+
+    if (!blogLoaded.current) {
+      blogLoaded.current = true;
+      const nextForm: BlogFormState = {
+        title: blog.title ?? "",
+        slug: blog.slug ?? "",
+        authorName: blog.author_name ?? "",
+        shortDescription: blog.short_description ?? "",
+        longDescription: blog.long_description ?? "",
+        metaTitle: blog.meta_title ?? "",
+        keywords: keywordsToList(blog.meta_keyword),
+        metaDescription: blog.meta_description ?? "",
+        imageId: blog.image?.id ?? null,
+        imageUrl: blog.image?.url ?? null,
+        authorImageId: blog.author_image?.id ?? null,
+        authorImageUrl: blog.author_image?.url ?? null,
+      };
+      setForm(nextForm);
+      setSlugTouched(true);
+      lastAutosaveKey.current = JSON.stringify({
+        title: nextForm.title,
+        slug: nextForm.slug,
+        short_description: nextForm.shortDescription,
+        long_description: nextForm.longDescription,
+        meta_title: nextForm.metaTitle,
+        meta_keyword: keywordsToString(nextForm.keywords),
+        meta_description: nextForm.metaDescription,
+      });
+      return;
+    }
+
+    setForm((prev) => ({
+      ...prev,
+      title: blog.title ?? prev.title,
+      slug: blog.slug ?? prev.slug,
+      authorName: blog.author_name ?? prev.authorName,
+      shortDescription: blog.short_description ?? prev.shortDescription,
+      longDescription: blog.long_description ?? prev.longDescription,
+      metaTitle: blog.meta_title ?? prev.metaTitle,
+      keywords: blog.meta_keyword != null ? keywordsToList(blog.meta_keyword) : prev.keywords,
+      metaDescription: blog.meta_description ?? prev.metaDescription,
+      imageId: blog.image?.id ?? prev.imageId,
+      imageUrl: blog.image?.url ?? prev.imageUrl,
+      authorImageId: blog.author_image?.id ?? prev.authorImageId,
+      authorImageUrl: blog.author_image?.url ?? prev.authorImageUrl,
+    }));
   }, [blog]);
 
   useEffect(() => {
@@ -468,8 +491,8 @@ export function BlogEditorView({ blogId }: BlogEditorViewProps) {
               placeholder="Start writing your blog..."
             />
 
-            {revisions.length > 0 ? (
-              <div className="space-y-3 rounded-xl border border-[#e5e7eb] p-4">
+            {/* {revisions.length > 0 ? (
+              <div className="space-y-3 rounded-xl border border-[#e5e7eb] p-4 max-h-64 overflow-y-auto">
                 <h3 className="text-[16px] font-bold text-[#111827]">Revisions</h3>
                 <ul className="space-y-2">
                   {revisions.map((revision) => (
@@ -493,7 +516,7 @@ export function BlogEditorView({ blogId }: BlogEditorViewProps) {
                   ))}
                 </ul>
               </div>
-            ) : null}
+            ) : null} */}
           </div>
         </div>
       )}
