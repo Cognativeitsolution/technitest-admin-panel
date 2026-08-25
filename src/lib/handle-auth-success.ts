@@ -18,10 +18,14 @@ export async function handleAuthSuccess({
   if (!resolvedUser) {
     try {
       const meResponse = await authService.getMe();
-      const rawUser = (meResponse as any)?.data || (meResponse as any)?.user || meResponse;
+      const rawUser = 
+        (meResponse as any)?.response?.data || 
+        (meResponse as any)?.data || 
+        (meResponse as any)?.user || 
+        meResponse;
       if (rawUser?.id || rawUser?.email) {
         resolvedUser = {
-          id: String(rawUser.id || ""),
+          id: String(rawUser.id || rawUser._id || ""),
           fullName: String(rawUser.fullName || rawUser.full_name || rawUser.username || "Admin"),
           email: String(rawUser.email || ""),
           avatar: rawUser.avatar ? String(rawUser.avatar) : undefined,
