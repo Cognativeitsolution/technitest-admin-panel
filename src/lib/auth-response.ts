@@ -36,7 +36,7 @@ export function parseLoginResponse(raw: any): {
 
   const user: User | null = rawUser.id || rawUser.email
     ? {
-      id: String(rawUser.i || ""),
+      id: String(rawUser.id || rawUser._id || ""),
       fullName: String(rawUser.fullName || rawUser.full_name || rawUser.username || "Admin"),
       email: String(rawUser.email || ""),
       avatar: rawUser.avatar ? String(rawUser.avatar) : undefined,

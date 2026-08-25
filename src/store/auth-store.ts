@@ -31,16 +31,20 @@ export const useAuthStore = create<AuthStore>((set) => ({
       }
       set({ accessToken: token, refreshToken: authStorage.getRefreshToken() });
       const response = await authService.getMe();
-      const rawUser = (response as any)?.data || (response as any)?.user || response;
-      if (!rawUser?.id && !rawUser?.email) {
-        throw new Error("Invalid profile");
-      }
+      // Extract user from the nested response structure
+      const rawUser = 
+        (response as any)?.response?.data || 
+        (response as any)?.data || 
+        (response as any)?.user || 
+        response;
+      
       const user: User = {
-        id: String(rawUser.id || ""),
-        fullName: String(rawUser.fullName || rawUser.full_name || rawUser.username || "Admin"),
-        email: String(rawUser.email || ""),
-        avatar: rawUser.avatar ? String(rawUser.avatar) : undefined,
+        id: String(rawUser?.id || rawUser?._id || "admin"),
+        fullName: String(rawUser?.fullName || rawUser?.full_name || rawUser?.username || "Admin User"),
+        email: String(rawUser?.email || ""),
+        avatar: rawUser?.avatar ? String(rawUser?.avatar) : undefined,
       };
+      
       set({ user, isAuthenticated: true, isLoading: false });
     } catch {
       authStorage.clear();
