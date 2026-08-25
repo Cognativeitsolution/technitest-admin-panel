@@ -81,12 +81,6 @@ function LoginForm() {
           <AuthField type="checkbox" {...register("remember")}>
             Remember me
           </AuthField>
-          <Link
-            href="/forgot-password"
-            className="text-[15px] font-normal text-[#252525] hover:underline"
-          >
-            Forgot Password?
-          </Link>
         </div>
 
         <AuthButton loading={loading} className="mt-[35px]">
