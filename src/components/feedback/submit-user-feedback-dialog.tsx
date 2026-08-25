@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 
 import { Dialog } from "@/components/ui/dialog";
 import { StarRating } from "@/components/ui/star-rating";
+import { quizInfoService } from "@/services/quiz-info.service";
 import type { SubmitUserFeedbackInput } from "@/types/user-feedback.types";
+import type { QuizInfoListItem } from "@/types/quiz-info.types";
 
 type SubmitUserFeedbackDialogProps = {
   open: boolean;
@@ -13,6 +15,9 @@ type SubmitUserFeedbackDialogProps = {
   onSubmit: (input: SubmitUserFeedbackInput) => Promise<boolean>;
 };
 
+const selectClassName =
+  "h-11 w-full rounded-xl border border-[#e5e7eb] bg-white px-3 text-sm text-[#111827] outline-none transition focus:border-[#2563eb]";
+
 export function SubmitUserFeedbackDialog({
   open,
   onClose,
@@ -20,26 +25,46 @@ export function SubmitUserFeedbackDialog({
   onSubmit,
 }: SubmitUserFeedbackDialogProps) {
   const [quizInfoId, setQuizInfoId] = useState("");
-  const [questionId, setQuestionId] = useState("");
   const [target, setTarget] = useState("quiz");
   const [rating, setRating] = useState(0);
   const [content, setContent] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+  const [quizzes, setQuizzes] = useState<QuizInfoListItem[]>([]);
+  const [quizzesLoading, setQuizzesLoading] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     setQuizInfoId("");
-    setQuestionId("");
     setTarget("quiz");
     setRating(0);
     setContent("");
     setFormError(null);
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    setQuizzesLoading(true);
+    quizInfoService
+      .getAllAdminQuizzes()
+      .then((items) => {
+        if (!cancelled) setQuizzes(items);
+      })
+      .catch(() => {
+        if (!cancelled) setQuizzes([]);
+      })
+      .finally(() => {
+        if (!cancelled) setQuizzesLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
   async function handleSave() {
     const quizId = Number(quizInfoId);
     if (!Number.isInteger(quizId) || quizId < 1) {
-      setFormError("A valid Quiz Info ID is required.");
+      setFormError("Please select a quiz.");
       return;
     }
     if (rating < 1) {
@@ -51,27 +76,15 @@ export function SubmitUserFeedbackDialog({
       return;
     }
 
-    let parsedQuestionId: number | null = null;
-    if (questionId.trim()) {
-      const qid = Number(questionId);
-      if (!Number.isInteger(qid) || qid < 1) {
-        setFormError("Question ID must be a positive number when provided.");
-        return;
-      }
-      parsedQuestionId = qid;
-    }
-
-    const ok = await onSubmit({
+    const payload: SubmitUserFeedbackInput = {
       quiz_info_id: quizId,
-      question_id: parsedQuestionId,
       target: target.trim() || "quiz",
       rating,
       content: content.trim(),
-    });
+    };
 
-    if (ok) {
-      onClose();
-    }
+    const ok = await onSubmit(payload);
+    if (ok) onClose();
   }
 
   return (
@@ -79,43 +92,36 @@ export function SubmitUserFeedbackDialog({
       <div className="space-y-5">
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <label className="block space-y-2">
-            <span className="text-sm font-medium text-[#374151]">Quiz Info ID</span>
-            <input
-              type="number"
-              min={1}
+            <span className="text-sm font-medium text-[#374151]">Quiz</span>
+            <select
               value={quizInfoId}
               onChange={(e) => setQuizInfoId(e.target.value)}
-              placeholder="e.g. 12"
-              className="h-11 w-full rounded-xl border border-[#e5e7eb] bg-white px-3 text-sm text-[#111827] outline-none transition focus:border-[#2563eb]"
-            />
+              disabled={quizzesLoading}
+              className={selectClassName}
+            >
+              <option value="">
+                {quizzesLoading ? "Loading quizzes..." : "Select a quiz"}
+              </option>
+              {quizzes.map((quiz) => (
+                <option key={quiz.id} value={quiz.id}>
+                  {quiz.name}
+                </option>
+              ))}
+            </select>
           </label>
 
           <label className="block space-y-2">
-            <span className="text-sm font-medium text-[#374151]">
-              Question ID <span className="font-normal text-[#9ca3af]">(optional)</span>
-            </span>
-            <input
-              type="number"
-              min={1}
-              value={questionId}
-              onChange={(e) => setQuestionId(e.target.value)}
-              placeholder="e.g. 5"
-              className="h-11 w-full rounded-xl border border-[#e5e7eb] bg-white px-3 text-sm text-[#111827] outline-none transition focus:border-[#2563eb]"
-            />
+            <span className="text-sm font-medium text-[#374151]">Target</span>
+            <select
+              value={target}
+              onChange={(e) => setTarget(e.target.value)}
+              className={selectClassName}
+            >
+              <option value="quiz">quiz</option>
+              <option value="question">question</option>
+            </select>
           </label>
         </div>
-
-        <label className="block space-y-2">
-          <span className="text-sm font-medium text-[#374151]">Target</span>
-          <select
-            value={target}
-            onChange={(e) => setTarget(e.target.value)}
-            className="h-11 w-full rounded-xl border border-[#e5e7eb] bg-white px-3 text-sm text-[#111827] outline-none transition focus:border-[#2563eb]"
-          >
-            <option value="quiz">quiz</option>
-            <option value="question">question</option>
-          </select>
-        </label>
 
         <div className="space-y-2">
           <span className="text-sm font-medium text-[#374151]">Rating</span>

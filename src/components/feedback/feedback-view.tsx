@@ -11,20 +11,18 @@ import { FeedbacksTable } from "@/components/feedback/feedbacks-table";
 import { AddReviewDialog } from "@/components/feedback/add-review-dialog";
 import { SubmitUserFeedbackDialog } from "@/components/feedback/submit-user-feedback-dialog";
 import { ReviewMessageDialog } from "@/components/feedback/review-message-dialog";
+import { FeedbackAnalysisDialog } from "@/components/feedback/feedback-analysis-dialog";
 import { useWebsiteReviews } from "@/hooks/feedback/use-website-reviews";
 import { useUserReviews } from "@/hooks/feedback/use-user-reviews";
-import {
-  feedbackItems as initialFeedbacks,
-  ratingOptions,
-  sentimentOptions,
-  quizNameOptions,
-  pageOptions,
-} from "@/data/feedback";
-import type { FeedbackTab, FeedbackItem } from "@/data/feedback";
+import { useFeedbackAnalysis } from "@/hooks/feedback/use-feedback-analysis";
+import { ratingOptions, sentimentOptions } from "@/data/feedback";
+import type { FeedbackTab } from "@/data/feedback";
 import type { WebsiteReviewRecord } from "@/types/website-review.types";
+import type { FeedbackAnalysisRecord } from "@/types/user-feedback.types";
 
 const featuredOptions = ["Featured", "Not Featured"];
 const targetOptions = ["quiz", "question"];
+const analysisStatusOptions = ["pending", "completed"];
 
 export function FeedbackView({
   initialTab = "website-reviews",
@@ -61,15 +59,20 @@ export function FeedbackView({
     submitFeedback,
   } = useUserReviews({ perPage: 15 });
 
-  const [feedbacks, setFeedbacks] =
-    useState<FeedbackItem[]>(initialFeedbacks);
+  const {
+    items: feedbackItems,
+    pagination: feedbackPagination,
+    loading: feedbackLoading,
+    error: feedbackError,
+    goToPage: goToFeedbackPage,
+  } = useFeedbackAnalysis({ perPage: 15 });
 
   const [ratingFilter, setRatingFilter] = useState<string[]>([]);
   const [featuredFilter, setFeaturedFilter] = useState<string[]>([]);
   const [targetFilter, setTargetFilter] = useState<string[]>([]);
   const [sentimentFilter, setSentimentFilter] = useState<string[]>([]);
-  const [quizFilter, setQuizFilter] = useState<string[]>([]);
-  const [pageFilter, setPageFilter] = useState<string[]>([]);
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [feedbackTargetFilter, setFeedbackTargetFilter] = useState<string[]>([]);
 
   const [addReviewOpen, setAddReviewOpen] = useState(false);
   const [submitFeedbackOpen, setSubmitFeedbackOpen] = useState(false);
@@ -79,6 +82,8 @@ export function FeedbackView({
     rating?: number;
     message: string;
   } | null>(null);
+  const [analysisDialog, setAnalysisDialog] =
+    useState<FeedbackAnalysisRecord | null>(null);
 
   const filteredWebsiteReviews = useMemo(() => {
     return websiteReviews.filter((r) => {
@@ -116,21 +121,36 @@ export function FeedbackView({
     });
   }, [userReviews, ratingFilter, targetFilter]);
 
-  function handleMarkResolved(id: string) {
-    setFeedbacks((prev) =>
-      prev.map((f) =>
-        f.id === id ? { ...f, status: "Approved" as const } : f,
-      ),
-    );
-  }
+  const filteredFeedbacks = useMemo(() => {
+    return feedbackItems.filter((item) => {
+      const sentiment = (
+        item.sentiment_label ||
+        item.sentiment_summary ||
+        ""
+      ).toLowerCase();
+      const status = (item.sentiment_status || "").toLowerCase();
 
-  const filteredFeedbacks = feedbacks.filter((f) => {
-    if (quizFilter.length > 0 && !quizFilter.includes(f.pageQuiz)) return false;
-    if (sentimentFilter.length > 0 && !sentimentFilter.includes(f.sentiment))
-      return false;
-    if (pageFilter.length > 0 && !pageFilter.includes(f.pageQuiz)) return false;
-    return true;
-  });
+      if (
+        sentimentFilter.length > 0 &&
+        !sentimentFilter.some((s) => s.toLowerCase() === sentiment)
+      ) {
+        return false;
+      }
+      if (
+        statusFilter.length > 0 &&
+        !statusFilter.some((s) => s.toLowerCase() === status)
+      ) {
+        return false;
+      }
+      if (
+        feedbackTargetFilter.length > 0 &&
+        !feedbackTargetFilter.includes(item.target.toLowerCase())
+      ) {
+        return false;
+      }
+      return true;
+    });
+  }, [feedbackItems, sentimentFilter, statusFilter, feedbackTargetFilter]);
 
   const tabs = [
     { id: "website-reviews" as const, label: "Website Reviews" },
@@ -212,6 +232,9 @@ export function FeedbackView({
               setRatingFilter([]);
               setFeaturedFilter([]);
               setTargetFilter([]);
+              setSentimentFilter([]);
+              setStatusFilter([]);
+              setFeedbackTargetFilter([]);
             }}
             className={`inline-flex h-10 items-center justify-center rounded-lg px-5 text-sm font-semibold transition ${
               activeTab === tab.id
@@ -314,16 +337,10 @@ export function FeedbackView({
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-3">
             <CheckboxDropdown
-              label="Quiz Name"
-              options={quizNameOptions}
-              selected={quizFilter}
-              onChange={setQuizFilter}
-            />
-            <CheckboxDropdown
-              label="Page"
-              options={pageOptions}
-              selected={pageFilter}
-              onChange={setPageFilter}
+              label="By Target"
+              options={targetOptions}
+              selected={feedbackTargetFilter}
+              onChange={setFeedbackTargetFilter}
             />
             <CheckboxDropdown
               label="Sentiment"
@@ -331,11 +348,30 @@ export function FeedbackView({
               selected={sentimentFilter}
               onChange={setSentimentFilter}
             />
+            <CheckboxDropdown
+              label="Status"
+              options={analysisStatusOptions}
+              selected={statusFilter}
+              onChange={setStatusFilter}
+            />
           </div>
+
+          {feedbackError ? (
+            <div className="rounded-xl border border-[#fecaca] bg-[#fef2f2] px-4 py-3 text-sm text-[#b91c1c]">
+              {feedbackError}
+            </div>
+          ) : null}
+
           <FeedbacksTable
             items={filteredFeedbacks}
-            onMarkResolved={handleMarkResolved}
-            onMessageClick={(f) => setMessageDialog({ message: f.message })}
+            loading={feedbackLoading}
+            onMessageClick={setAnalysisDialog}
+          />
+
+          <Pagination
+            currentPage={feedbackPagination.page}
+            totalPages={feedbackPagination.totalPages}
+            onPageChange={goToFeedbackPage}
           />
         </div>
       ) : null}
@@ -363,6 +399,12 @@ export function FeedbackView({
         onClose={() => setMessageDialog(null)}
         rating={messageDialog?.rating}
         message={messageDialog?.message ?? ""}
+      />
+
+      <FeedbackAnalysisDialog
+        open={!!analysisDialog}
+        onClose={() => setAnalysisDialog(null)}
+        item={analysisDialog}
       />
     </div>
   );

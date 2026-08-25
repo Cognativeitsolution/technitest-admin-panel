@@ -15,15 +15,25 @@ export type UserFeedbackRecord = {
   created_at: string;
 };
 
+export type FeedbackAnalysisRecord = UserFeedbackRecord & {
+  sentiment_status: string | null;
+  sentiment_summary: string | null;
+  sentiment_label: string | null;
+  sentiment_confidence: number | null;
+  sentiment_tone: string | null;
+  recommendation_flag: string | null;
+  analysis_note: string | null;
+};
+
 export type SubmitUserFeedbackInput = {
   quiz_info_id: number;
-  question_id?: number | null;
   target: string;
   rating: number;
   content: string;
 };
 
 export type UserFeedbackListResult = PaginatedData<UserFeedbackRecord>;
+export type FeedbackAnalysisListResult = PaginatedData<FeedbackAnalysisRecord>;
 
 export type UserFeedbackQuery = {
   page?: number;
