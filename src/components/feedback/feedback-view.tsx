@@ -1,105 +1,133 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, Trash2, CheckCircle } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Plus } from "lucide-react";
 
-import { Dialog } from "@/components/ui/dialog";
+import { Pagination } from "@/components/shared/pagination";
 import { CheckboxDropdown } from "@/components/feedback/checkbox-dropdown";
 import { WebsiteReviewsTable } from "@/components/feedback/website-reviews-table";
 import { UserReviewsTable } from "@/components/feedback/user-reviews-table";
 import { FeedbacksTable } from "@/components/feedback/feedbacks-table";
 import { AddReviewDialog } from "@/components/feedback/add-review-dialog";
+import { SubmitUserFeedbackDialog } from "@/components/feedback/submit-user-feedback-dialog";
 import { ReviewMessageDialog } from "@/components/feedback/review-message-dialog";
+import { useWebsiteReviews } from "@/hooks/feedback/use-website-reviews";
+import { useUserReviews } from "@/hooks/feedback/use-user-reviews";
 import {
-  websiteReviews as initialWebsiteReviews,
-  userReviews as initialUserReviews,
   feedbackItems as initialFeedbacks,
   ratingOptions,
-  statusOptions,
   sentimentOptions,
   quizNameOptions,
   pageOptions,
 } from "@/data/feedback";
-import type { FeedbackTab, WebsiteReview, UserReview, FeedbackItem } from "@/data/feedback";
+import type { FeedbackTab, FeedbackItem } from "@/data/feedback";
+import type { WebsiteReviewRecord } from "@/types/website-review.types";
 
-export function FeedbackView({ initialTab = "website-reviews" }: { initialTab?: string }) {
+const featuredOptions = ["Featured", "Not Featured"];
+const targetOptions = ["quiz", "question"];
+
+export function FeedbackView({
+  initialTab = "website-reviews",
+}: {
+  initialTab?: string;
+}) {
   const [activeTab, setActiveTab] = useState<FeedbackTab>(
-    initialTab === "user-reviews" ? "user-reviews" : initialTab === "feedbacks" ? "feedbacks" : "website-reviews"
+    initialTab === "user-reviews"
+      ? "user-reviews"
+      : initialTab === "feedbacks"
+        ? "feedbacks"
+        : "website-reviews",
   );
 
-  const [websiteReviews, setWebsiteReviews] = useState<WebsiteReview[]>(initialWebsiteReviews);
-  const [userReviews, setUserReviews] = useState<UserReview[]>(initialUserReviews);
-  const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>(initialFeedbacks);
+  const {
+    items: websiteReviews,
+    pagination: websitePagination,
+    loading: websiteLoading,
+    error: websiteError,
+    mutating: websiteMutating,
+    goToPage: goToWebsitePage,
+    createReview,
+    updateReview,
+    toggleFeatured,
+  } = useWebsiteReviews({ perPage: 15 });
 
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const {
+    items: userReviews,
+    pagination: userPagination,
+    loading: userLoading,
+    error: userError,
+    mutating: userMutating,
+    goToPage: goToUserPage,
+    submitFeedback,
+  } = useUserReviews({ perPage: 15 });
+
+  const [feedbacks, setFeedbacks] =
+    useState<FeedbackItem[]>(initialFeedbacks);
+
   const [ratingFilter, setRatingFilter] = useState<string[]>([]);
-  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [featuredFilter, setFeaturedFilter] = useState<string[]>([]);
+  const [targetFilter, setTargetFilter] = useState<string[]>([]);
   const [sentimentFilter, setSentimentFilter] = useState<string[]>([]);
   const [quizFilter, setQuizFilter] = useState<string[]>([]);
   const [pageFilter, setPageFilter] = useState<string[]>([]);
 
   const [addReviewOpen, setAddReviewOpen] = useState(false);
-  const [messageDialog, setMessageDialog] = useState<{ rating?: number; message: string } | null>(null);
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [submitFeedbackOpen, setSubmitFeedbackOpen] = useState(false);
+  const [editingReview, setEditingReview] =
+    useState<WebsiteReviewRecord | null>(null);
+  const [messageDialog, setMessageDialog] = useState<{
+    rating?: number;
+    message: string;
+  } | null>(null);
 
-  function handleSelectAll(checked: boolean) {
-    if (checked) {
-      const current = activeTab === "website-reviews" ? filteredWebsiteReviews : filteredUserReviews;
-      setSelectedIds(current.map((r) => r.id));
-    } else {
-      setSelectedIds([]);
-    }
-  }
+  const filteredWebsiteReviews = useMemo(() => {
+    return websiteReviews.filter((r) => {
+      if (
+        ratingFilter.length > 0 &&
+        !ratingFilter.includes(`${r.rating} Stars`)
+      ) {
+        return false;
+      }
+      if (featuredFilter.includes("Featured") && !featuredFilter.includes("Not Featured")) {
+        return r.is_featured;
+      }
+      if (featuredFilter.includes("Not Featured") && !featuredFilter.includes("Featured")) {
+        return !r.is_featured;
+      }
+      return true;
+    });
+  }, [websiteReviews, ratingFilter, featuredFilter]);
 
-  function handleSelectRow(id: string, checked: boolean) {
-    if (checked) {
-      setSelectedIds((prev) => [...prev, id]);
-    } else {
-      setSelectedIds((prev) => prev.filter((i) => i !== id));
-    }
-  }
-
-  function toggleActive(id: string, active: boolean) {
-    setWebsiteReviews((prev) => prev.map((r) => r.id === id ? { ...r, active } : r));
-    setUserReviews((prev) => prev.map((r) => r.id === id ? { ...r, active } : r));
-  }
+  const filteredUserReviews = useMemo(() => {
+    return userReviews.filter((r) => {
+      if (
+        ratingFilter.length > 0 &&
+        !ratingFilter.includes(`${r.rating} Stars`)
+      ) {
+        return false;
+      }
+      if (
+        targetFilter.length > 0 &&
+        !targetFilter.includes(r.target.toLowerCase())
+      ) {
+        return false;
+      }
+      return true;
+    });
+  }, [userReviews, ratingFilter, targetFilter]);
 
   function handleMarkResolved(id: string) {
-    setFeedbacks((prev) => prev.map((f) => f.id === id ? { ...f, status: "Approved" as const } : f));
-  }
-
-  function handleApproveAll() {
-    setWebsiteReviews((prev) =>
-      prev.map((r) => selectedIds.includes(r.id) ? { ...r, status: "Approved" as const, active: true } : r)
+    setFeedbacks((prev) =>
+      prev.map((f) =>
+        f.id === id ? { ...f, status: "Approved" as const } : f,
+      ),
     );
-    setUserReviews((prev) =>
-      prev.map((r) => selectedIds.includes(r.id) ? { ...r, status: "Approved" as const, active: true } : r)
-    );
-    setSelectedIds([]);
   }
-
-  function handleDeleteAll() {
-    setWebsiteReviews((prev) => prev.filter((r) => !selectedIds.includes(r.id)));
-    setUserReviews((prev) => prev.filter((r) => !selectedIds.includes(r.id)));
-    setSelectedIds([]);
-    setDeleteConfirmOpen(false);
-  }
-
-  const filteredWebsiteReviews = websiteReviews.filter((r) => {
-    if (ratingFilter.length > 0 && !ratingFilter.includes(`${r.rating} Stars`)) return false;
-    if (statusFilter.length > 0 && !statusFilter.includes(r.status === "Approved" ? "Active" : "Inactive")) return false;
-    return true;
-  });
-
-  const filteredUserReviews = userReviews.filter((r) => {
-    if (ratingFilter.length > 0 && !ratingFilter.includes(`${r.rating} Stars`)) return false;
-    if (statusFilter.length > 0 && !statusFilter.includes(r.status === "Approved" ? "Active" : "Inactive")) return false;
-    return true;
-  });
 
   const filteredFeedbacks = feedbacks.filter((f) => {
     if (quizFilter.length > 0 && !quizFilter.includes(f.pageQuiz)) return false;
-    if (sentimentFilter.length > 0 && !sentimentFilter.includes(f.sentiment)) return false;
+    if (sentimentFilter.length > 0 && !sentimentFilter.includes(f.sentiment))
+      return false;
     if (pageFilter.length > 0 && !pageFilter.includes(f.pageQuiz)) return false;
     return true;
   });
@@ -110,34 +138,80 @@ export function FeedbackView({ initialTab = "website-reviews" }: { initialTab?: 
     { id: "feedbacks" as const, label: "Feedbacks" },
   ];
 
+  async function handleReviewSubmit(input: {
+    name: string;
+    rating: number;
+    message: string;
+    image?: File | null;
+    video?: File | null;
+    isFeatured?: boolean;
+  }) {
+    if (editingReview) {
+      return updateReview({
+        reviewId: editingReview.id,
+        payload: {
+          name: input.name,
+          rating: input.rating,
+          message: input.message,
+        },
+        image: input.image,
+        video: input.video,
+      });
+    }
+
+    return createReview({
+      payload: {
+        name: input.name,
+        rating: input.rating,
+        message: input.message,
+      },
+      image: input.image,
+      video: input.video,
+      isFeatured: input.isFeatured,
+    });
+  }
+
   return (
     <div className="space-y-5">
-      {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-[28px] font-bold tracking-tight text-[#111827]">
           Feedback &amp; Reviews
         </h1>
-        {activeTab !== "feedbacks" ? (
+        {activeTab === "website-reviews" ? (
           <button
             type="button"
-            onClick={() => setAddReviewOpen(true)}
+            onClick={() => {
+              setEditingReview(null);
+              setAddReviewOpen(true);
+            }}
             className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#f0a500] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d99400]"
           >
             <Plus className="size-4" />
             Add Review
           </button>
         ) : null}
+        {activeTab === "user-reviews" ? (
+          <button
+            type="button"
+            onClick={() => setSubmitFeedbackOpen(true)}
+            className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#f0a500] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d99400]"
+          >
+            <Plus className="size-4" />
+            Submit Feedback
+          </button>
+        ) : null}
       </div>
 
-      {/* Tab Switcher */}
-      <div className="flex items-center gap-1 rounded-xl bg-[#f3f4f6] p-1 w-fit">
+      <div className="flex w-fit items-center gap-1 rounded-xl bg-[#f3f4f6] p-1">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             type="button"
             onClick={() => {
               setActiveTab(tab.id);
-              setSelectedIds([]);
+              setRatingFilter([]);
+              setFeaturedFilter([]);
+              setTargetFilter([]);
             }}
             className={`inline-flex h-10 items-center justify-center rounded-lg px-5 text-sm font-semibold transition ${
               activeTab === tab.id
@@ -150,89 +224,113 @@ export function FeedbackView({ initialTab = "website-reviews" }: { initialTab?: 
         ))}
       </div>
 
-      {/* Website Reviews Tab */}
       {activeTab === "website-reviews" ? (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-3">
-            <CheckboxDropdown label="By Rating" options={ratingOptions} selected={ratingFilter} onChange={setRatingFilter} />
-            <CheckboxDropdown label="By Status" options={statusOptions} selected={statusFilter} onChange={setStatusFilter} />
+            <CheckboxDropdown
+              label="By Rating"
+              options={ratingOptions}
+              selected={ratingFilter}
+              onChange={setRatingFilter}
+            />
+            <CheckboxDropdown
+              label="By Featured"
+              options={featuredOptions}
+              selected={featuredFilter}
+              onChange={setFeaturedFilter}
+            />
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={() => { if (selectedIds.length > 0) setDeleteConfirmOpen(true); }}
-              disabled={selectedIds.length === 0}
-              className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#ef4444] px-4 text-sm font-semibold text-white transition hover:bg-[#dc2626] disabled:pointer-events-none disabled:opacity-40"
-            >
-              <Trash2 className="size-4" />
-              Delete All
-            </button>
-            <button
-              type="button"
-              onClick={handleApproveAll}
-              disabled={selectedIds.length === 0}
-              className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#2563eb] px-4 text-sm font-semibold text-white transition hover:bg-[#1d4ed8] disabled:pointer-events-none disabled:opacity-40"
-            >
-              <CheckCircle className="size-4" />
-              Approve All
-            </button>
-          </div>
+
+          {websiteError ? (
+            <div className="rounded-xl border border-[#fecaca] bg-[#fef2f2] px-4 py-3 text-sm text-[#b91c1c]">
+              {websiteError}
+            </div>
+          ) : null}
+
           <WebsiteReviewsTable
             reviews={filteredWebsiteReviews}
-            selectedIds={selectedIds}
-            onSelectAll={handleSelectAll}
-            onSelectRow={handleSelectRow}
-            onToggleActive={toggleActive}
-            onMessageClick={(r) => setMessageDialog({ rating: r.rating, message: r.message })}
+            loading={websiteLoading}
+            onToggleFeatured={toggleFeatured}
+            onEdit={(review) => {
+              setEditingReview(review);
+              setAddReviewOpen(true);
+            }}
+            onMessageClick={(r) =>
+              setMessageDialog({ rating: r.rating, message: r.message })
+            }
+          />
+
+          <Pagination
+            currentPage={websitePagination.page}
+            totalPages={websitePagination.totalPages}
+            onPageChange={goToWebsitePage}
           />
         </div>
       ) : null}
 
-      {/* User Reviews Tab */}
       {activeTab === "user-reviews" ? (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-3">
-            <CheckboxDropdown label="By Rating" options={ratingOptions} selected={ratingFilter} onChange={setRatingFilter} />
-            <CheckboxDropdown label="By Status" options={statusOptions} selected={statusFilter} onChange={setStatusFilter} />
+            <CheckboxDropdown
+              label="By Rating"
+              options={ratingOptions}
+              selected={ratingFilter}
+              onChange={setRatingFilter}
+            />
+            <CheckboxDropdown
+              label="By Target"
+              options={targetOptions}
+              selected={targetFilter}
+              onChange={setTargetFilter}
+            />
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={() => { if (selectedIds.length > 0) setDeleteConfirmOpen(true); }}
-              disabled={selectedIds.length === 0}
-              className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#ef4444] px-4 text-sm font-semibold text-white transition hover:bg-[#dc2626] disabled:pointer-events-none disabled:opacity-40"
-            >
-              <Trash2 className="size-4" />
-              Delete All
-            </button>
-            <button
-              type="button"
-              onClick={handleApproveAll}
-              disabled={selectedIds.length === 0}
-              className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#2563eb] px-4 text-sm font-semibold text-white transition hover:bg-[#1d4ed8] disabled:pointer-events-none disabled:opacity-40"
-            >
-              <CheckCircle className="size-4" />
-              Approve All
-            </button>
-          </div>
+
+          {userError ? (
+            <div className="rounded-xl border border-[#fecaca] bg-[#fef2f2] px-4 py-3 text-sm text-[#b91c1c]">
+              {userError}
+            </div>
+          ) : null}
+
           <UserReviewsTable
             reviews={filteredUserReviews}
-            selectedIds={selectedIds}
-            onSelectAll={handleSelectAll}
-            onSelectRow={handleSelectRow}
-            onToggleActive={toggleActive}
-            onMessageClick={(r) => setMessageDialog({ rating: r.rating, message: r.message })}
+            loading={userLoading}
+            onMessageClick={(r) =>
+              setMessageDialog({
+                rating: r.rating,
+                message: r.content?.trim() || "No message",
+              })
+            }
+          />
+
+          <Pagination
+            currentPage={userPagination.page}
+            totalPages={userPagination.totalPages}
+            onPageChange={goToUserPage}
           />
         </div>
       ) : null}
 
-      {/* Feedbacks Tab */}
       {activeTab === "feedbacks" ? (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-3">
-            <CheckboxDropdown label="Quiz Name" options={quizNameOptions} selected={quizFilter} onChange={setQuizFilter} />
-            <CheckboxDropdown label="Page" options={pageOptions} selected={pageFilter} onChange={setPageFilter} />
-            <CheckboxDropdown label="Sentiment" options={sentimentOptions} selected={sentimentFilter} onChange={setSentimentFilter} />
+            <CheckboxDropdown
+              label="Quiz Name"
+              options={quizNameOptions}
+              selected={quizFilter}
+              onChange={setQuizFilter}
+            />
+            <CheckboxDropdown
+              label="Page"
+              options={pageOptions}
+              selected={pageFilter}
+              onChange={setPageFilter}
+            />
+            <CheckboxDropdown
+              label="Sentiment"
+              options={sentimentOptions}
+              selected={sentimentFilter}
+              onChange={setSentimentFilter}
+            />
           </div>
           <FeedbacksTable
             items={filteredFeedbacks}
@@ -242,37 +340,24 @@ export function FeedbackView({ initialTab = "website-reviews" }: { initialTab?: 
         </div>
       ) : null}
 
-      {/* Delete Confirmation */}
-      <Dialog
-        open={deleteConfirmOpen}
-        onClose={() => setDeleteConfirmOpen(false)}
-        title="Delete Reviews"
-      >
-        <p className="text-[15px] text-[#4b5563]">
-          Are you sure you want to delete <span className="font-semibold text-[#111827]">{selectedIds.length} selected review{selectedIds.length !== 1 ? "s" : ""}</span>? This action cannot be undone.
-        </p>
-        <div className="mt-6 flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={() => setDeleteConfirmOpen(false)}
-            className="inline-flex h-10 items-center justify-center rounded-xl border border-[#e5e7eb] bg-white px-5 text-sm font-medium text-[#374151] transition hover:bg-[#f9fafb]"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleDeleteAll}
-            className="inline-flex h-10 items-center justify-center rounded-xl bg-[#ef4444] px-5 text-sm font-semibold text-white transition hover:bg-[#dc2626]"
-          >
-            Delete
-          </button>
-        </div>
-      </Dialog>
+      <AddReviewDialog
+        open={addReviewOpen}
+        onClose={() => {
+          setAddReviewOpen(false);
+          setEditingReview(null);
+        }}
+        review={editingReview}
+        submitting={websiteMutating}
+        onSubmit={handleReviewSubmit}
+      />
 
-      {/* Add Review Dialog */}
-      <AddReviewDialog open={addReviewOpen} onClose={() => setAddReviewOpen(false)} />
+      <SubmitUserFeedbackDialog
+        open={submitFeedbackOpen}
+        onClose={() => setSubmitFeedbackOpen(false)}
+        submitting={userMutating}
+        onSubmit={submitFeedback}
+      />
 
-      {/* Review Message Dialog */}
       <ReviewMessageDialog
         open={!!messageDialog}
         onClose={() => setMessageDialog(null)}
