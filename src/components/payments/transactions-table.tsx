@@ -3,16 +3,16 @@
 import { Eye } from "lucide-react";
 
 import { TransactionStatusBadge } from "@/components/payments/transaction-status-badge";
-import type { PaymentTransaction } from "@/data/payments";
+import type { TransactionRecord } from "@/types/payment.types";
 
 type TransactionsTableProps = {
-  transactions: PaymentTransaction[];
-  onViewInvoice: (tx: PaymentTransaction) => void;
+  transactions: TransactionRecord[];
+  onViewReceipt: (tx: TransactionRecord) => void;
 };
 
 export function TransactionsTable({
   transactions,
-  onViewInvoice,
+  onViewReceipt,
 }: TransactionsTableProps) {
   return (
     <div className="overflow-hidden rounded-2xl border border-[#e8ecf2] bg-white shadow-[0_1px_3px_rgba(16,24,40,0.04)]">
@@ -21,11 +21,11 @@ export function TransactionsTable({
           <thead>
             <tr className="bg-[#eef5ff] text-[13px] font-semibold text-[#374151]">
               <th className="px-5 py-3.5">Transaction</th>
-              <th className="px-5 py-3.5">User</th>
-              <th className="px-5 py-3.5">Purpose</th>
+              <th className="px-5 py-3.5">User ID</th>
+              <th className="px-5 py-3.5">Provider</th>
               <th className="px-5 py-3.5">Amount</th>
               <th className="px-5 py-3.5">Status</th>
-              <th className="px-5 py-3.5">Initiated</th>
+              <th className="px-5 py-3.5">Created</th>
               <th className="px-5 py-3.5">Actions</th>
             </tr>
           </thead>
@@ -38,33 +38,39 @@ export function TransactionsTable({
                 <td className="px-5 py-4">
                   <div className="flex flex-col">
                     <span className="text-sm font-medium text-[#2563eb]">
-                      {tx.provider}
+                      #{tx.id}
                     </span>
-                    <span className="text-xs text-[#6b7280]">
-                      {tx.transactionId}
+                    <span className="max-w-[180px] truncate text-xs text-[#6b7280]">
+                      {tx.provider_reference ?? "—"}
                     </span>
                   </div>
                 </td>
                 <td className="px-5 py-4 text-sm font-medium text-[#111827]">
-                  {tx.userName}
+                  {tx.user_id}
                 </td>
-                <td className="px-5 py-4 text-sm text-[#374151]">
-                  {tx.purpose}
+                <td className="px-5 py-4 text-sm capitalize text-[#374151]">
+                  {tx.provider}
                 </td>
                 <td className="px-5 py-4 text-sm font-semibold text-[#111827]">
-                  {tx.currency} {tx.amount.toLocaleString()}
+                  {tx.currency.toUpperCase()} {tx.amount.toLocaleString()}
                 </td>
                 <td className="px-5 py-4">
                   <TransactionStatusBadge status={tx.status} />
                 </td>
                 <td className="px-5 py-4 text-sm text-[#6b7280]">
-                  {tx.initiatedDate}
+                  {tx.created_at
+                    ? new Date(tx.created_at).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })
+                    : "—"}
                 </td>
                 <td className="px-5 py-4">
                   <button
                     type="button"
-                    aria-label="View invoice"
-                    onClick={() => onViewInvoice(tx)}
+                    aria-label="View receipt"
+                    onClick={() => onViewReceipt(tx)}
                     className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#2563eb]"
                   >
                     <Eye className="size-4" />
