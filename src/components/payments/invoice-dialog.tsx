@@ -4,6 +4,11 @@ import { Printer, Download, Loader2 } from "lucide-react";
 
 import { Dialog } from "@/components/ui/dialog";
 import {
+  downloadInvoicePdf,
+  printInvoice,
+  type InvoiceDocumentData,
+} from "@/lib/invoice-export";
+import {
   TRANSACTION_STATUS_LABELS,
   type TransactionRecord,
   type TransactionReceipt,
@@ -22,6 +27,13 @@ const STATUS_TEXT_CLASS: Record<TransactionStatus, string> = {
   pending: "text-[#ca8a04]",
   failed: "text-[#ef4444]",
   refunded: "text-[#7c3aed]",
+};
+
+const STATUS_COLOR: Record<TransactionStatus, string> = {
+  completed: "#16a34a",
+  pending: "#ca8a04",
+  failed: "#ef4444",
+  refunded: "#7c3aed",
 };
 
 type InvoiceDialogProps = {
@@ -56,30 +68,6 @@ function maskReference(reference: string | null | undefined) {
   return `*******${digits.slice(-4)}`;
 }
 
-function getInvoiceHtml(title: string, innerHtml: string) {
-  return `<html><head><title>${title}</title>
-      <style>
-        body { font-family: sans-serif; padding: 40px; color: #111827; }
-        h2 { font-size: 20px; margin-bottom: 8px; }
-        .section { margin-bottom: 24px; }
-        .row { display: flex; justify-content: space-between; margin-bottom: 8px; }
-        .label { color: #6b7280; font-size: 13px; }
-        .value { font-size: 14px; font-weight: 500; }
-        .blue { color: #2563eb; }
-        .green { color: #16a34a; }
-        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-        th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid #e5e7eb; font-size: 13px; }
-        th { background: #f9fafb; font-weight: 600; }
-        .separator { border-top: 1px solid #e5e7eb; margin: 16px 0; }
-        .total-row { display: flex; justify-content: space-between; padding: 6px 0; }
-        .total-label { color: #6b7280; }
-        .total-value { font-weight: 600; }
-        .highlight { color: #2563eb; font-weight: 700; font-size: 16px; }
-      </style></head><body>
-      ${innerHtml}
-      </body></html>`;
-}
-
 export function InvoiceDialog({
   open,
   onClose,
@@ -103,31 +91,66 @@ export function InvoiceDialog({
       : "Order";
   const billToName =
     receipt?.user_email?.split("@")[0] || `User #${tx.user_id}`;
-  const maskedAccount = maskReference(tx.provider_reference);
-  const invoiceTitle = `Invoice #${tx.id}`;
+  const maskedAccount = maskReference(tx.provider_reference) || "—";
+  const couponLabel =
+    couponAmount > 0
+      ? `Coupon${subTotal > 0 ? ` (${Math.round((couponAmount / subTotal) * 100)}%)` : ""}`
+      : null;
+  const coinsLabel =
+    coinsAmount > 0 || (tx.coins_spent ?? 0) > 0
+      ? `Coins${tx.coins_spent ? ` (${tx.coins_spent})` : ""}`
+      : null;
+
+  const invoice: InvoiceDocumentData = {
+    id: tx.id,
+    status: TRANSACTION_STATUS_LABELS[tx.status] ?? tx.status,
+    statusColor: STATUS_COLOR[tx.status] ?? "#6b7280",
+    customerId: String(tx.user_id),
+    purchaseDate: formatPurchaseDate(tx.completed_at ?? tx.created_at),
+    billTo: {
+      name: billToName,
+      lines: receipt?.user_email ? [receipt.user_email] : [],
+    },
+    billFrom: {
+      name: BILL_FROM.name,
+      lines: [BILL_FROM.company, BILL_FROM.phone, BILL_FROM.email],
+    },
+    paymentMethod: formatProvider(tx.provider),
+    maskedAccount,
+    accountName: billToName,
+    orderLabel,
+    orderAmount: formatMoney(currency, subTotal),
+    subTotal: formatMoney(currency, subTotal),
+    discounts: [
+      ...(couponLabel
+        ? [
+            {
+              label: couponLabel,
+              amount: `${currency.toUpperCase()} (${couponAmount.toLocaleString()})`,
+            },
+          ]
+        : []),
+      ...(coinsLabel
+        ? [
+            {
+              label: coinsLabel,
+              amount: `${currency.toUpperCase()} (${coinsAmount.toLocaleString()})`,
+            },
+          ]
+        : []),
+    ],
+    grossTotal: formatMoney(currency, paidAmount),
+    total: formatMoney(currency, paidAmount),
+    receivedPayment: formatMoney(currency, receivedPayment),
+    failureReason: tx.failure_reason,
+  };
 
   function handlePrint() {
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
-    const content = document.getElementById("invoice-content");
-    if (!content) return;
-    printWindow.document.write(getInvoiceHtml(invoiceTitle, content.innerHTML));
-    printWindow.document.close();
-    printWindow.print();
+    printInvoice(invoice);
   }
 
   function handleDownload() {
-    const content = document.getElementById("invoice-content");
-    if (!content) return;
-    const blob = new Blob([getInvoiceHtml(invoiceTitle, content.innerHTML)], {
-      type: "text/html",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `invoice-${tx.id}.html`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadInvoicePdf(invoice);
   }
 
   return (
