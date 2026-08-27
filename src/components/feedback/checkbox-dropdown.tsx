@@ -6,17 +6,24 @@ import { ChevronDown } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 
+export type CheckboxDropdownOption = string | { value: string; label: string };
+
 type CheckboxDropdownProps = {
   label: string;
-  options: string[];
+  options: CheckboxDropdownOption[];
   selected: string[];
   onChange: (values: string[]) => void;
   className?: string;
 };
 
+function toOption(option: CheckboxDropdownOption) {
+  return typeof option === "string" ? { value: option, label: option } : option;
+}
+
 export function CheckboxDropdown({ label, options, selected, onChange, className }: CheckboxDropdownProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const items = options.map(toOption);
 
   const displayLabel = selected.length === 0 ? label : `${label} (${selected.length})`;
 
@@ -58,22 +65,22 @@ export function CheckboxDropdown({ label, options, selected, onChange, className
       </button>
 
       {open ? (
-        <div className="absolute top-[calc(100%+8px)] left-0 z-50 min-w-[180px]">
+        <div className="absolute top-[calc(100%+8px)] left-0 z-50 min-w-45">
           <div className="overflow-hidden rounded-2xl border border-[#eef1f6] bg-white shadow-[0_12px_30px_rgba(16,24,40,0.14)]">
             <ul className="py-1.5">
-              {options.map((option, index) => (
-                <li key={option}>
+              {items.map((option, index) => (
+                <li key={option.value}>
                   {index > 0 ? <div className="mx-3 h-px bg-[#eef1f6]" /> : null}
                   <button
                     type="button"
-                    onClick={() => toggle(option)}
+                    onClick={() => toggle(option.value)}
                     className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-[#111827] transition hover:bg-[#f8fafc]"
                   >
                     <Checkbox
-                      checked={selected.includes(option)}
-                      onCheckedChange={() => toggle(option)}
+                      checked={selected.includes(option.value)}
+                      onCheckedChange={() => toggle(option.value)}
                     />
-                    {option}
+                    {option.label}
                   </button>
                 </li>
               ))}
