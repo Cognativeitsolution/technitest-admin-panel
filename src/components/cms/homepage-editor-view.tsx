@@ -396,7 +396,7 @@ function HomepageForm({
         </div>
       </div>
 
-      <div className="space-y-3">
+      {/* <div className="space-y-3">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-base font-bold text-[#111827]">Live Preview</h2>
           <button
@@ -592,7 +592,7 @@ function HomepageForm({
             </div>
           </section>
         </div>
-      </div>
+      </div> */}
 
       <GalleryModal
         open={galleryOpen}
