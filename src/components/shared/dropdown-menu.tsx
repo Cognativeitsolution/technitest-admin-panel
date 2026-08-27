@@ -76,7 +76,7 @@ export function DropdownMenu({
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={() => setOpen((prev) => !prev)}
-        className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#e5e7eb] bg-white px-3.5 text-sm font-medium text-[#374151] shadow-sm transition hover:bg-[#f9fafb]"
+        className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#e5e7eb] bg-white px-3.5 text-sm font-medium text-[#374151] shadow-sm transition hover:bg-[#f9fafb] disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {value}
         <ChevronDown
@@ -111,7 +111,7 @@ export function DropdownMenu({
             <ul
               role="listbox"
               aria-label={label}
-              className="max-h-72 overflow-y-auto py-1.5"
+              className="max-h-72 overflow-y-auto py-1.5 custom-scrollbar"
             >
               {filteredItems.map((item, index) => {
                 const isSelected = item.value === value;
@@ -130,7 +130,7 @@ export function DropdownMenu({
                         setOpen(false);
                       }}
                       className={cn(
-                        "flex w-full items-center gap-3 px-4 py-3 text-sm font-medium transition capitalize",
+                        "flex w-full items-center gap-3 px-4 py-3 text-sm font-medium transition capitalize whitespace-nowrap",
                         isSelected
                           ? "bg-[#f0f5ff] text-[#2563eb]"
                           : "text-[#111827] hover:bg-[#f8fafc]"
