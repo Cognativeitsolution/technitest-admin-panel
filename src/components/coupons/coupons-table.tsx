@@ -1,17 +1,35 @@
 "use client";
 
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, RotateCcw, Trash2 } from "lucide-react";
 
-import type { Coupon } from "@/data/coupons";
+import {
+  formatDiscountType,
+  formatDiscountValue,
+  formatUsageLimit,
+  formatValidity,
+  getCouponStatus,
+  isCouponDeleted,
+} from "@/lib/coupon-utils";
 import { cn } from "@/lib/utils";
+import type { CouponRecord } from "@/types/coupon.types";
 
 type CouponsTableProps = {
-  coupons: Coupon[];
-  onEdit: (coupon: Coupon) => void;
-  onDelete: (coupon: Coupon) => void;
+  coupons: CouponRecord[];
+  loading?: boolean;
+  restoringId?: number | null;
+  onEdit: (coupon: CouponRecord) => void;
+  onDelete: (coupon: CouponRecord) => void;
+  onRestore: (coupon: CouponRecord) => void;
 };
 
-export function CouponsTable({ coupons, onEdit, onDelete }: CouponsTableProps) {
+export function CouponsTable({
+  coupons,
+  loading = false,
+  restoringId = null,
+  onEdit,
+  onDelete,
+  onRestore,
+}: CouponsTableProps) {
   return (
     <div className="overflow-hidden rounded-2xl border border-[#e8ecf2] bg-white shadow-[0_1px_3px_rgba(16,24,40,0.04)]">
       <div className="overflow-x-auto">
@@ -29,64 +47,125 @@ export function CouponsTable({ coupons, onEdit, onDelete }: CouponsTableProps) {
             </tr>
           </thead>
           <tbody>
-            {coupons.map((coupon) => (
-              <tr
-                key={coupon.id}
-                className="border-t border-[#eef1f6] transition hover:bg-[#fafbfc]"
-              >
-                <td className="px-5 py-4 text-sm font-semibold text-[#111827]">
-                  {coupon.code}
-                </td>
-                <td className="px-5 py-4 text-sm text-[#374151]">
-                  {coupon.discountType}
-                </td>
-                <td className="px-5 py-4 text-sm font-medium text-[#374151]">
-                  {coupon.discountValue}
-                </td>
-                <td className="px-5 py-4 text-sm text-[#374151]">
-                  {coupon.usageLimit}
-                </td>
-                <td className="px-5 py-4 text-sm text-[#374151]">{coupon.used}</td>
-                <td className="px-5 py-4 text-sm text-[#374151]">
-                  {coupon.validity}
-                </td>
-                <td className="px-5 py-4">
-                  <span
-                    className={cn(
-                      "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold",
-                      coupon.status === "Active" &&
-                        "bg-[#dcfce7] text-[#16a34a]",
-                      coupon.status === "Inactive" &&
-                        "bg-[#f3f4f6] text-[#6b7280]",
-                      coupon.status === "Expired" &&
-                        "bg-[#fee2e2] text-[#dc2626]"
-                    )}
-                  >
-                    {coupon.status}
-                  </span>
-                </td>
-                <td className="px-5 py-4">
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      aria-label={`Edit ${coupon.code}`}
-                      onClick={() => onEdit(coupon)}
-                      className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#f0a500]"
-                    >
-                      <Pencil className="size-4" />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={`Delete ${coupon.code}`}
-                      onClick={() => onDelete(coupon)}
-                      className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#fef2f2] hover:text-[#ef4444]"
-                    >
-                      <Trash2 className="size-4" />
-                    </button>
-                  </div>
+            {loading ? (
+              <tr>
+                <td
+                  colSpan={8}
+                  className="px-5 py-10 text-center text-sm text-[#6b7280]"
+                >
+                  Loading coupons...
                 </td>
               </tr>
-            ))}
+            ) : null}
+
+            {!loading
+              ? coupons.map((coupon) => {
+                  const status = getCouponStatus(coupon);
+                  const deleted = isCouponDeleted(coupon);
+                  const restoring = restoringId === coupon.id;
+
+                  return (
+                    <tr
+                      key={coupon.id}
+                      className={cn(
+                        "border-t border-[#eef1f6] transition hover:bg-[#fafbfc]",
+                        deleted && "bg-[#fafafa]",
+                      )}
+                    >
+                      <td
+                        className={cn(
+                          "px-5 py-4 text-sm font-semibold",
+                          deleted ? "text-[#9ca3af]" : "text-[#111827]",
+                        )}
+                      >
+                        {coupon.code}
+                      </td>
+                      <td className="px-5 py-4 text-sm text-[#374151]">
+                        {formatDiscountType(coupon.discount_type)}
+                      </td>
+                      <td className="px-5 py-4 text-sm font-medium text-[#374151]">
+                        {formatDiscountValue(
+                          coupon.discount_type,
+                          coupon.discount_value,
+                        )}
+                      </td>
+                      <td className="px-5 py-4 text-sm text-[#374151]">
+                        {formatUsageLimit(coupon.usage_limit)}
+                      </td>
+                      <td className="px-5 py-4 text-sm text-[#374151]">
+                        {coupon.used_count}
+                      </td>
+                      <td className="px-5 py-4 text-sm text-[#374151]">
+                        {formatValidity(coupon.start_date, coupon.end_date)}
+                      </td>
+                      <td className="px-5 py-4">
+                        <span
+                          className={cn(
+                            "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold",
+                            status === "Active" &&
+                              "bg-[#dcfce7] text-[#16a34a]",
+                            status === "Deleted" &&
+                              "bg-[#fee2e2] text-[#dc2626]",
+                            status === "Expired" &&
+                              "bg-[#ffedd5] text-[#c2410c]",
+                          )}
+                        >
+                          {status}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
+                        {deleted ? (
+                          <button
+                            type="button"
+                            aria-label={`Restore ${coupon.code}`}
+                            disabled={restoring}
+                            onClick={() => onRestore(coupon)}
+                            className="inline-flex cursor-pointer items-center gap-1.5 text-sm font-medium text-[#2563eb] underline decoration-[#2563eb]/40 underline-offset-2 transition hover:text-[#1d4ed8] hover:decoration-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-50 disabled:no-underline"
+                          >
+                            <RotateCcw
+                              className={cn(
+                                "size-3.5",
+                                restoring && "animate-spin",
+                              )}
+                            />
+                            {restoring ? "Restoring..." : "Restore"}
+                          </button>
+                        ) : (
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              aria-label={`Edit ${coupon.code}`}
+                              onClick={() => onEdit(coupon)}
+                              className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#f0a500]"
+                            >
+                              <Pencil className="size-4" />
+                            </button>
+                            <button
+                              type="button"
+                              aria-label={`Delete ${coupon.code}`}
+                              onClick={() => onDelete(coupon)}
+                              className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#fef2f2] hover:text-[#ef4444]"
+                            >
+                              <Trash2 className="size-4" />
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              : null}
+
+            {!loading && coupons.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={8}
+                  className="px-5 py-10 text-center text-sm text-[#6b7280]"
+                >
+                  No coupons found.
+                </td>
+              </tr>
+            ) : null}
           </tbody>
         </table>
       </div>

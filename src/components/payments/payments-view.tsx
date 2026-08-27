@@ -1,75 +1,127 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Search } from "lucide-react";
+import { useState, useCallback, useMemo } from "react";
+import { Search, Loader2 } from "lucide-react";
 
 import { CheckboxDropdown } from "@/components/feedback/checkbox-dropdown";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { TransactionsTable } from "@/components/payments/transactions-table";
 import { InvoiceDialog } from "@/components/payments/invoice-dialog";
 import { Pagination } from "@/components/shared/pagination";
 import {
-  transactions as initialTransactions,
-  transactionStatusOptions,
-} from "@/data/payments";
-import type { DateRange } from "@/components/ui/date-range-picker";
-import type { PaymentTransaction } from "@/data/payments";
+  DateRangePicker,
+  type DateRange,
+} from "@/components/ui/date-range-picker";
+import {
+  useTransactions,
+  useTransactionReceipt,
+} from "@/hooks/payment/use-transactions";
+import { useTransactionFilterOptions } from "@/hooks/payment/use-transaction-filter-options";
+import type { TransactionRecord } from "@/types/payment.types";
 
-const PAGE_SIZE = 6;
+function toIsoDate(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function matchesDateRange(value: string | null, range: DateRange) {
+  if (!range.start && !range.end) return true;
+  if (!value) return false;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return false;
+
+  const time = new Date(
+    parsed.getFullYear(),
+    parsed.getMonth(),
+    parsed.getDate(),
+  ).getTime();
+
+  if (range.start) {
+    const startTime = new Date(
+      range.start.getFullYear(),
+      range.start.getMonth(),
+      range.start.getDate(),
+    ).getTime();
+    if (time < startTime) return false;
+  }
+
+  if (range.end) {
+    const endTime = new Date(
+      range.end.getFullYear(),
+      range.end.getMonth(),
+      range.end.getDate(),
+    ).getTime();
+    if (time > endTime) return false;
+  }
+
+  return true;
+}
 
 export function PaymentsView() {
-  const [transactions] = useState<PaymentTransaction[]>(initialTransactions);
+  const { statuses } = useTransactionFilterOptions();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [dateRange, setDateRange] = useState<DateRange>({
-    start: new Date(2025, 6, 1),
-    end: new Date(2025, 6, 31),
+    start: null,
+    end: null,
   });
-  const [page, setPage] = useState(1);
-  const [invoiceTarget, setInvoiceTarget] = useState<PaymentTransaction | null>(null);
+  const [receiptTarget, setReceiptTarget] = useState<TransactionRecord | null>(
+    null,
+  );
+
+  const dateFrom =
+    dateRange.start && dateRange.end ? toIsoDate(dateRange.start) : undefined;
+  const dateTo =
+    dateRange.start && dateRange.end ? toIsoDate(dateRange.end) : undefined;
+
+  const { items, pagination, loading, error, goToPage } = useTransactions({
+    status: statusFilter,
+    dateFrom,
+    dateTo,
+  });
+  const {
+    receipt,
+    loading: receiptLoading,
+    fetchReceipt,
+    clearReceipt,
+  } = useTransactionReceipt();
+
+  const handleViewReceipt = useCallback(
+    (tx: TransactionRecord) => {
+      setReceiptTarget(tx);
+      fetchReceipt(tx.id);
+    },
+    [fetchReceipt],
+  );
+
+  const handleCloseReceipt = useCallback(() => {
+    setReceiptTarget(null);
+    clearReceipt();
+  }, [clearReceipt]);
 
   const filtered = useMemo(() => {
-    let result = transactions;
-
-    if (statusFilter.length > 0) {
-      result = result.filter((tx) => statusFilter.includes(tx.status));
-    }
-
-    if (dateRange.start && dateRange.end) {
-      result = result.filter((tx) => {
-        const parts = tx.initiatedDate.split(" ");
-        const day = parseInt(parts[0], 10);
-        const monthMap: Record<string, number> = {
-          Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
-          Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
-        };
-        const month = monthMap[parts[1]] ?? 0;
-        const year = parseInt(parts[2], 10);
-        const txDate = new Date(year, month, day);
-        return txDate >= dateRange.start! && txDate <= dateRange.end!;
-      });
-    }
-
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      result = result.filter(
-        (tx) =>
-          tx.transactionId.toLowerCase().includes(q) ||
-          tx.orderId.toLowerCase().includes(q) ||
+    return items.filter((tx) => {
+      if (statusFilter.length > 0) {
+        const selected = statusFilter.map((status) => status.toLowerCase());
+        if (!selected.includes(tx.status.toLowerCase())) return false;
+      }
+      if (!matchesDateRange(tx.created_at, dateRange)) return false;
+      if (search.trim()) {
+        const q = search.toLowerCase();
+        return (
+          String(tx.id).includes(q) ||
           tx.provider.toLowerCase().includes(q) ||
-          tx.userName.toLowerCase().includes(q)
-      );
-    }
-
-    return result;
-  }, [transactions, statusFilter, dateRange, search]);
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+          (tx.provider_reference ?? "").toLowerCase().includes(q) ||
+          String(tx.user_id).includes(q)
+        );
+      }
+      return true;
+    });
+  }, [items, statusFilter, dateRange, search]);
 
   return (
     <div className="space-y-5">
-      {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-[28px] font-bold tracking-tight text-[#111827]">
           Payment & Transactions
@@ -81,46 +133,72 @@ export function PaymentsView() {
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
-              setPage(1);
+              goToPage(1);
             }}
-            placeholder="Search by transaction Number"
+            placeholder="Search by ID, provider, reference..."
             className="h-10 w-full rounded-xl border border-[#e5e7eb] bg-white pr-4 pl-10 text-sm text-[#374151] outline-none transition placeholder:text-[#9ca3af] focus:border-[#d1d5db] focus:ring-0"
           />
         </div>
       </div>
 
-      {/* Filters Row */}
       <div className="flex flex-wrap items-center gap-3">
         <CheckboxDropdown
           label="By status"
-          options={transactionStatusOptions}
+          options={statuses}
           selected={statusFilter}
           onChange={(values) => {
             setStatusFilter(values);
-            setPage(1);
+            goToPage(1);
           }}
         />
-        <DateRangePicker value={dateRange} onChange={setDateRange} />
+        <DateRangePicker
+          placeholder="Date"
+          value={dateRange}
+          onChange={(range) => {
+            setDateRange(range);
+            if ((range.start && range.end) || (!range.start && !range.end)) {
+              goToPage(1);
+            }
+          }}
+        />
       </div>
 
-      {/* Table */}
-      <TransactionsTable
-        transactions={pageItems}
-        onViewInvoice={setInvoiceTarget}
-      />
+      {error && (
+        <div className="rounded-xl border border-[#fecaca] bg-[#fef2f2] px-4 py-3 text-sm text-[#ef4444]">
+          {error}
+        </div>
+      )}
 
-      {/* Pagination */}
-      <Pagination
-        currentPage={page}
-        totalPages={totalPages}
-        onPageChange={setPage}
-      />
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="size-6 animate-spin text-[#2563eb]" />
+          <span className="ml-2 text-sm text-[#6b7280]">
+            Loading transactions...
+          </span>
+        </div>
+      )}
 
-      {/* Invoice Modal */}
+      {!loading && (
+        <TransactionsTable
+          transactions={filtered}
+          onViewReceipt={handleViewReceipt}
+        />
+      )}
+
+      {pagination.totalPages > 1 && (
+        <Pagination
+          currentPage={pagination.page}
+          totalPages={pagination.totalPages}
+          onPageChange={goToPage}
+        />
+      )}
+
       <InvoiceDialog
-        open={!!invoiceTarget}
-        onClose={() => setInvoiceTarget(null)}
-        transaction={invoiceTarget}
+        open={!!receiptTarget}
+        onClose={handleCloseReceipt}
+        transaction={receiptTarget}
+        receipt={receipt}
+        loading={receiptLoading}
       />
     </div>
   );
