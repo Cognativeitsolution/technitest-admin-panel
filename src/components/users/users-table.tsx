@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Eye, Pencil, Trash2 } from "lucide-react";
 
+import { Can } from "@/components/shared/can";
 import type { UserRecord } from "@/data/users";
 
 type UsersTableProps = {
@@ -16,7 +17,7 @@ export function UsersTable({ users, onEdit, onDelete }: UsersTableProps) {
   return (
     <div className="overflow-hidden rounded-2xl border border-[#e8ecf2] bg-white shadow-[0_1px_3px_rgba(16,24,40,0.04)]">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[900px] border-collapse text-left">
+        <table className="w-full min-w-225 border-collapse text-left">
           <thead>
             <tr className="bg-[#eef5ff] text-[13px] font-semibold text-[#374151]">
               <th className="px-5 py-3.5">Users</th>
@@ -81,22 +82,26 @@ export function UsersTable({ users, onEdit, onDelete }: UsersTableProps) {
                     >
                       <Eye className="size-4" />
                     </Link>
-                    <button
-                      type="button"
-                      aria-label={`Edit ${user.name}`}
-                      onClick={() => onEdit?.(user)}
-                      className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#f0a500]"
-                    >
-                      <Pencil className="size-4" />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={`Delete ${user.name}`}
-                      onClick={() => onDelete?.(user)}
-                      className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#fef2f2] hover:text-[#ef4444]"
-                    >
-                      <Trash2 className="size-4" />
-                    </button>
+                    <Can permission="user:update">
+                      <button
+                        type="button"
+                        aria-label={`Edit ${user.name}`}
+                        onClick={() => onEdit?.(user)}
+                        className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#f0a500]"
+                      >
+                        <Pencil className="size-4" />
+                      </button>
+                    </Can>
+                    <Can permission="user:delete">
+                      <button
+                        type="button"
+                        aria-label={`Delete ${user.name}`}
+                        onClick={() => onDelete?.(user)}
+                        className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#fef2f2] hover:text-[#ef4444]"
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
+                    </Can>
                   </div>
                 </td>
               </tr>
