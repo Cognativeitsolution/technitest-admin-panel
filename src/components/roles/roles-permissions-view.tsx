@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, PlusCircle, RefreshCw, ShieldAlert } from "lucide-react";
 
 import { Dialog } from "@/components/ui/dialog";
 import { CheckboxDropdown } from "@/components/feedback/checkbox-dropdown";
@@ -10,12 +10,12 @@ import { RolesTable } from "@/components/roles/roles-table";
 import { UserDialog } from "@/components/roles/user-dialog";
 import { RoleDialog } from "@/components/roles/role-dialog";
 import { PermissionsDialog } from "@/components/roles/permissions-dialog";
-import {
-  adminUsers as initialUsers,
-  roles as initialRoles,
-  statusFilterOptions,
-} from "@/data/roles";
-import type { RolesTab, AdminUser, Role } from "@/data/roles";
+import { RolesPageHeader } from "@/components/roles/page-header";
+import { RolesTabBar, rolesTabIcons } from "@/components/roles/tab-bar";
+import { useRoles } from "@/hooks/roles/use-roles";
+import { adminUsers as initialUsers, statusFilterOptions } from "@/data/roles";
+import type { RolesTab, AdminUser } from "@/data/roles";
+import type { RoleRecord } from "@/types/role.types";
 
 export function RolesPermissionsView({ initialTab = "users" }: { initialTab?: string }) {
   const [activeTab, setActiveTab] = useState<RolesTab>(
@@ -23,7 +23,6 @@ export function RolesPermissionsView({ initialTab = "users" }: { initialTab?: st
   );
 
   const [users, setUsers] = useState<AdminUser[]>(initialUsers);
-  const [roles, setRoles] = useState<Role[]>(initialRoles);
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
 
   const [userDialogOpen, setUserDialogOpen] = useState(false);
@@ -31,13 +30,23 @@ export function RolesPermissionsView({ initialTab = "users" }: { initialTab?: st
   const [userDialogTarget, setUserDialogTarget] = useState<AdminUser | null>(null);
 
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
-  const [roleDialogMode, setRoleDialogMode] = useState<"create" | "edit">("create");
-  const [roleDialogTarget, setRoleDialogTarget] = useState<Role | null>(null);
 
   const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
-  const [permissionsDialogTarget, setPermissionsDialogTarget] = useState<Role | null>(null);
+  const [permissionsDialogTarget, setPermissionsDialogTarget] = useState<RoleRecord | null>(null);
 
-  const [deleteTarget, setDeleteTarget] = useState<{ type: string; item: AdminUser | Role } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<RoleRecord | null>(null);
+
+  const {
+    roles,
+    groups,
+    loading,
+    error,
+    mutating,
+    refresh,
+    createRole,
+    updateRolePermissions,
+    deleteRole,
+  } = useRoles();
 
   const filteredUsers = users.filter((u) => {
     if (statusFilter.length > 0 && !statusFilter.includes(u.status)) return false;
@@ -59,93 +68,63 @@ export function RolesPermissionsView({ initialTab = "users" }: { initialTab?: st
   }
 
   function openCreateRole() {
-    setRoleDialogMode("create");
-    setRoleDialogTarget(null);
     setRoleDialogOpen(true);
   }
 
-  function openEditRole(role: Role) {
-    setRoleDialogMode("edit");
-    setRoleDialogTarget(role);
-    setRoleDialogOpen(true);
-  }
-
-  function openPermissions(role: Role) {
+  function openPermissions(role: RoleRecord) {
     setPermissionsDialogTarget(role);
     setPermissionsDialogOpen(true);
   }
 
-  function confirmDelete(type: string, item: AdminUser | Role) {
-    setDeleteTarget({ type, item });
+  function closePermissionsDialog() {
+    setPermissionsDialogOpen(false);
+    setPermissionsDialogTarget(null);
   }
 
-  function handleDelete() {
+  async function handleDeleteRole() {
     if (!deleteTarget) return;
-    const { type, item } = deleteTarget;
-    if (type === "user") {
-      setUsers((prev) => prev.filter((u) => u.id !== item.id));
-    } else {
-      setRoles((prev) => prev.filter((r) => r.id !== item.id));
-    }
-    setDeleteTarget(null);
+    const ok = await deleteRole(deleteTarget.id);
+    if (ok) setDeleteTarget(null);
   }
 
-  function deleteItemName() {
-    if (!deleteTarget) return "";
-    const { type, item } = deleteTarget;
-    if (type === "user") return (item as AdminUser).name;
-    return (item as Role).name;
-  }
-
-  const tabs = [
-    { id: "users" as const, label: "Users" },
-    { id: "roles" as const, label: "Roles" },
-  ];
+  const pageActions = (
+    <>
+      <button
+        type="button"
+        onClick={openCreateUser}
+        className="inline-flex h-11 items-center gap-2 rounded-xl border border-[#e5e7eb] bg-white px-5 text-sm font-semibold text-[#374151] shadow-sm transition hover:bg-[#f9fafb]"
+      >
+        <PlusCircle className="size-4 text-[#6b7280]" />
+        Add User
+      </button>
+      <button
+        type="button"
+        onClick={openCreateRole}
+        className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#f0a500] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d99400]"
+      >
+        <Plus className="size-4" />
+        Add Role
+      </button>
+    </>
+  );
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-[28px] font-bold tracking-tight text-[#111827]">
-          Roles &amp; Permissions
-        </h1>
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={openCreateUser}
-            className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#111827] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1f2937]"
-          >
-            <Plus className="size-4" />
-            Add User
-          </button>
-          <button
-            type="button"
-            onClick={openCreateRole}
-            className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#f0a500] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d99400]"
-          >
-            <Plus className="size-4" />
-            Add Role
-          </button>
-        </div>
-      </div>
+      <RolesPageHeader
+        title="Roles & Permissions"
+        description="Create custom roles and control exactly what each admin can access and do across the platform."
+        actions={pageActions}
+      />
 
-      {/* Tab Switcher */}
-      <div className="flex items-center gap-1 rounded-xl bg-[#f3f4f6] p-1 w-fit">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setActiveTab(tab.id)}
-            className={`inline-flex h-10 items-center justify-center rounded-lg px-6 text-sm font-semibold transition ${
-              activeTab === tab.id
-                ? "bg-[#111827] text-white shadow-sm"
-                : "text-[#6b7280] hover:text-[#374151]"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <RolesTabBar
+        tabs={[
+          { id: "users", label: "Users", icon: rolesTabIcons.users },
+          { id: "roles", label: "Roles", icon: rolesTabIcons.roles },
+        ]}
+        active={activeTab}
+        counts={{ roles: roles.length, users: users.length }}
+        onChange={(id) => setActiveTab(id as RolesTab)}
+      />
 
       {/* Users Tab */}
       {activeTab === "users" ? (
@@ -159,7 +138,9 @@ export function RolesPermissionsView({ initialTab = "users" }: { initialTab?: st
           <UsersTable
             users={filteredUsers}
             onEdit={openEditUser}
-            onDelete={(u) => confirmDelete("user", u)}
+            onDelete={(u) => {
+              setUsers((prev) => prev.filter((item) => item.id !== u.id));
+            }}
           />
         </div>
       ) : null}
@@ -167,37 +148,60 @@ export function RolesPermissionsView({ initialTab = "users" }: { initialTab?: st
       {/* Roles Tab */}
       {activeTab === "roles" ? (
         <div className="space-y-4">
+          {error ? (
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-[#fecaca] bg-[#fef2f2] px-4 py-3 text-sm text-[#b91c1c]">
+              <span className="flex items-center gap-2">
+                <ShieldAlert className="size-4 shrink-0" />
+                {error}
+              </span>
+              <button
+                type="button"
+                onClick={refresh}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-[#b91c1c] transition hover:bg-[#fee2e2]"
+              >
+                <RefreshCw className="size-3.5" />
+                Retry
+              </button>
+            </div>
+          ) : null}
           <RolesTable
             roles={roles}
-            onEdit={openEditRole}
-            onDelete={(r) => confirmDelete("role", r)}
+            loading={loading}
+            onEdit={openPermissions}
+            onDelete={setDeleteTarget}
           />
         </div>
       ) : null}
 
       {/* Delete Confirmation */}
       <Dialog
-        open={!!deleteTarget}
+        open={Boolean(deleteTarget)}
         onClose={() => setDeleteTarget(null)}
-        title={`Delete ${deleteTarget?.type === "user" ? "User" : "Role"}`}
+        title="Delete Role"
+        maxWidth="max-w-sm"
       >
-        <p className="text-[15px] text-[#4b5563]">
-          Are you sure you want to delete <span className="font-semibold text-[#111827]">{deleteItemName()}</span>? This action cannot be undone.
+        <p className="text-sm text-[#4b5563]">
+          Are you sure you want to delete{" "}
+          <span className="font-semibold text-[#111827]">{deleteTarget?.name}</span>?
+          Admins assigned to this role will lose its access. This action cannot be
+          undone.
         </p>
         <div className="mt-6 flex justify-end gap-3">
           <button
             type="button"
             onClick={() => setDeleteTarget(null)}
-            className="inline-flex h-10 items-center justify-center rounded-xl border border-[#e5e7eb] bg-white px-5 text-sm font-medium text-[#374151] transition hover:bg-[#f9fafb]"
+            disabled={mutating}
+            className="inline-flex h-10 items-center justify-center rounded-xl border border-[#e5e7eb] bg-white px-5 text-sm font-medium text-[#374151] transition hover:bg-[#f9fafb] disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             type="button"
-            onClick={handleDelete}
-            className="inline-flex h-10 items-center justify-center rounded-xl bg-[#ef4444] px-5 text-sm font-semibold text-white transition hover:bg-[#dc2626]"
+            onClick={handleDeleteRole}
+            disabled={mutating}
+            className="inline-flex h-10 items-center justify-center rounded-xl bg-[#ef4444] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#dc2626] disabled:opacity-50"
           >
-            Delete
+            {mutating ? "Deleting..." : "Delete"}
           </button>
         </div>
       </Dialog>
@@ -208,22 +212,26 @@ export function RolesPermissionsView({ initialTab = "users" }: { initialTab?: st
         onClose={() => setUserDialogOpen(false)}
         mode={userDialogMode}
         user={userDialogTarget}
-        roleNames={roleNames}
+        roleNames={roleNames.length > 0 ? roleNames : ["Super Admin"]}
       />
 
       {/* Role Dialog */}
       <RoleDialog
         open={roleDialogOpen}
         onClose={() => setRoleDialogOpen(false)}
-        mode={roleDialogMode}
-        role={roleDialogTarget}
+        groups={groups}
+        submitting={mutating}
+        onSubmit={createRole}
       />
 
       {/* Permissions Dialog */}
       <PermissionsDialog
         open={permissionsDialogOpen}
-        onClose={() => setPermissionsDialogOpen(false)}
+        onClose={closePermissionsDialog}
         role={permissionsDialogTarget}
+        groups={groups}
+        submitting={mutating}
+        onSubmit={updateRolePermissions}
       />
     </div>
   );

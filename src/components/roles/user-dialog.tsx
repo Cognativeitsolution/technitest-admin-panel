@@ -78,13 +78,20 @@ export function UserDialog({ open, onClose, mode, user, roleNames }: UserDialogP
         </div>
       </div>
 
-      <div className="mt-6 flex justify-end">
+      <div className="mt-6 flex justify-end gap-3 border-t border-[#eef1f6] pt-5">
+        <button
+          type="button"
+          onClick={onClose}
+          className="inline-flex h-11 items-center justify-center rounded-xl border border-[#e5e7eb] bg-white px-5 text-sm font-semibold text-[#374151] transition hover:bg-[#f9fafb]"
+        >
+          Cancel
+        </button>
         <button
           type="button"
           onClick={handleSave}
-          className="inline-flex h-11 items-center justify-center rounded-xl bg-[#f0a500] px-6 text-sm font-semibold text-white transition hover:bg-[#d99400]"
+          className="inline-flex h-11 min-w-[140px] items-center justify-center rounded-xl bg-[#f0a500] px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d99400]"
         >
-          {mode === "create" ? "Save User" : "Save Changes"}
+          {mode === "create" ? "Add User" : "Save Changes"}
         </button>
       </div>
     </Dialog>
