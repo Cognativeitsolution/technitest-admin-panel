@@ -26,27 +26,27 @@ export const locationService = {
     const { data } = await apiClient.get<
       ApiEnvelope<LocationListPayload<Country>>
     >("/api/v1/locations/countries");
-    return unwrapLocationItems(data.response.data);
+    return unwrapLocationItems<Country>(data.response.data);
   },
 
   getStatesByCountry: async (countryId: number) => {
     const { data } = await apiClient.get<
       ApiEnvelope<LocationListPayload<State>>
     >(`/api/v1/locations/countries/${countryId}/states`);
-    return unwrapLocationItems(data.response.data);
+    return unwrapLocationItems<State>(data.response.data);
   },
 
   getCitiesByState: async (stateId: number) => {
     const { data } = await apiClient.get<
       ApiEnvelope<LocationListPayload<City>>
     >(`/api/v1/locations/states/${stateId}/cities`);
-    return unwrapLocationItems(data.response.data);
+    return unwrapLocationItems<City>(data.response.data);
   },
 
   getCitiesByCountry: async (countryId: number) => {
     const { data } = await apiClient.get<
       ApiEnvelope<LocationListPayload<City>>
     >(`/api/v1/locations/countries/${countryId}/cities`);
-    return unwrapLocationItems(data.response.data);
+    return unwrapLocationItems<City>(data.response.data);
   },
 };

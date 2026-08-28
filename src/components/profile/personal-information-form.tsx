@@ -328,7 +328,7 @@ export function PersonalInformationForm() {
         <div>
           <FieldLabel required>Country Or Region</FieldLabel>
           <SearchableSelect
-            value={selectedCountry}
+            value={selectedCountry ?? ""}
             options={countryOptions}
             fallbackLabel={countryFallbackLabel}
             placeholder="Select country"
@@ -345,7 +345,7 @@ export function PersonalInformationForm() {
         <div>
           <FieldLabel>State / Province</FieldLabel>
           <SearchableSelect
-            value={selectedState}
+            value={selectedState ?? ""}
             options={stateOptions}
             fallbackLabel={stateFallbackLabel}
             placeholder={countryId ? "Select state" : "Select country first"}
@@ -363,7 +363,7 @@ export function PersonalInformationForm() {
         <div>
           <FieldLabel required>City</FieldLabel>
           <SearchableSelect
-            value={selectedCity}
+            value={selectedCity ?? ""}
             options={cityOptions}
             fallbackLabel={cityFallbackLabel}
             placeholder={
