@@ -42,13 +42,19 @@ export function UserProfileInfo({ user, readonly = false }: UserProfileInfoProps
 
       <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="relative size-[88px] shrink-0">
-          <Image
-            src={user.avatar}
-            alt={user.name}
-            width={88}
-            height={88}
-            className="size-[88px] rounded-full object-cover"
-          />
+          {user.avatar ? (
+            <Image
+              src={user.avatar}
+              alt={user.name}
+              width={88}
+              height={88}
+              className="size-[88px] rounded-full object-cover"
+            />
+          ) : (
+            <div className="flex size-[88px] items-center justify-center rounded-full bg-gray-200 text-3xl font-semibold text-gray-500">
+              {user.name ? user.name.charAt(0).toUpperCase() : "U"}
+            </div>
+          )}
           {readonly ? null : (
             <button
               type="button"
@@ -289,7 +295,7 @@ export function UserProfileInfo({ user, readonly = false }: UserProfileInfoProps
           </div>
         </div>
 
-        <div>
+        {/* <div>
           <p className="mb-1.5 text-sm font-medium text-[#374151]">
             Mobile Verification
           </p>
@@ -301,7 +307,7 @@ export function UserProfileInfo({ user, readonly = false }: UserProfileInfoProps
           >
             {user.mobileVerified ? "Verified" : "Unverified"}
           </div>
-        </div>
+        </div> */}
       </div>
     </section>
   );

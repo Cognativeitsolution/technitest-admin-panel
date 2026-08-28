@@ -20,4 +20,6 @@ export type ApiUser = {
   } | null;
   total_quizzes_attempted: number;
   total_certificates_issued: number;
+  total_successful_referral?: number;
+  total_earned_coin?: number;
 };

@@ -5,8 +5,8 @@ export type UserRecord = {
   email: string;
   phone: string;
   country: string;
-  quizzesTaken: number;
-  certificates: number;
+  quizzesTaken: number | string;
+  certificates: number | string;
   avatar: string;
   state: string;
   city: string;
@@ -14,8 +14,8 @@ export type UserRecord = {
   highestEducation: string;
   level: string;
   dateOfBirth: string;
-  coinsEarned: number;
-  successfulReferrals: number;
+  coinsEarned: number | string;
+  total_successful_referral: number | string;
   emailVerified: boolean;
   mobileVerified: boolean;
 };
@@ -46,7 +46,7 @@ export const users: UserRecord[] = [
     level: "Advanced",
     dateOfBirth: "10/10/2025",
     coinsEarned: 500,
-    successfulReferrals: 24,
+    total_successful_referral: 24,
     emailVerified: true,
     mobileVerified: false,
   },
@@ -67,7 +67,7 @@ export const users: UserRecord[] = [
     level: "Intermediate",
     dateOfBirth: "14/03/1998",
     coinsEarned: 220,
-    successfulReferrals: 5,
+    total_successful_referral: 5,
     emailVerified: true,
     mobileVerified: true,
   },
@@ -88,7 +88,7 @@ export const users: UserRecord[] = [
     level: "Advanced",
     dateOfBirth: "22/07/1996",
     coinsEarned: 780,
-    successfulReferrals: 12,
+    total_successful_referral: 12,
     emailVerified: true,
     mobileVerified: false,
   },
@@ -109,7 +109,7 @@ export const users: UserRecord[] = [
     level: "Beginner",
     dateOfBirth: "05/11/1994",
     coinsEarned: 140,
-    successfulReferrals: 2,
+    total_successful_referral: 2,
     emailVerified: false,
     mobileVerified: true,
   },
@@ -130,7 +130,7 @@ export const users: UserRecord[] = [
     level: "Advanced",
     dateOfBirth: "18/01/1999",
     coinsEarned: 960,
-    successfulReferrals: 18,
+    total_successful_referral: 18,
     emailVerified: true,
     mobileVerified: true,
   },
@@ -151,7 +151,7 @@ export const users: UserRecord[] = [
     level: "Intermediate",
     dateOfBirth: "09/09/2000",
     coinsEarned: 310,
-    successfulReferrals: 7,
+    total_successful_referral: 7,
     emailVerified: true,
     mobileVerified: false,
   },
@@ -172,7 +172,7 @@ export const users: UserRecord[] = [
     level: "Advanced",
     dateOfBirth: "30/04/1995",
     coinsEarned: 450,
-    successfulReferrals: 9,
+    total_successful_referral: 9,
     emailVerified: true,
     mobileVerified: true,
   },
@@ -193,7 +193,7 @@ export const users: UserRecord[] = [
     level: "Intermediate",
     dateOfBirth: "12/12/1997",
     coinsEarned: 620,
-    successfulReferrals: 11,
+    total_successful_referral: 11,
     emailVerified: false,
     mobileVerified: false,
   },
