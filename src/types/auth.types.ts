@@ -23,6 +23,8 @@ export type ChangePasswordPayload = {
 
 export type AuthState = {
   user: User | null;
+  roles: string[];
+  permissions: string[];
   accessToken: string | null;
   refreshToken: string | null;
   isAuthenticated: boolean;

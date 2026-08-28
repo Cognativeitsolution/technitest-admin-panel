@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { Dialog } from "@/components/ui/dialog";
 import { TextField } from "@/components/ui/text-field";
+import { Can } from "@/components/shared/can";
 import { PermissionMatrix } from "@/components/roles/permission-matrix";
 import type { PermissionGroup } from "@/lib/role-utils";
 import type { CreateRolePayload } from "@/types/role.types";
@@ -109,14 +110,16 @@ export function RoleDialog({
         >
           Cancel
         </button>
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={submitting}
-          className="inline-flex h-11 min-w-[140px] items-center justify-center rounded-xl bg-[#f0a500] px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d99400] disabled:opacity-50"
-        >
-          {submitting ? "Creating..." : "Add Role"}
-        </button>
+        <Can permission="role:create">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={submitting}
+            className="inline-flex h-11 min-w-35 items-center justify-center rounded-xl bg-[#f0a500] px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d99400] disabled:opacity-50"
+          >
+            {submitting ? "Creating..." : "Add Role"}
+          </button>
+        </Can>
       </div>
     </Dialog>
   );

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Plus, RefreshCw, ShieldAlert, ShieldCheck } from "lucide-react";
 
 import { Dialog } from "@/components/ui/dialog";
+import { Can } from "@/components/shared/can";
 import { RolesTable } from "@/components/roles/roles-table";
 import { RoleDialog } from "@/components/roles/role-dialog";
 import { PermissionsDialog } from "@/components/roles/permissions-dialog";
@@ -53,14 +54,16 @@ export function RolesPermissionsView() {
         title="Roles & Permissions"
         description="Create custom roles and control exactly what each admin can access and do across the platform."
         actions={
-          <button
-            type="button"
-            onClick={() => setRoleDialogOpen(true)}
-            className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#f0a500] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d99400]"
-          >
-            <Plus className="size-4" />
-            Add Role
-          </button>
+          <Can permission="role:create">
+            <button
+              type="button"
+              onClick={() => setRoleDialogOpen(true)}
+              className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#f0a500] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d99400]"
+            >
+              <Plus className="size-4" />
+              Add Role
+            </button>
+          </Can>
         }
       />
 
