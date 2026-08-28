@@ -5,6 +5,10 @@ import { usePathname } from "next/navigation";
 import { PanelLeftOpen, X } from "lucide-react";
 
 import { navItems } from "@/config/navigation";
+import {
+  SIDEBAR_WIDTH_COLLAPSED_PX,
+  SIDEBAR_WIDTH_EXPANDED_PX,
+} from "@/config/layout";
 import { usePermissions } from "@/hooks/use-permissions";
 import { cn } from "@/lib/utils";
 import { useSidebarStore } from "@/store/sidebar-store";
@@ -29,13 +33,13 @@ export function Sidebar() {
       ) : null}
 
       <aside
-      style={{
-        boxShadow: "4px 0px 27.2px 1px #E4EDFA",
-      }}
+        style={{
+          boxShadow: "4px 0px 27.2px 1px #E4EDFA",
+          width: collapsed ? SIDEBAR_WIDTH_COLLAPSED_PX : SIDEBAR_WIDTH_EXPANDED_PX,
+        }}
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex h-screen flex-col border-r border-[#e8ecf2] bg-[#f7f8fa] transition-all duration-300",
-          collapsed ? "w-21" : "w-70",
-          mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+          "fixed inset-y-0 left-0 z-50 flex h-screen flex-col border-r border-[#e8ecf2] bg-[#f7f8fa] transition-[width] duration-300",
+          mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
         )}
       >
         <div

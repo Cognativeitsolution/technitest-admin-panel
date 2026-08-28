@@ -15,6 +15,32 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth-store";
 
+function ProfileAvatar({
+  src,
+  alt,
+}: {
+  src?: string | null;
+  alt: string;
+}) {
+  if (src) {
+    return (
+      <Image
+        src={src}
+        alt={alt}
+        width={36}
+        height={36}
+        className="size-9 rounded-full object-cover"
+      />
+    );
+  }
+
+  return (
+    <div className="flex size-9 items-center justify-center rounded-full bg-[#eef5ff] text-[#2563eb]">
+      <User className="size-4" />
+    </div>
+  );
+}
+
 export function ProfileMenu() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -22,8 +48,6 @@ export function ProfileMenu() {
 
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
-
-  console.log("Profile User Data (from /api/v1/auth/me):", user);
 
   useEffect(() => {
     if (!open) return;
@@ -80,20 +104,14 @@ export function ProfileMenu() {
         onClick={() => setOpen((prev) => !prev)}
         className="inline-flex items-center gap-2.5 rounded-lg px-1.5 py-1 transition hover:bg-[#f3f4f6]"
       >
-        <Image
-          src={user?.avatar || "https://i.pravatar.cc/80?img=12"}
-          alt={user?.fullName || "-"}
-          width={36}
-          height={36}
-          className="size-9 rounded-full object-cover"
-        />
+        <ProfileAvatar src={user?.avatar} alt={user?.fullName || "Profile"} />
         <span className="hidden text-sm font-semibold text-[#111827] md:inline">
           {user?.fullName || "-"}
         </span>
         <ChevronDown
           className={cn(
             "hidden size-4 text-[#6b7280] transition md:block",
-            open && "rotate-180"
+            open && "rotate-180",
           )}
         />
       </button>
