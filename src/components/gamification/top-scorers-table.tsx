@@ -2,6 +2,7 @@
 
 import { Star } from "lucide-react";
 
+import { Can } from "@/components/shared/can";
 import { Switch } from "@/components/ui/switch";
 import type { TopScorerEntry } from "@/types/gamification.types";
 import { formatDateTime } from "@/lib/utils";
@@ -24,7 +25,7 @@ export function TopScorersTable({ scorers, loading = false, rankOffset = 0, onTo
   return (
     <div className="overflow-hidden rounded-2xl border border-[#e8ecf2] bg-white shadow-[0_1px_3px_rgba(16,24,40,0.04)]">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[1000px] border-collapse text-left">
+        <table className="w-full min-w-250 border-collapse text-left">
           <thead>
             <tr className="bg-[#eef5ff] text-[13px] font-semibold text-[#374151]">
               <th className="px-5 py-3.5">Rank</th>
@@ -67,15 +68,17 @@ export function TopScorersTable({ scorers, loading = false, rankOffset = 0, onTo
                     </td>
                     <td className="px-5 py-4 text-sm text-[#6b7280]">{formatDateTime(ts.date_performed)}</td>
                     <td className="px-5 py-4">
-                      <div className="flex items-center gap-2">
-                        <Switch
-                          checked={ts.is_featured}
-                          onCheckedChange={(checked) => onToggleFeatured(ts, checked)}
-                        />
-                        {ts.is_featured ? (
-                          <Star className="size-4 fill-[#f0a500] text-[#f0a500]" />
-                        ) : null}
-                      </div>
+                      <Can permission="certificate:update">
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={ts.is_featured}
+                            onCheckedChange={(checked) => onToggleFeatured(ts, checked)}
+                          />
+                          {ts.is_featured ? (
+                            <Star className="size-4 fill-[#f0a500] text-[#f0a500]" />
+                          ) : null}
+                        </div>
+                      </Can>
                     </td>
                   </tr>
                 ))}

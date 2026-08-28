@@ -3,6 +3,7 @@
 import NextImage from "next/image";
 import { Image as ImageIcon, Pencil, RotateCcw, Trash2 } from "lucide-react";
 
+import { Can } from "@/components/shared/can";
 import { formatDateTime } from "@/lib/utils";
 import type { Banner } from "@/types/banner.types";
 
@@ -97,32 +98,38 @@ export function AdvertisementsTable({
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          aria-label={`Edit ${banner.title}`}
-                          onClick={() => onEdit(banner)}
-                          className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#f0a500]"
-                        >
-                          <Pencil className="size-4" />
-                        </button>
+                        <Can permission="banner:update">
+                          <button
+                            type="button"
+                            aria-label={`Edit ${banner.title}`}
+                            onClick={() => onEdit(banner)}
+                            className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#f0a500]"
+                          >
+                            <Pencil className="size-4" />
+                          </button>
+                        </Can>
                         {isDeletedStatus(banner.status) && onRestore ? (
-                          <button
-                            type="button"
-                            aria-label={`Restore ${banner.title}`}
-                            onClick={() => onRestore(banner)}
-                            className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#2563eb]"
-                          >
-                            <RotateCcw className="size-4" />
-                          </button>
+                          <Can permission="banner:restore">
+                            <button
+                              type="button"
+                              aria-label={`Restore ${banner.title}`}
+                              onClick={() => onRestore(banner)}
+                              className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#2563eb]"
+                            >
+                              <RotateCcw className="size-4" />
+                            </button>
+                          </Can>
                         ) : (
-                          <button
-                            type="button"
-                            aria-label={`Delete ${banner.title}`}
-                            onClick={() => onDelete(banner)}
-                            className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#fef2f2] hover:text-[#ef4444]"
-                          >
-                            <Trash2 className="size-4" />
-                          </button>
+                          <Can permission="banner:delete">
+                            <button
+                              type="button"
+                              aria-label={`Delete ${banner.title}`}
+                              onClick={() => onDelete(banner)}
+                              className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#fef2f2] hover:text-[#ef4444]"
+                            >
+                              <Trash2 className="size-4" />
+                            </button>
+                          </Can>
                         )}
                       </div>
                     </td>

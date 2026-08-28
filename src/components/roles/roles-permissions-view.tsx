@@ -1,34 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, PlusCircle, RefreshCw, ShieldAlert } from "lucide-react";
+import { Plus, RefreshCw, ShieldAlert, ShieldCheck } from "lucide-react";
 
 import { Dialog } from "@/components/ui/dialog";
-import { CheckboxDropdown } from "@/components/feedback/checkbox-dropdown";
-import { UsersTable } from "@/components/roles/users-table";
+import { Can } from "@/components/shared/can";
 import { RolesTable } from "@/components/roles/roles-table";
-import { UserDialog } from "@/components/roles/user-dialog";
 import { RoleDialog } from "@/components/roles/role-dialog";
 import { PermissionsDialog } from "@/components/roles/permissions-dialog";
 import { RolesPageHeader } from "@/components/roles/page-header";
-import { RolesTabBar, rolesTabIcons } from "@/components/roles/tab-bar";
 import { useRoles } from "@/hooks/roles/use-roles";
-import { adminUsers as initialUsers, statusFilterOptions } from "@/data/roles";
-import type { RolesTab, AdminUser } from "@/data/roles";
 import type { RoleRecord } from "@/types/role.types";
 
-export function RolesPermissionsView({ initialTab = "users" }: { initialTab?: string }) {
-  const [activeTab, setActiveTab] = useState<RolesTab>(
-    initialTab === "roles" ? "roles" : "users"
-  );
-
-  const [users, setUsers] = useState<AdminUser[]>(initialUsers);
-  const [statusFilter, setStatusFilter] = useState<string[]>([]);
-
-  const [userDialogOpen, setUserDialogOpen] = useState(false);
-  const [userDialogMode, setUserDialogMode] = useState<"create" | "edit">("create");
-  const [userDialogTarget, setUserDialogTarget] = useState<AdminUser | null>(null);
-
+export function RolesPermissionsView() {
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
 
   const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
@@ -48,29 +32,6 @@ export function RolesPermissionsView({ initialTab = "users" }: { initialTab?: st
     deleteRole,
   } = useRoles();
 
-  const filteredUsers = users.filter((u) => {
-    if (statusFilter.length > 0 && !statusFilter.includes(u.status)) return false;
-    return true;
-  });
-
-  const roleNames = roles.map((r) => r.name);
-
-  function openCreateUser() {
-    setUserDialogMode("create");
-    setUserDialogTarget(null);
-    setUserDialogOpen(true);
-  }
-
-  function openEditUser(user: AdminUser) {
-    setUserDialogMode("edit");
-    setUserDialogTarget(user);
-    setUserDialogOpen(true);
-  }
-
-  function openCreateRole() {
-    setRoleDialogOpen(true);
-  }
-
   function openPermissions(role: RoleRecord) {
     setPermissionsDialogTarget(role);
     setPermissionsDialogOpen(true);
@@ -87,90 +48,56 @@ export function RolesPermissionsView({ initialTab = "users" }: { initialTab?: st
     if (ok) setDeleteTarget(null);
   }
 
-  const pageActions = (
-    <>
-      <button
-        type="button"
-        onClick={openCreateUser}
-        className="inline-flex h-11 items-center gap-2 rounded-xl border border-[#e5e7eb] bg-white px-5 text-sm font-semibold text-[#374151] shadow-sm transition hover:bg-[#f9fafb]"
-      >
-        <PlusCircle className="size-4 text-[#6b7280]" />
-        Add User
-      </button>
-      <button
-        type="button"
-        onClick={openCreateRole}
-        className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#f0a500] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d99400]"
-      >
-        <Plus className="size-4" />
-        Add Role
-      </button>
-    </>
-  );
-
   return (
     <div className="space-y-5">
       <RolesPageHeader
         title="Roles & Permissions"
         description="Create custom roles and control exactly what each admin can access and do across the platform."
-        actions={pageActions}
+        actions={
+          <Can permission="role:create">
+            <button
+              type="button"
+              onClick={() => setRoleDialogOpen(true)}
+              className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#f0a500] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d99400]"
+            >
+              <Plus className="size-4" />
+              Add Role
+            </button>
+          </Can>
+        }
       />
 
-      <RolesTabBar
-        tabs={[
-          { id: "users", label: "Users", icon: rolesTabIcons.users },
-          { id: "roles", label: "Roles", icon: rolesTabIcons.roles },
-        ]}
-        active={activeTab}
-        counts={{ roles: roles.length, users: users.length }}
-        onChange={(id) => setActiveTab(id as RolesTab)}
-      />
-
-      {/* Users Tab */}
-      {activeTab === "users" ? (
-        <div className="space-y-4">
-          <CheckboxDropdown
-            label="Status"
-            options={statusFilterOptions}
-            selected={statusFilter}
-            onChange={setStatusFilter}
-          />
-          <UsersTable
-            users={filteredUsers}
-            onEdit={openEditUser}
-            onDelete={(u) => {
-              setUsers((prev) => prev.filter((item) => item.id !== u.id));
-            }}
-          />
+      {error ? (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-[#fecaca] bg-[#fef2f2] px-4 py-3 text-sm text-[#b91c1c]">
+          <span className="flex items-center gap-2">
+            <ShieldAlert className="size-4 shrink-0" />
+            {error}
+          </span>
+          <button
+            type="button"
+            onClick={refresh}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-[#b91c1c] transition hover:bg-[#fee2e2]"
+          >
+            <RefreshCw className="size-3.5" />
+            Retry
+          </button>
         </div>
       ) : null}
 
-      {/* Roles Tab */}
-      {activeTab === "roles" ? (
-        <div className="space-y-4">
-          {error ? (
-            <div className="flex items-center justify-between gap-3 rounded-xl border border-[#fecaca] bg-[#fef2f2] px-4 py-3 text-sm text-[#b91c1c]">
-              <span className="flex items-center gap-2">
-                <ShieldAlert className="size-4 shrink-0" />
-                {error}
-              </span>
-              <button
-                type="button"
-                onClick={refresh}
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-[#b91c1c] transition hover:bg-[#fee2e2]"
-              >
-                <RefreshCw className="size-3.5" />
-                Retry
-              </button>
-            </div>
-          ) : null}
-          <RolesTable
-            roles={roles}
-            loading={loading}
-            onEdit={openPermissions}
-            onDelete={setDeleteTarget}
-          />
+      {!error && loading && roles.length === 0 ? (
+        <div className="flex items-center gap-3 rounded-2xl border border-[#e8ecf2] bg-white p-6 text-sm text-[#6b7280]">
+          <ShieldCheck className="size-5 animate-pulse text-[#f0a500]" />
+          Loading roles...
         </div>
+      ) : null}
+
+      {!error && !loading ? (
+        <RolesTable
+          roles={roles}
+          loading={loading}
+          onEdit={openPermissions}
+          onDelete={setDeleteTarget}
+        />
       ) : null}
 
       {/* Delete Confirmation */}
@@ -205,15 +132,6 @@ export function RolesPermissionsView({ initialTab = "users" }: { initialTab?: st
           </button>
         </div>
       </Dialog>
-
-      {/* User Dialog */}
-      <UserDialog
-        open={userDialogOpen}
-        onClose={() => setUserDialogOpen(false)}
-        mode={userDialogMode}
-        user={userDialogTarget}
-        roleNames={roleNames.length > 0 ? roleNames : ["Super Admin"]}
-      />
 
       {/* Role Dialog */}
       <RoleDialog

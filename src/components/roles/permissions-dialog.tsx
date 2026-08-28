@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { Dialog } from "@/components/ui/dialog";
+import { Can } from "@/components/shared/can";
 import { PermissionMatrix } from "@/components/roles/permission-matrix";
 import type { PermissionGroup } from "@/lib/role-utils";
 import type { RoleRecord } from "@/types/role.types";
@@ -94,14 +95,16 @@ export function PermissionsDialog({
         >
           Cancel
         </button>
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={submitting}
-          className="inline-flex h-11 min-w-[160px] items-center justify-center rounded-xl bg-[#f0a500] px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d99400] disabled:opacity-50"
-        >
-          {submitting ? "Saving..." : "Save Permissions"}
-        </button>
+        <Can permission="role:update">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={submitting}
+            className="inline-flex h-11 min-w-40 items-center justify-center rounded-xl bg-[#f0a500] px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d99400] disabled:opacity-50"
+          >
+            {submitting ? "Saving..." : "Save Permissions"}
+          </button>
+        </Can>
       </div>
     </Dialog>
   );

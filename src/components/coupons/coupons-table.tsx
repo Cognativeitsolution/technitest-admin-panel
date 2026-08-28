@@ -2,6 +2,7 @@
 
 import { Pencil, RotateCcw, Trash2 } from "lucide-react";
 
+import { Can } from "@/components/shared/can";
 import {
   formatDiscountType,
   formatDiscountValue,
@@ -115,39 +116,45 @@ export function CouponsTable({
                       </td>
                       <td className="px-5 py-4">
                         {deleted ? (
-                          <button
-                            type="button"
-                            aria-label={`Restore ${coupon.code}`}
-                            disabled={restoring}
-                            onClick={() => onRestore(coupon)}
-                            className="inline-flex cursor-pointer items-center gap-1.5 text-sm font-medium text-[#2563eb] underline decoration-[#2563eb]/40 underline-offset-2 transition hover:text-[#1d4ed8] hover:decoration-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-50 disabled:no-underline"
-                          >
-                            <RotateCcw
-                              className={cn(
-                                "size-3.5",
-                                restoring && "animate-spin",
-                              )}
-                            />
-                            {restoring ? "Restoring..." : "Restore"}
-                          </button>
+                          <Can permission="coupon:restore">
+                            <button
+                              type="button"
+                              aria-label={`Restore ${coupon.code}`}
+                              disabled={restoring}
+                              onClick={() => onRestore(coupon)}
+                              className="inline-flex cursor-pointer items-center gap-1.5 text-sm font-medium text-[#2563eb] underline decoration-[#2563eb]/40 underline-offset-2 transition hover:text-[#1d4ed8] hover:decoration-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-50 disabled:no-underline"
+                            >
+                              <RotateCcw
+                                className={cn(
+                                  "size-3.5",
+                                  restoring && "animate-spin",
+                                )}
+                              />
+                              {restoring ? "Restoring..." : "Restore"}
+                            </button>
+                          </Can>
                         ) : (
                           <div className="flex items-center gap-1.5">
-                            <button
-                              type="button"
-                              aria-label={`Edit ${coupon.code}`}
-                              onClick={() => onEdit(coupon)}
-                              className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#f0a500]"
-                            >
-                              <Pencil className="size-4" />
-                            </button>
-                            <button
-                              type="button"
-                              aria-label={`Delete ${coupon.code}`}
-                              onClick={() => onDelete(coupon)}
-                              className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#fef2f2] hover:text-[#ef4444]"
-                            >
-                              <Trash2 className="size-4" />
-                            </button>
+                            <Can permission="coupon:update">
+                              <button
+                                type="button"
+                                aria-label={`Edit ${coupon.code}`}
+                                onClick={() => onEdit(coupon)}
+                                className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#f0a500]"
+                              >
+                                <Pencil className="size-4" />
+                              </button>
+                            </Can>
+                            <Can permission="coupon:delete">
+                              <button
+                                type="button"
+                                aria-label={`Delete ${coupon.code}`}
+                                onClick={() => onDelete(coupon)}
+                                className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#fef2f2] hover:text-[#ef4444]"
+                              >
+                                <Trash2 className="size-4" />
+                              </button>
+                            </Can>
                           </div>
                         )}
                       </td>
