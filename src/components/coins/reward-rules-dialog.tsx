@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Pencil } from "lucide-react";
 
 import { Dialog } from "@/components/ui/dialog";
+import { Can } from "@/components/shared/can";
 import { RewardRuleEditDialog } from "@/components/coins/reward-rule-edit-dialog";
 import { useRewardRules } from "@/hooks/coin-reward/use-reward-rules";
 import {
@@ -78,14 +79,16 @@ export function RewardRulesDialog({ open, onClose }: RewardRulesDialogProps) {
                           {formatRewardValue(rule)}
                         </td>
                         <td className="px-5 py-4">
-                          <button
-                            type="button"
-                            aria-label={`Edit ${formatRewardTypeLabel(rule.reward_type)}`}
-                            onClick={() => setEditingRule(rule)}
-                            className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#f0a500]"
-                          >
-                            <Pencil className="size-4" />
-                          </button>
+                          <Can permission="reward_rule:update">
+                            <button
+                              type="button"
+                              aria-label={`Edit ${formatRewardTypeLabel(rule.reward_type)}`}
+                              onClick={() => setEditingRule(rule)}
+                              className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#f0a500]"
+                            >
+                              <Pencil className="size-4" />
+                            </button>
+                          </Can>
                         </td>
                       </tr>
                     ))}

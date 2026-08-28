@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { DropdownMenu } from "@/components/shared/dropdown-menu";
 import { Pagination } from "@/components/shared/pagination";
+import { Can } from "@/components/shared/can";
 import { CoinHistoryTable } from "@/components/coins/coin-history-table";
 import { buildCoinLogsExport } from "@/components/coins/export-coin-logs";
 import { ReferralUsersTable } from "@/components/coins/referral-users-table";
@@ -141,14 +142,16 @@ export function CoinsReferralsView({ initialTab = "coins" }: { initialTab?: stri
           Coins & Referrals
         </h1>
         <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setRewardRulesOpen(true)}
-            className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#111827] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1f2937]"
-          >
-            <Settings className="size-4" />
-            Reward Rules
-          </button>
+          <Can permission="reward_rule:update">
+            <button
+              type="button"
+              onClick={() => setRewardRulesOpen(true)}
+              className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#111827] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1f2937]"
+            >
+              <Settings className="size-4" />
+              Reward Rules
+            </button>
+          </Can>
           <div className="relative" ref={exportMenuRef}>
             <button
               type="button"

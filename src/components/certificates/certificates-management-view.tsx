@@ -6,6 +6,7 @@ import { Pencil } from "lucide-react";
 
 import { CertificatesTable } from "@/components/certificates/certificates-table";
 import { Dialog } from "@/components/ui/dialog";
+import { Can } from "@/components/shared/can";
 import { DateRangePicker, type DateRange } from "@/components/ui/date-range-picker";
 import { DropdownMenu } from "@/components/shared/dropdown-menu";
 import { Pagination } from "@/components/shared/pagination";
@@ -159,14 +160,16 @@ export function CertificatesManagementView() {
           Certificate Management
         </h1>
 
-        <button
-          type="button"
-          onClick={() => router.push("/certificates/template")}
-          className="inline-flex h-11 w-fit items-center gap-2 rounded-xl bg-[#f0a500] px-4 text-sm font-semibold text-white transition hover:bg-[#d99400]"
-        >
-          <Pencil className="size-4" />
-          Modify Certificate Template
-        </button>
+        <Can permission="certificate:update">
+          <button
+            type="button"
+            onClick={() => router.push("/certificates/template")}
+            className="inline-flex h-11 w-fit items-center gap-2 rounded-xl bg-[#f0a500] px-4 text-sm font-semibold text-white transition hover:bg-[#d99400]"
+          >
+            <Pencil className="size-4" />
+            Modify Certificate Template
+          </button>
+        </Can>
       </div>
 
       {error ? <p className="text-sm text-[#ef4444]">{error}</p> : null}

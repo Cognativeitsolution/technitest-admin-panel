@@ -5,6 +5,7 @@ import { Plus } from "lucide-react";
 
 import { CouponDialog } from "@/components/coupons/coupon-dialog";
 import { CouponsTable } from "@/components/coupons/coupons-table";
+import { Can } from "@/components/shared/can";
 import { DropdownMenu } from "@/components/shared/dropdown-menu";
 import { Pagination } from "@/components/shared/pagination";
 import { Dialog } from "@/components/ui/dialog";
@@ -97,14 +98,16 @@ export function CouponsManagementView() {
           Coupons Management
         </h1>
 
-        <button
-          type="button"
-          onClick={openCreate}
-          className="inline-flex h-11 w-fit items-center gap-2 rounded-xl bg-[#f0a500] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d99400]"
-        >
-          <Plus className="size-4" />
-          Add Coupon
-        </button>
+        <Can permission="coupon:create">
+          <button
+            type="button"
+            onClick={openCreate}
+            className="inline-flex h-11 w-fit items-center gap-2 rounded-xl bg-[#f0a500] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d99400]"
+          >
+            <Plus className="size-4" />
+            Add Coupon
+          </button>
+        </Can>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
