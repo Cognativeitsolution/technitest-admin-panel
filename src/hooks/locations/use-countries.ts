@@ -13,7 +13,7 @@ export function useCountries() {
 
   useEffect(() => {
     let cancelled = false;
-    
+
     setLoading(true);
     locationService
       .getCountries()
