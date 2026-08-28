@@ -12,7 +12,7 @@ export function ProfileView() {
   );
 
   return (
-    <div className="mx-auto w-full max-w-[1100px] space-y-9">
+    <div className="mx-auto w-full max-w-275 space-y-9">
       <div className="flex flex-wrap items-center gap-4">
         <h1 className="text-[30px] font-bold tracking-tight text-[#111111]">
           Profile

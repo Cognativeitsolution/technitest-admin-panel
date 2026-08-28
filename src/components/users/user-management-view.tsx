@@ -5,28 +5,24 @@ import { Download } from "lucide-react";
 
 import { DropdownMenu } from "@/components/shared/dropdown-menu";
 import { Pagination } from "@/components/shared/pagination";
+import { DateRangePicker, type DateRange } from "@/components/ui/date-range-picker";
 import { UsersTable } from "@/components/users/users-table";
-import { countryOptions, users as allUsers } from "@/data/users";
+import { useUsers } from "@/hooks/users/use-users";
+import { useCountries } from "@/hooks/locations/use-countries";
 
-const PAGE_SIZE = 8;
-const dateOptions = ["Date", "Last 7 Days", "Last 30 Days", "This Year"];
+const PAGE_SIZE = 10;
 
 export function UserManagementView() {
-  const [country, setCountry] = useState(countryOptions[0]);
-  const [dateFilter, setDateFilter] = useState(dateOptions[0]);
-  const [page, setPage] = useState(1);
+  const { countries, loading: countriesLoading } = useCountries();
+  const [country, setCountry] = useState("All Countries");
+  const [dateRange, setDateRange] = useState<DateRange>({ start: null, end: null });
 
-  const filteredUsers = useMemo(() => {
-    if (country === "All Countries") return allUsers;
-    return allUsers.filter((user) => user.country === country);
-  }, [country]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE));
-  const currentPage = Math.min(page, totalPages);
-  const pageUsers = filteredUsers.slice(
-    (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE
-  );
+  const { items, pagination, loading, goToPage } = useUsers({
+    perPage: PAGE_SIZE,
+    country: country === "All Countries" ? undefined : country,
+    dateFrom: dateRange.start ? dateRange.start.toISOString() : undefined,
+    dateTo: dateRange.end ? dateRange.end.toISOString() : undefined,
+  });
 
   return (
     <div className="space-y-5">
@@ -46,28 +42,26 @@ export function UserManagementView() {
 
       <div className="flex flex-wrap items-center gap-3">
         <DropdownMenu
-          label="Country"
+          label={countriesLoading ? "Loading..." : "Country"}
           value={country}
-          options={countryOptions}
-          onChange={(value) => {
-            setCountry(value);
-            setPage(1);
-          }}
+          options={countries}
+          searchable
+          onChange={(value) => setCountry(value)}
         />
-        <DropdownMenu
-          label="Date"
-          value={dateFilter}
-          options={dateOptions}
-          onChange={setDateFilter}
+        <DateRangePicker
+          value={dateRange}
+          onChange={setDateRange}
+          placeholder="Select dates"
+          dualMonth={false}
         />
       </div>
 
-      <UsersTable users={pageUsers} />
+      <UsersTable users={items} loading={loading} />
 
       <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setPage}
+        currentPage={pagination.page || 1}
+        totalPages={Math.max(1, pagination.totalPages || 1)}
+        onPageChange={goToPage}
       />
     </div>
   );
