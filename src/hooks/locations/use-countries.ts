@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { locationService } from "@/services/location.service";
 import { ApiError } from "@/lib/api-error";
 import { toast } from "sonner";
+import type { Country } from "@/types/location.types";
 
 export function useCountries() {
   const [countries, setCountries] = useState<string[]>(["All Countries"]);
@@ -14,7 +15,6 @@ export function useCountries() {
   useEffect(() => {
     let cancelled = false;
 
-    setLoading(true);
     locationService
       .getCountries()
       .then((data) => {
