@@ -3,39 +3,78 @@
 import { useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 
-import { Dialog } from "@/components/ui/dialog";
 import { Can } from "@/components/shared/can";
+import { Dialog } from "@/components/ui/dialog";
 import { MultiSelectFilter } from "@/components/quizzes/multi-select-filter";
 import { Pagination } from "@/components/shared/pagination";
 import { QuizTable } from "@/components/quizzes/quiz-table";
-import { quizzes as allQuizzes, categoryOptions, levelOptions, typeOptions } from "@/data/quizzes";
-import type { Quiz } from "@/data/quizzes";
+import { useQuizAdminList } from "@/hooks/quizzes/use-quiz-admin-list";
+import type { QuizInfoListItem } from "@/types/quiz-info.types";
 
-const PAGE_SIZE = 5;
+const levelOptions = ["beginner", "intermediate", "advanced"];
+const skillOptions = ["student", "professional"];
+const statusOptions = ["Active", "Inactive"];
+
+function capitalize(value: string) {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
 
 export function QuizListView() {
+  const {
+    items,
+    pagination,
+    loading,
+    error,
+    goToPage,
+  } = useQuizAdminList({ perPage: 15 });
+
   const [categories, setCategories] = useState<string[]>([]);
   const [levels, setLevels] = useState<string[]>([]);
-  const [types, setTypes] = useState<string[]>([]);
-  const [page, setPage] = useState(1);
-  const [deleteTarget, setDeleteTarget] = useState<Quiz | null>(null);
+  const [skills, setSkills] = useState<string[]>([]);
+  const [statuses, setStatuses] = useState<string[]>([]);
+  const [deleteTarget, setDeleteTarget] = useState<QuizInfoListItem | null>(null);
+
+  const categoryOptions = useMemo(() => {
+    const titles = new Set<string>();
+    for (const quiz of items) {
+      if (quiz.category?.title) titles.add(quiz.category.title);
+    }
+    return Array.from(titles).sort((a, b) => a.localeCompare(b));
+  }, [items]);
 
   const filtered = useMemo(() => {
-    return allQuizzes.filter((q) => {
-      if (categories.length > 0 && !categories.includes(q.category)) return false;
-      if (levels.length > 0 && !levels.includes(q.level)) return false;
-      if (types.length > 0 && !types.includes(q.type)) return false;
+    return items.filter((quiz) => {
+      if (
+        categories.length > 0 &&
+        !categories.includes(quiz.category?.title ?? "")
+      ) {
+        return false;
+      }
+      if (
+        levels.length > 0 &&
+        !levels.includes((quiz.difficulty_level ?? "").toLowerCase())
+      ) {
+        return false;
+      }
+      if (
+        skills.length > 0 &&
+        !skills.includes((quiz.skill_level ?? "").toLowerCase())
+      ) {
+        return false;
+      }
+      if (statuses.length > 0) {
+        const status = quiz.is_active ? "Active" : "Inactive";
+        if (!statuses.includes(status)) return false;
+      }
       return true;
     });
-  }, [categories, levels, types]);
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const currentPage = Math.min(page, totalPages);
-  const pageQuizzes = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  }, [items, categories, levels, skills, statuses]);
 
   function handleDelete() {
     setDeleteTarget(null);
+    toast.message("Quiz delete API is not available yet.");
   }
 
   return (
@@ -60,28 +99,56 @@ export function QuizListView() {
           label="Category"
           options={categoryOptions}
           selected={categories}
-          onChange={(v) => { setCategories(v); setPage(1); }}
+          onChange={(v) => {
+            setCategories(v);
+            goToPage(1);
+          }}
         />
         <MultiSelectFilter
           label="Level"
-          options={levelOptions}
-          selected={levels}
-          onChange={(v) => { setLevels(v); setPage(1); }}
+          options={levelOptions.map(capitalize)}
+          selected={levels.map(capitalize)}
+          onChange={(v) => {
+            setLevels(v.map((item) => item.toLowerCase()));
+            goToPage(1);
+          }}
         />
         <MultiSelectFilter
-          label="Type"
-          options={typeOptions}
-          selected={types}
-          onChange={(v) => { setTypes(v); setPage(1); }}
+          label="Skill"
+          options={skillOptions.map(capitalize)}
+          selected={skills.map(capitalize)}
+          onChange={(v) => {
+            setSkills(v.map((item) => item.toLowerCase()));
+            goToPage(1);
+          }}
+        />
+        <MultiSelectFilter
+          label="Status"
+          options={statusOptions}
+          selected={statuses}
+          onChange={(v) => {
+            setStatuses(v);
+            goToPage(1);
+          }}
         />
       </div>
 
-      <QuizTable quizzes={pageQuizzes} onDelete={setDeleteTarget} />
+      {error ? (
+        <div className="rounded-xl border border-[#fecaca] bg-[#fef2f2] px-4 py-3 text-sm text-[#b91c1c]">
+          {error}
+        </div>
+      ) : null}
+
+      <QuizTable
+        quizzes={filtered}
+        loading={loading}
+        onDelete={setDeleteTarget}
+      />
 
       <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setPage}
+        currentPage={pagination.page}
+        totalPages={pagination.totalPages}
+        onPageChange={goToPage}
       />
 
       <Dialog
@@ -90,7 +157,11 @@ export function QuizListView() {
         title="Delete Quiz"
       >
         <p className="text-[15px] text-[#4b5563]">
-          Are you sure you want to delete <span className="font-semibold text-[#111827]">{deleteTarget?.title}</span>? This action cannot be undone.
+          Are you sure you want to delete{" "}
+          <span className="font-semibold text-[#111827]">
+            {deleteTarget?.name}
+          </span>
+          ? This action cannot be undone.
         </p>
         <div className="mt-6 flex justify-end gap-3">
           <button
