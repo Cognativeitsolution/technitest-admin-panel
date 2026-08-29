@@ -1,54 +1,72 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 
 import { Dialog } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { questionTypeOptions } from "@/data/quizzes";
-import type { QuizQuestion, QuestionType } from "@/data/quizzes";
+import type {
+  QuizQuestionAdmin,
+  QuizQuestionCreatePayload,
+  QuizQuestionType,
+} from "@/types/quiz-create.types";
 
 const inputClassName =
   "h-11 w-full rounded-xl border border-[#e5e7eb] bg-[#f8fafc] px-3.5 text-sm font-medium text-[#111827] outline-none transition focus:border-[#3b82f6] focus:bg-white focus:ring-2 focus:ring-[#3b82f6]/20";
 
+const typeOptions: { value: QuizQuestionType; label: string }[] = [
+  { value: "mcq", label: "MCQs" },
+  { value: "tf", label: "True/False" },
+  { value: "blanks", label: "Fill in the blanks" },
+];
+
 type QuestionFormDialogProps = {
   open: boolean;
   onClose: () => void;
-  question: QuizQuestion | null;
-  onSave: (question: QuizQuestion) => void;
+  question: QuizQuestionAdmin | null;
+  onSave: (payload: QuizQuestionCreatePayload) => void;
 };
 
-export function QuestionFormDialog({ open, onClose, question, onSave }: QuestionFormDialogProps) {
-  const [type, setType] = useState<QuestionType>("MCQs");
-  const [time, setTime] = useState("00:00:40");
+export function QuestionFormDialog({
+  open,
+  onClose,
+  question,
+  onSave,
+}: QuestionFormDialogProps) {
+  const [type, setType] = useState<QuizQuestionType>("mcq");
+  const [time, setTime] = useState("40");
   const [text, setText] = useState("");
   const [options, setOptions] = useState(["", "", "", ""]);
   const [correctAnswer, setCorrectAnswer] = useState(0);
+  const [prevOpen, setPrevOpen] = useState(open);
 
-  useEffect(() => {
-    if (question) {
-      setType(question.type);
-      setTime(question.timePerQuestion);
-      setText(question.question);
-      setOptions([...question.options, ...Array(Math.max(0, 4 - question.options.length)).fill("")].slice(0, 4));
-      setCorrectAnswer(question.correctAnswer);
-    } else {
-      setType("MCQs");
-      setTime("00:00:40");
-      setText("");
-      setOptions(["", "", "", ""]);
-      setCorrectAnswer(0);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setType(question?.type ?? "mcq");
+      setTime(String(question?.time_limit ?? 40));
+      setText(question?.question ?? "");
+      const baseOptions = question?.option?.map((opt) => opt.option_text) ?? [];
+      setOptions(
+        [...baseOptions, ...Array(Math.max(0, 4 - baseOptions.length)).fill("")].slice(0, 4),
+      );
+      setCorrectAnswer(
+        question
+          ? Math.max(0, (question.option ?? []).findIndex((opt) => opt.is_correct))
+          : 0,
+      );
     }
-  }, [question, open]);
+  }
 
   function handleSave() {
     onSave({
-      id: question?.id ?? `q${Date.now()}`,
       question: text,
       type,
-      timePerQuestion: time,
-      options: options.filter((o) => o.trim() !== ""),
-      correctAnswer,
+      time_limit: Number(time) || 30,
+      source_type: "manual",
+      option: options
+        .filter((opt) => opt.trim() !== "")
+        .map((opt, index) => ({ option_text: opt, is_correct: index === correctAnswer })),
     });
   }
 
@@ -59,21 +77,40 @@ export function QuestionFormDialog({ open, onClose, question, onSave }: Question
           <label className="block space-y-1.5">
             <span className="text-sm font-medium text-[#374151]">Question Type</span>
             <div className="relative">
-              <select value={type} onChange={(e) => setType(e.target.value as QuestionType)} className={cn(inputClassName, "appearance-none pr-10")}>
-                {questionTypeOptions.map((t) => <option key={t}>{t}</option>)}
+              <select
+                value={type}
+                onChange={(e) => setType(e.target.value as QuizQuestionType)}
+                className={cn(inputClassName, "appearance-none pr-10")}
+              >
+                {typeOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
               </select>
               <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-[#9ca3af]" />
             </div>
           </label>
           <label className="block space-y-1.5">
-            <span className="text-sm font-medium text-[#374151]">Time Per Question</span>
-            <input type="text" value={time} onChange={(e) => setTime(e.target.value)} className={inputClassName} />
+            <span className="text-sm font-medium text-[#374151]">Time Per Question (seconds)</span>
+            <input
+              type="number"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+              min={5}
+              className={inputClassName}
+            />
           </label>
         </div>
 
         <label className="block space-y-1.5">
           <span className="text-sm font-medium text-[#374151]">Question Text</span>
-          <textarea value={text} onChange={(e) => setText(e.target.value)} rows={2} className={cn(inputClassName, "resize-none")} />
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            rows={2}
+            className={cn(inputClassName, "resize-none")}
+          />
         </label>
 
         <div className="space-y-3">
@@ -85,8 +122,11 @@ export function QuestionFormDialog({ open, onClose, question, onSave }: Question
                 onClick={() => setCorrectAnswer(i)}
                 className={cn(
                   "flex size-5 shrink-0 items-center justify-center rounded-full border-2 transition",
-                  correctAnswer === i ? "border-[#22c55e] bg-[#22c55e] text-white" : "border-[#d1d5db]"
+                  correctAnswer === i
+                    ? "border-[#22c55e] bg-[#22c55e] text-white"
+                    : "border-[#d1d5db]",
                 )}
+                aria-label={`Set option ${i + 1} as correct`}
               >
                 {correctAnswer === i ? <span className="size-2 rounded-full bg-white" /> : null}
               </button>
@@ -103,7 +143,9 @@ export function QuestionFormDialog({ open, onClose, question, onSave }: Question
               />
             </div>
           ))}
-          <p className="text-xs text-[#6b7280]">Select the correct answer by clicking the radio button.</p>
+          <p className="text-xs text-[#6b7280]">
+            Select the correct answer by clicking the radio button.
+          </p>
         </div>
       </div>
 
