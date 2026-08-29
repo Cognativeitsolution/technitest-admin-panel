@@ -1,54 +1,90 @@
 import type { AuthTokens, User } from "@/types/auth.types";
 
-export function parseLoginResponse(raw: any): {
+import { resolveUserAvatar } from "@/lib/user-avatar";
+
+function readDeep(root: unknown, paths: string[]): unknown {
+  let value: unknown = root;
+  for (const key of paths) {
+    if (value !== null && value !== undefined) {
+      const record = value as Record<string, unknown>;
+      if (typeof record === "object") {
+        value = record[key];
+        continue;
+      }
+    }
+    return undefined;
+  }
+  return value;
+}
+
+function firstDefined(root: unknown, paths: string[][]): unknown {
+  for (const path of paths) {
+    const value = readDeep(root, path);
+    if (value !== undefined) return value;
+  }
+  return undefined;
+}
+
+function toStringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.map(String) : [];
+}
+
+function toParsedUser(rawUser: Record<string, unknown>): User | null {
+  if (!rawUser.id && !rawUser.email) return null;
+  return {
+    id: String(rawUser.id ?? rawUser._id ?? ""),
+    fullName: String(
+      rawUser.fullName ?? rawUser.full_name ?? rawUser.username ?? "Admin",
+    ),
+    email: String(rawUser.email ?? ""),
+    avatar: resolveUserAvatar(rawUser),
+  };
+}
+
+export function parseLoginResponse(raw: unknown): {
   tokens: AuthTokens;
   user: User | null;
+  roles: string[];
+  permissions: string[];
 } {
-  console.log("RAW LOGIN RESPONSE:", raw);
+  const tokensObj =
+    firstDefined(raw, [
+      ["tokens"],
+      ["data", "tokens"],
+      ["data", "data", "tokens"],
+      ["response", "data", "tokens"],
+      ["response", "tokens"],
+      ["response", "data"],
+    ]) ?? raw;
+  const tokenBag = (tokensObj ?? {}) as Record<string, unknown>;
 
-  // Try to find the tokens object in various possible nested locations
-  let tokensObj =
-    raw?.tokens ||
-    raw?.data?.tokens ||
-    raw?.data?.data?.tokens ||
-    raw?.response?.data?.tokens ||
-    raw?.response?.tokens ||
-    raw?.response?.data ||
-    raw || {};
-
-  const accessToken = tokensObj?.accessToken || tokensObj?.access_token || tokensObj?.token;
-  const refreshToken = tokensObj?.refreshToken || tokensObj?.refresh_token;
+  const accessToken =
+    tokenBag.accessToken ?? tokenBag.access_token ?? tokenBag.token;
+  const refreshToken = tokenBag.refreshToken ?? tokenBag.refresh_token;
 
   if (!accessToken) {
-    console.error("Failed to parse access token. tokensObj was:", tokensObj);
     throw new Error("Invalid login response: missing token");
   }
 
-  // Same for user object
-  let rawUser =
-    raw?.user ||
-    raw?.data?.user ||
-    raw?.data?.data?.user ||
-    raw?.response?.data?.user ||
-    raw?.response?.user ||
-    raw?.response?.data ||
-    {};
-
-  const user: User | null = rawUser.id || rawUser.email
-    ? {
-      id: String(rawUser.id || rawUser._id || ""),
-      fullName: String(rawUser.fullName || rawUser.full_name || rawUser.username || "Admin"),
-      email: String(rawUser.email || ""),
-      avatar: rawUser.avatar ? String(rawUser.avatar) : undefined,
-    }
-    : null;
+  const rawUser =
+    firstDefined(raw, [
+      ["user"],
+      ["data", "user"],
+      ["data", "data", "user"],
+      ["response", "data", "user"],
+      ["response", "user"],
+      ["response", "data"],
+    ]) ?? {};
+  const userRecord = rawUser as Record<string, unknown>;
 
   return {
     tokens: {
-      accessToken,
-      refreshToken: refreshToken || "",
-      expiresIn: Number(tokensObj?.expiresIn || tokensObj?.expires_in || 0),
+      accessToken: String(accessToken),
+      refreshToken: refreshToken ? String(refreshToken) : "",
+      expiresIn: Number(tokenBag.expiresIn ?? tokenBag.expires_in ?? 0),
     },
-    user,
+    user: toParsedUser(userRecord),
+    roles: toStringArray(userRecord.roles),
+    permissions: toStringArray(userRecord.permissions),
   };
 }

@@ -5,6 +5,11 @@ import { usePathname } from "next/navigation";
 import { PanelLeftOpen, X } from "lucide-react";
 
 import { navItems } from "@/config/navigation";
+import {
+  SIDEBAR_WIDTH_COLLAPSED_PX,
+  SIDEBAR_WIDTH_EXPANDED_PX,
+} from "@/config/layout";
+import { usePermissions } from "@/hooks/use-permissions";
 import { cn } from "@/lib/utils";
 import { useSidebarStore } from "@/store/sidebar-store";
 
@@ -12,6 +17,9 @@ export function Sidebar() {
   const pathname = usePathname();
   const { collapsed, mobileOpen, toggleCollapsed, setMobileOpen } =
     useSidebarStore();
+  const { canAccess, isLoading } = usePermissions();
+
+  const visibleItems = isLoading ? [] : navItems.filter((item) => canAccess(item.modules));
 
   return (
     <>
@@ -25,13 +33,13 @@ export function Sidebar() {
       ) : null}
 
       <aside
-      style={{
-        boxShadow: "4px 0px 27.2px 1px #E4EDFA",
-      }}
+        style={{
+          boxShadow: "4px 0px 27.2px 1px #E4EDFA",
+          width: collapsed ? SIDEBAR_WIDTH_COLLAPSED_PX : SIDEBAR_WIDTH_EXPANDED_PX,
+        }}
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex h-screen flex-col border-r border-[#e8ecf2] bg-[#f7f8fa] transition-all duration-300",
-          collapsed ? "w-21" : "w-70",
-          mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+          "fixed inset-y-0 left-0 z-50 flex h-screen flex-col border-r border-[#e8ecf2] bg-[#f7f8fa] transition-[width] duration-300",
+          mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
         )}
       >
         <div
@@ -46,7 +54,7 @@ export function Sidebar() {
               onClick={toggleCollapsed}
               className="inline-flex items-center gap-2 text-sm font-medium text-[#6b7280] transition hover:text-[#111827]"
             >
-              <X className="size-[18px]" />
+              <X className="size-4.5" />
               Collapse
             </button>
           ) : (
@@ -56,7 +64,7 @@ export function Sidebar() {
               onClick={toggleCollapsed}
               className="rounded-lg p-2 text-[#6b7280] transition hover:bg-white hover:text-[#111827]"
             >
-              <PanelLeftOpen className="size-[18px]" />
+              <PanelLeftOpen className="size-4.5" />
             </button>
           )}
 
@@ -72,7 +80,7 @@ export function Sidebar() {
 
         <nav className="flex-1 overflow-y-auto px-3 py-4">
           <ul className="space-y-1.5">
-            {navItems.map((item) => {
+            {visibleItems.map((item) => {
               const Icon = item.icon;
               const isActive =
                 item.href === "/"
@@ -95,7 +103,7 @@ export function Sidebar() {
                   >
                     <Icon
                       className={cn(
-                        "size-[18px] shrink-0",
+                        "size-4.5 shrink-0",
                         isActive ? "text-white" : "text-[#6b7280]"
                       )}
                     />

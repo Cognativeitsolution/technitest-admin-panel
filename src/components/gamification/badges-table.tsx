@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { Pencil } from "lucide-react";
 
+import { Can } from "@/components/shared/can";
 import type { BadgeRule } from "@/types/gamification.types";
 import { formatDateTime } from "@/lib/utils";
 
@@ -70,9 +71,11 @@ export function BadgesTable({ badges, loading = false, onEdit }: BadgesTableProp
                     <td className="px-5 py-4 text-sm text-[#374151]">{badge.validity_years} year{badge.validity_years === 1 ? "" : "s"}</td>
                     <td className="px-5 py-4 text-sm text-[#6b7280]">{formatDateTime(badge.updated_at)}</td>
                     <td className="px-5 py-4">
-                      <button type="button" aria-label={`Edit ${badge.badge_name || "badge"}`} onClick={() => onEdit(badge)} className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#f0a500]">
-                        <Pencil className="size-4" />
-                      </button>
+                      <Can permission="badges:update">
+                        <button type="button" aria-label={`Edit ${badge.badge_name || "badge"}`} onClick={() => onEdit(badge)} className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#f0a500]">
+                          <Pencil className="size-4" />
+                        </button>
+                      </Can>
                     </td>
                   </tr>
                 ))}

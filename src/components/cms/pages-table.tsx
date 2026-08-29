@@ -2,6 +2,7 @@
 
 import { Eye, Pencil, Trash2 } from "lucide-react";
 
+import { Can } from "@/components/shared/can";
 import { pageStatusLabel } from "@/lib/page-content";
 import { formatDateTime } from "@/lib/utils";
 import type { PageListItem } from "@/types/page.types";
@@ -85,22 +86,26 @@ export function PagesTable({
                         >
                           <Eye className="size-4" />
                         </button>
-                        <button
-                          type="button"
-                          aria-label={`Edit ${page.title}`}
-                          onClick={() => onEdit(page)}
-                          className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#f0a500]"
-                        >
-                          <Pencil className="size-4" />
-                        </button>
-                        <button
-                          type="button"
-                          aria-label={`Delete ${page.title}`}
-                          onClick={() => onDelete(page)}
-                          className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#fef2f2] hover:text-[#ef4444]"
-                        >
-                          <Trash2 className="size-4" />
-                        </button>
+                        <Can permission="page:update">
+                          <button
+                            type="button"
+                            aria-label={`Edit ${page.title}`}
+                            onClick={() => onEdit(page)}
+                            className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#f0a500]"
+                          >
+                            <Pencil className="size-4" />
+                          </button>
+                        </Can>
+                        <Can permission="page:delete">
+                          <button
+                            type="button"
+                            aria-label={`Delete ${page.title}`}
+                            onClick={() => onDelete(page)}
+                            className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#fef2f2] hover:text-[#ef4444]"
+                          >
+                            <Trash2 className="size-4" />
+                          </button>
+                        </Can>
                       </div>
                     </td>
                   </tr>

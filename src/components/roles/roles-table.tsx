@@ -2,6 +2,7 @@
 
 import { Lock, Pencil, ShieldCheck, Trash2 } from "lucide-react";
 
+import { Can } from "@/components/shared/can";
 import { EmptyState } from "@/components/roles/empty-state";
 import { RoleBadge } from "@/components/roles/role-badge";
 import type { RoleRecord } from "@/types/role.types";
@@ -57,7 +58,7 @@ export function RolesTable({
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[760px] border-collapse text-left">
+        <table className="w-full min-w-190 border-collapse text-left">
           <thead>
             <tr className="bg-[#eef5ff] text-[13px] font-semibold text-[#374151]">
               <th className="px-5 py-3.5">Role</th>
@@ -110,22 +111,26 @@ export function RolesTable({
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          type="button"
-                          aria-label={`Edit permissions for ${role.name}`}
-                          onClick={() => onEdit(role)}
-                          className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#f0a500]"
-                        >
-                          <Pencil className="size-4" />
-                        </button>
-                        <button
-                          type="button"
-                          aria-label={`Delete ${role.name}`}
-                          onClick={() => onDelete(role)}
-                          className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#fef2f2] hover:text-[#ef4444]"
-                        >
-                          <Trash2 className="size-4" />
-                        </button>
+                        <Can permission="role:update">
+                          <button
+                            type="button"
+                            aria-label={`Edit permissions for ${role.name}`}
+                            onClick={() => onEdit(role)}
+                            className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#f0a500]"
+                          >
+                            <Pencil className="size-4" />
+                          </button>
+                        </Can>
+                        <Can permission="role:delete">
+                          <button
+                            type="button"
+                            aria-label={`Delete ${role.name}`}
+                            onClick={() => onDelete(role)}
+                            className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#fef2f2] hover:text-[#ef4444]"
+                          >
+                            <Trash2 className="size-4" />
+                          </button>
+                        </Can>
                       </div>
                     </td>
                   </tr>

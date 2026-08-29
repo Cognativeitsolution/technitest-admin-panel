@@ -5,6 +5,7 @@ import { Plus } from "lucide-react";
 import Link from "next/link";
 
 import { Dialog } from "@/components/ui/dialog";
+import { Can } from "@/components/shared/can";
 import { MultiSelectFilter } from "@/components/quizzes/multi-select-filter";
 import { Pagination } from "@/components/shared/pagination";
 import { QuizTable } from "@/components/quizzes/quiz-table";
@@ -43,13 +44,15 @@ export function QuizListView() {
         <h1 className="text-[28px] font-bold tracking-tight text-[#111827]">
           Quizzes Management
         </h1>
-        <Link
-          href="/quizzes/new"
-          className="inline-flex h-11 w-fit items-center gap-2 rounded-xl bg-[#f0a500] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d99400]"
-        >
-          <Plus className="size-4" />
-          Add New Quiz
-        </Link>
+        <Can permission="quiz:create">
+          <Link
+            href="/quizzes/new"
+            className="inline-flex h-11 w-fit items-center gap-2 rounded-xl bg-[#f0a500] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d99400]"
+          >
+            <Plus className="size-4" />
+            Add New Quiz
+          </Link>
+        </Can>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">

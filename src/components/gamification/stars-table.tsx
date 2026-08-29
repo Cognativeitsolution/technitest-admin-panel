@@ -2,6 +2,7 @@
 
 import { Pencil, Star, Trash2 } from "lucide-react";
 
+import { Can } from "@/components/shared/can";
 import type { StarRuleRecord } from "@/types/gamification.types";
 import { formatDateTime } from "@/lib/utils";
 
@@ -54,12 +55,16 @@ export function StarsTable({ rules, loading = false, onEdit, onDelete }: StarsTa
                     <td className="px-5 py-4 text-sm text-[#6b7280]">{formatDateTime(rule.updated_at)}</td>
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-1.5">
-                        <button type="button" aria-label={`Edit ${rule.name || "star rule"}`} onClick={() => onEdit(rule)} className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#f0a500]">
-                          <Pencil className="size-4" />
-                        </button>
-                        <button type="button" aria-label={`Delete ${rule.name || "star rule"}`} onClick={() => onDelete(rule)} className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#fef2f2] hover:text-[#ef4444]">
-                          <Trash2 className="size-4" />
-                        </button>
+                        <Can permission="stars:update">
+                          <button type="button" aria-label={`Edit ${rule.name || "star rule"}`} onClick={() => onEdit(rule)} className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#f0a500]">
+                            <Pencil className="size-4" />
+                          </button>
+                        </Can>
+                        <Can permission="stars:delete">
+                          <button type="button" aria-label={`Delete ${rule.name || "star rule"}`} onClick={() => onDelete(rule)} className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#fef2f2] hover:text-[#ef4444]">
+                            <Trash2 className="size-4" />
+                          </button>
+                        </Can>
                       </div>
                     </td>
                   </tr>

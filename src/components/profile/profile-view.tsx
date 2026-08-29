@@ -8,11 +8,11 @@ import { ProfileTabs } from "@/components/profile/profile-tabs";
 
 export function ProfileView() {
   const [activeTab, setActiveTab] = useState<"personal" | "password">(
-    "personal"
+    "personal",
   );
 
   return (
-    <div className="mx-auto w-full max-w-275 space-y-9">
+    <div className="w-full max-w-4xl space-y-10">
       <div className="flex flex-wrap items-center gap-4">
         <h1 className="text-[30px] font-bold tracking-tight text-[#111111]">
           Profile

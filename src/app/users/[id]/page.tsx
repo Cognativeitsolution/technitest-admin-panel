@@ -1,7 +1,5 @@
-import { notFound } from "next/navigation";
-
+import { userService } from "@/services/user.service";
 import { UserDetailView } from "@/components/users/user-detail-view";
-import { getUserById, userCertificates } from "@/data/users";
 
 type UserDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -9,11 +7,6 @@ type UserDetailPageProps = {
 
 export default async function UserDetailPage({ params }: UserDetailPageProps) {
   const { id } = await params;
-  const user = getUserById(id);
 
-  if (!user) {
-    notFound();
-  }
-
-  return <UserDetailView user={user} certificates={userCertificates} />;
+  return <UserDetailView userId={id} />;
 }

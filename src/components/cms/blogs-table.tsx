@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { Eye, Image as ImageIcon, Pencil, RotateCcw, Trash2 } from "lucide-react";
 
+import { Can } from "@/components/shared/can";
 import { blogStatusLabel } from "@/lib/blog";
 import { formatDateTime } from "@/lib/utils";
 import type { BlogListItem } from "@/types/blog.types";
@@ -105,32 +106,38 @@ export function BlogsTable({
                         >
                           <Eye className="size-4" />
                         </button>
-                        <button
-                          type="button"
-                          aria-label={`Edit ${blog.title}`}
-                          onClick={() => onEdit(blog)}
-                          className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#f0a500]"
-                        >
-                          <Pencil className="size-4" />
-                        </button>
+                        <Can permission="blog:update">
+                          <button
+                            type="button"
+                            aria-label={`Edit ${blog.title}`}
+                            onClick={() => onEdit(blog)}
+                            className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#f0a500]"
+                          >
+                            <Pencil className="size-4" />
+                          </button>
+                        </Can>
                         {blog.status === "archived" && onRestore ? (
-                          <button
-                            type="button"
-                            aria-label={`Restore ${blog.title}`}
-                            onClick={() => onRestore(blog)}
-                            className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#2563eb]"
-                          >
-                            <RotateCcw className="size-4" />
-                          </button>
+                          <Can permission="blog:restore">
+                            <button
+                              type="button"
+                              aria-label={`Restore ${blog.title}`}
+                              onClick={() => onRestore(blog)}
+                              className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#2563eb]"
+                            >
+                              <RotateCcw className="size-4" />
+                            </button>
+                          </Can>
                         ) : (
-                          <button
-                            type="button"
-                            aria-label={`Delete ${blog.title}`}
-                            onClick={() => onDelete(blog)}
-                            className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#fef2f2] hover:text-[#ef4444]"
-                          >
-                            <Trash2 className="size-4" />
-                          </button>
+                          <Can permission="blog:delete">
+                            <button
+                              type="button"
+                              aria-label={`Delete ${blog.title}`}
+                              onClick={() => onDelete(blog)}
+                              className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#fef2f2] hover:text-[#ef4444]"
+                            >
+                              <Trash2 className="size-4" />
+                            </button>
+                          </Can>
                         )}
                       </div>
                     </td>

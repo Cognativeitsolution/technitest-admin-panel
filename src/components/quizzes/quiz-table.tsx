@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Eye, Pencil, Trash2 } from "lucide-react";
 
+import { Can } from "@/components/shared/can";
 import type { Quiz } from "@/data/quizzes";
 
 type QuizTableProps = {
@@ -59,21 +60,25 @@ export function QuizTable({ quizzes, onDelete }: QuizTableProps) {
                     >
                       <Eye className="size-4" />
                     </Link>
-                    <Link
-                      href={`/quizzes/${quiz.id}`}
-                      aria-label={`Edit ${quiz.title}`}
-                      className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#f0a500]"
-                    >
-                      <Pencil className="size-4" />
-                    </Link>
-                    <button
-                      type="button"
-                      aria-label={`Delete ${quiz.title}`}
-                      onClick={() => onDelete?.(quiz)}
-                      className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#fef2f2] hover:text-[#ef4444]"
-                    >
-                      <Trash2 className="size-4" />
-                    </button>
+                    <Can permission="quiz:update">
+                      <Link
+                        href={`/quizzes/${quiz.id}`}
+                        aria-label={`Edit ${quiz.title}`}
+                        className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#f0a500]"
+                      >
+                        <Pencil className="size-4" />
+                      </Link>
+                    </Can>
+                    <Can permission="quiz:delete">
+                      <button
+                        type="button"
+                        aria-label={`Delete ${quiz.title}`}
+                        onClick={() => onDelete?.(quiz)}
+                        className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#fef2f2] hover:text-[#ef4444]"
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
+                    </Can>
                   </div>
                 </td>
               </tr>
