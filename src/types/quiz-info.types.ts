@@ -32,3 +32,27 @@ export type QuizInfoQuery = {
   page?: number;
   per_page?: number;
 };
+
+export type QuizDifficultyLevel = "beginner" | "intermediate" | "advance";
+export type QuizSkillLevel = "student" | "professional";
+
+export type QuizInfoCreatePayload = {
+  name: string;
+  description: string;
+  difficulty_level: QuizDifficultyLevel;
+  skill_level: QuizSkillLevel;
+  category_id: number;
+  passing_score: number;
+  min_attempt: number;
+  shuffle_questions: boolean;
+  is_negative_marking: boolean;
+  negative_marking_value: number | null;
+};
+
+export type QuizInfoUpdatePayload = Partial<QuizInfoCreatePayload>;
+
+export type QuizInfoFilterPayload = {
+  category_ids?: number[] | null;
+  difficulty_levels?: QuizDifficultyLevel[] | null;
+  is_active?: boolean | null;
+};

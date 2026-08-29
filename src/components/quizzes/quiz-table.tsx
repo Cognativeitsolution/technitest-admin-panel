@@ -16,9 +16,10 @@ type QuizTableProps = {
   quizzes: QuizInfoListItem[];
   loading?: boolean;
   onDelete?: (quiz: QuizInfoListItem) => void;
+  onPreview?: (quiz: QuizInfoListItem) => void;
 };
 
-export function QuizTable({ quizzes, loading = false, onDelete }: QuizTableProps) {
+export function QuizTable({ quizzes, loading = false, onDelete, onPreview }: QuizTableProps) {
   return (
     <div className="overflow-hidden rounded-2xl border border-[#e8ecf2] bg-white shadow-[0_1px_3px_rgba(16,24,40,0.04)]">
       <div className="overflow-x-auto">
@@ -84,13 +85,14 @@ export function QuizTable({ quizzes, loading = false, onDelete }: QuizTableProps
                       </td>
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-1.5">
-                          <Link
-                            href={`/quizzes/${quiz.id}/preview`}
+                          <button
+                            type="button"
                             aria-label={`Preview ${quiz.name}`}
+                            onClick={() => onPreview?.(quiz)}
                             className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#3b82f6]"
                           >
                             <Eye className="size-4" />
-                          </Link>
+                          </button>
                           <Can permission="quiz:update">
                             <Link
                               href={`/quizzes/${quiz.id}`}

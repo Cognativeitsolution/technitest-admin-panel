@@ -1,48 +1,104 @@
 "use client";
 
 import { useState } from "react";
-import { Eye, Pencil, Plus, Trash2, Sparkles } from "lucide-react";
+import { Pencil, Plus, Trash2, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 
 import { Dialog } from "@/components/ui/dialog";
 import { Can } from "@/components/shared/can";
 import { QuestionFormDialog } from "@/components/quizzes/question-form-dialog";
 import { AiGenerateDialog } from "@/components/quizzes/ai-generate-dialog";
+import { useQuizQuestions } from "@/hooks/quizzes/use-quiz-questions";
 import type { QuizQuestion } from "@/data/quizzes";
+import type {
+  QuizQuestionAdmin,
+  QuizQuestionCreatePayload,
+  QuizQuestionType,
+} from "@/types/quiz-create.types";
+
+const typeLabels: Record<QuizQuestionType, string> = {
+  mcq: "MCQs",
+  tf: "True/False",
+  blanks: "Fill in the blanks",
+};
+
+function mapMockType(type: string): QuizQuestionType {
+  if (type === "True/False") return "tf";
+  if (type === "Fill in the blanks") return "blanks";
+  return "mcq";
+}
+
+function parseTimeToSeconds(timePerQuestion: string): number {
+  const parts = timePerQuestion.split(":").map((part) => Number(part) || 0);
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  return parts[0] || 30;
+}
+
+function mockToPayload(q: QuizQuestion): QuizQuestionCreatePayload {
+  return {
+    question: q.question,
+    type: mapMockType(q.type),
+    time_limit: parseTimeToSeconds(q.timePerQuestion),
+    source_type: "manual",
+    option: q.options.map((opt, index) => ({
+      option_text: opt,
+      is_correct: index === q.correctAnswer,
+    })),
+  };
+}
 
 type QuestionBankProps = {
-  questions: QuizQuestion[];
-  totalTime: string;
-  onQuestionsChange: (questions: QuizQuestion[]) => void;
-  onPreview: () => void;
+  quizId: number;
+  totalDuration?: number;
   readonly?: boolean;
 };
 
-export function QuestionBank({ questions, totalTime, onQuestionsChange, onPreview, readonly = false }: QuestionBankProps) {
+export function QuestionBank({ quizId, totalDuration, readonly = false }: QuestionBankProps) {
+  const { items, loading, mutating, error, addMany, updateOne, removeOne } =
+    useQuizQuestions(quizId);
+
   const [questionFormOpen, setQuestionFormOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
-  const [editQuestion, setEditQuestion] = useState<QuizQuestion | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<QuizQuestion | null>(null);
+  const [editQuestion, setEditQuestion] = useState<QuizQuestionAdmin | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<QuizQuestionAdmin | null>(null);
 
-  function handleSaveQuestion(q: QuizQuestion) {
+  async function handleSaveQuestion(payload: QuizQuestionCreatePayload) {
     if (editQuestion) {
-      onQuestionsChange(questions.map((item) => (item.id === q.id ? q : item)));
+      const ok = await updateOne(editQuestion.id, payload);
+      if (ok) {
+        toast.success("Question updated successfully");
+        setEditQuestion(null);
+        setQuestionFormOpen(false);
+      }
     } else {
-      onQuestionsChange([...questions, q]);
+      const ok = await addMany({ question: [payload] });
+      if (ok) {
+        toast.success("Question added successfully");
+        setQuestionFormOpen(false);
+      }
     }
-    setEditQuestion(null);
-    setQuestionFormOpen(false);
   }
 
-  function handleDeleteQuestion() {
-    if (deleteTarget) {
-      onQuestionsChange(questions.filter((q) => q.id !== deleteTarget.id));
+  async function handleDeleteQuestion() {
+    if (!deleteTarget) return;
+    const ok = await removeOne(deleteTarget.id);
+    if (ok) {
+      toast.success("Question deleted successfully");
       setDeleteTarget(null);
     }
   }
 
-  function handleAddFromAi(newQuestions: QuizQuestion[]) {
-    onQuestionsChange([...questions, ...newQuestions]);
+  async function handleAddFromAi(newQuestions: QuizQuestion[]) {
+    if (newQuestions.length === 0) return;
+    const ok = await addMany({ question: newQuestions.map(mockToPayload) });
+    if (ok) toast.success(`${newQuestions.length} question(s) added`);
   }
+
+  const displayTime =
+    totalDuration && totalDuration > 0
+      ? `${Math.round(totalDuration / 60)} min`
+      : "—";
 
   return (
     <>
@@ -50,17 +106,9 @@ export function QuestionBank({ questions, totalTime, onQuestionsChange, onPrevie
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-4">
             <h2 className="text-lg font-bold text-[#111827]">2. Question Bank</h2>
-            <span className="text-sm text-[#6b7280]">Total Time: {totalTime}</span>
+            <span className="text-sm text-[#6b7280]">Total Duration: {displayTime}</span>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onPreview}
-              className="inline-flex h-9 items-center gap-2 rounded-xl border border-[#e5e7eb] bg-white px-4 text-sm font-medium text-[#374151] transition hover:bg-[#f9fafb]"
-            >
-              <Eye className="size-4" />
-              Preview Questions
-            </button>
             <Can permission="quiz:update">
               <button
                 type="button"
@@ -74,7 +122,17 @@ export function QuestionBank({ questions, totalTime, onQuestionsChange, onPrevie
           </div>
         </div>
 
-        {questions.length > 0 ? (
+        {error ? (
+          <div className="mt-4 rounded-xl border border-[#fecaca] bg-[#fef2f2] px-4 py-3 text-sm text-[#b91c1c]">
+            {error}
+          </div>
+        ) : null}
+
+        {loading ? (
+          <div className="mt-4 rounded-xl border border-[#e8ecf2] py-10 text-center text-sm text-[#6b7280]">
+            Loading questions...
+          </div>
+        ) : items.length > 0 ? (
           <div className="mt-4 overflow-hidden rounded-xl border border-[#e8ecf2]">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[700px] border-collapse text-left">
@@ -88,19 +146,29 @@ export function QuestionBank({ questions, totalTime, onQuestionsChange, onPrevie
                   </tr>
                 </thead>
                 <tbody>
-                  {questions.map((q, i) => (
-                    <tr key={q.id} className="border-t border-[#eef1f6] text-sm text-[#374151]">
-                      <td className="px-4 py-3.5 font-medium">{String(i + 1).padStart(2, "0")}</td>
+                  {items.map((q, i) => (
+                    <tr
+                      key={q.id}
+                      className="border-t border-[#eef1f6] text-sm text-[#374151]"
+                    >
+                      <td className="px-4 py-3.5 font-medium">
+                        {String(i + 1).padStart(2, "0")}
+                      </td>
                       <td className="max-w-xs truncate px-4 py-3.5">{q.question}</td>
-                      <td className="px-4 py-3.5">{q.type}</td>
-                      <td className="px-4 py-3.5 font-mono text-xs">{q.timePerQuestion}</td>
+                      <td className="px-4 py-3.5">{typeLabels[q.type] ?? q.type}</td>
+                      <td className="px-4 py-3.5 font-mono text-xs">
+                        {q.time_limit ? `${q.time_limit}s` : "—"}
+                      </td>
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-1">
                           <Can permission="quiz:update">
                             <button
                               type="button"
                               aria-label="Edit question"
-                              onClick={() => { setEditQuestion(q); setQuestionFormOpen(true); }}
+                              onClick={() => {
+                                setEditQuestion(q);
+                                setQuestionFormOpen(true);
+                              }}
                               className="rounded-lg p-1.5 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#f0a500]"
                             >
                               <Pencil className="size-4" />
@@ -135,8 +203,12 @@ export function QuestionBank({ questions, totalTime, onQuestionsChange, onPrevie
             <Can permission="quiz:update">
               <button
                 type="button"
-                onClick={() => { setEditQuestion(null); setQuestionFormOpen(true); }}
-                className="flex size-10 items-center justify-center rounded-full bg-[#ede9fe] text-[#7c3aed] transition hover:bg-[#ddd6fe]"
+                onClick={() => {
+                  setEditQuestion(null);
+                  setQuestionFormOpen(true);
+                }}
+                disabled={mutating}
+                className="flex size-10 items-center justify-center rounded-full bg-[#ede9fe] text-[#7c3aed] transition hover:bg-[#ddd6fe] disabled:opacity-50"
               >
                 <Plus className="size-5" />
               </button>
@@ -148,7 +220,10 @@ export function QuestionBank({ questions, totalTime, onQuestionsChange, onPrevie
 
       <QuestionFormDialog
         open={questionFormOpen}
-        onClose={() => { setQuestionFormOpen(false); setEditQuestion(null); }}
+        onClose={() => {
+          setQuestionFormOpen(false);
+          setEditQuestion(null);
+        }}
         question={editQuestion}
         onSave={handleSaveQuestion}
       />
@@ -160,13 +235,24 @@ export function QuestionBank({ questions, totalTime, onQuestionsChange, onPrevie
       />
 
       <Dialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Delete Question">
-        <p className="text-[15px] text-[#4b5563]">Are you sure you want to delete this question?</p>
+        <p className="text-[15px] text-[#4b5563]">
+          Are you sure you want to delete this question?
+        </p>
         <div className="mt-6 flex justify-end gap-3">
-          <button type="button" onClick={() => setDeleteTarget(null)} className="inline-flex h-10 items-center justify-center rounded-xl border border-[#e5e7eb] bg-white px-5 text-sm font-medium text-[#374151] transition hover:bg-[#f9fafb]">
+          <button
+            type="button"
+            onClick={() => setDeleteTarget(null)}
+            className="inline-flex h-10 items-center justify-center rounded-xl border border-[#e5e7eb] bg-white px-5 text-sm font-medium text-[#374151] transition hover:bg-[#f9fafb]"
+          >
             Cancel
           </button>
-          <button type="button" onClick={handleDeleteQuestion} className="inline-flex h-10 items-center justify-center rounded-xl bg-[#ef4444] px-5 text-sm font-semibold text-white transition hover:bg-[#dc2626]">
-            Delete
+          <button
+            type="button"
+            onClick={handleDeleteQuestion}
+            disabled={mutating}
+            className="inline-flex h-10 items-center justify-center rounded-xl bg-[#ef4444] px-5 text-sm font-semibold text-white transition hover:bg-[#dc2626] disabled:opacity-50"
+          >
+            {mutating ? "Deleting..." : "Delete"}
           </button>
         </div>
       </Dialog>

@@ -10,10 +10,13 @@ import { Dialog } from "@/components/ui/dialog";
 import { MultiSelectFilter } from "@/components/quizzes/multi-select-filter";
 import { Pagination } from "@/components/shared/pagination";
 import { QuizTable } from "@/components/quizzes/quiz-table";
+import { QuizPreviewDialog } from "@/components/quizzes/quiz-preview-dialog";
 import { useQuizAdminList } from "@/hooks/quizzes/use-quiz-admin-list";
+import { quizInfoService } from "@/services/quiz-info.service";
+import { ApiError } from "@/lib/api-error";
 import type { QuizInfoListItem } from "@/types/quiz-info.types";
 
-const levelOptions = ["beginner", "intermediate", "advanced"];
+const levelOptions = ["beginner", "intermediate", "advance"];
 const skillOptions = ["student", "professional"];
 const statusOptions = ["Active", "Inactive"];
 
@@ -28,6 +31,7 @@ export function QuizListView() {
     loading,
     error,
     goToPage,
+    refresh,
   } = useQuizAdminList({ perPage: 15 });
 
   const [categories, setCategories] = useState<string[]>([]);
@@ -35,6 +39,8 @@ export function QuizListView() {
   const [skills, setSkills] = useState<string[]>([]);
   const [statuses, setStatuses] = useState<string[]>([]);
   const [deleteTarget, setDeleteTarget] = useState<QuizInfoListItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [previewTarget, setPreviewTarget] = useState<QuizInfoListItem | null>(null);
 
   const categoryOptions = useMemo(() => {
     const titles = new Set<string>();
@@ -72,9 +78,20 @@ export function QuizListView() {
     });
   }, [items, categories, levels, skills, statuses]);
 
-  function handleDelete() {
-    setDeleteTarget(null);
-    toast.message("Quiz delete API is not available yet.");
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await quizInfoService.delete(deleteTarget.id);
+      toast.success("Quiz deleted successfully");
+      setDeleteTarget(null);
+      refresh();
+      goToPage(1);
+    } catch (err) {
+      toast.error(ApiError.fromAxiosError(err).message);
+    } finally {
+      setDeleting(false);
+    }
   }
 
   return (
@@ -143,6 +160,7 @@ export function QuizListView() {
         quizzes={filtered}
         loading={loading}
         onDelete={setDeleteTarget}
+        onPreview={setPreviewTarget}
       />
 
       <Pagination
@@ -174,12 +192,19 @@ export function QuizListView() {
           <button
             type="button"
             onClick={handleDelete}
-            className="inline-flex h-10 items-center justify-center rounded-xl bg-[#ef4444] px-5 text-sm font-semibold text-white transition hover:bg-[#dc2626]"
+            disabled={deleting}
+            className="inline-flex h-10 items-center justify-center rounded-xl bg-[#ef4444] px-5 text-sm font-semibold text-white transition hover:bg-[#dc2626] disabled:pointer-events-none disabled:opacity-60"
           >
-            Delete
+            {deleting ? "Deleting..." : "Delete"}
           </button>
         </div>
       </Dialog>
+
+      <QuizPreviewDialog
+        open={!!previewTarget}
+        quizId={previewTarget?.id ?? null}
+        onClose={() => setPreviewTarget(null)}
+      />
     </div>
   );
 }
