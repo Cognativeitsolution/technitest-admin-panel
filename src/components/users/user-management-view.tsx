@@ -9,7 +9,7 @@ import { DateRangePicker, type DateRange } from "@/components/ui/date-range-pick
 import { UsersTable } from "@/components/users/users-table";
 import { useUsers } from "@/hooks/users/use-users";
 import { useCountries } from "@/hooks/locations/use-countries";
-import { UserDialog } from "@/components/roles/user-dialog";
+import { UserDialog } from "@/components/users/user-dialog";
 import type { AdminUser } from "@/data/roles";
 import { Dialog } from "@/components/ui/dialog";
 import type { ApiUser } from "@/types/user.types";
@@ -42,7 +42,7 @@ export function UserManagementView() {
 
   const selectedCountryId = country === "All Countries" ? undefined : countryData?.find((c) => c.name === country)?.id;
 
-  const { items, pagination, loading, goToPage, refresh, mutateItems } = useUsers({
+  const { items, pagination, loading, goToPage, mutateItems } = useUsers({
     perPage: PAGE_SIZE,
     country_id: selectedCountryId ? String(selectedCountryId) : undefined,
     start_date: dateRange.start ? formatDate(dateRange.start) : undefined,
