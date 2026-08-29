@@ -1,7 +1,6 @@
 import type { NextConfig } from "next";
 
 const API_BASE_URL =
-  process.env.BACKEND_PROXY_TARGET?.trim().replace(/\/$/, "") ||
   process.env.NEXT_PUBLIC_API_BASE_URL?.trim().replace(/\/$/, "") ||
   "https://tech-ni-test.efinder24.com";
 
