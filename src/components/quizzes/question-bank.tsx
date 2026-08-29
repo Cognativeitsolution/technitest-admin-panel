@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Eye, Pencil, Plus, Trash2, Sparkles } from "lucide-react";
 
 import { Dialog } from "@/components/ui/dialog";
+import { Can } from "@/components/shared/can";
 import { QuestionFormDialog } from "@/components/quizzes/question-form-dialog";
 import { AiGenerateDialog } from "@/components/quizzes/ai-generate-dialog";
 import type { QuizQuestion } from "@/data/quizzes";
@@ -60,14 +61,16 @@ export function QuestionBank({ questions, totalTime, onQuestionsChange, onPrevie
               <Eye className="size-4" />
               Preview Questions
             </button>
-            <button
-              type="button"
-              onClick={() => setAiOpen(true)}
-              className="inline-flex h-9 items-center gap-2 rounded-xl bg-[#6366f1] px-4 text-sm font-semibold text-white transition hover:bg-[#4f46e5]"
-            >
-              <Sparkles className="size-4" />
-              Generate via AI
-            </button>
+            <Can permission="quiz:update">
+              <button
+                type="button"
+                onClick={() => setAiOpen(true)}
+                className="inline-flex h-9 items-center gap-2 rounded-xl bg-[#6366f1] px-4 text-sm font-semibold text-white transition hover:bg-[#4f46e5]"
+              >
+                <Sparkles className="size-4" />
+                Generate via AI
+              </button>
+            </Can>
           </div>
         </div>
 
@@ -93,22 +96,26 @@ export function QuestionBank({ questions, totalTime, onQuestionsChange, onPrevie
                       <td className="px-4 py-3.5 font-mono text-xs">{q.timePerQuestion}</td>
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            aria-label="Edit question"
-                            onClick={() => { setEditQuestion(q); setQuestionFormOpen(true); }}
-                            className="rounded-lg p-1.5 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#f0a500]"
-                          >
-                            <Pencil className="size-4" />
-                          </button>
-                          <button
-                            type="button"
-                            aria-label="Delete question"
-                            onClick={() => setDeleteTarget(q)}
-                            className="rounded-lg p-1.5 text-[#9ca3af] transition hover:bg-[#fef2f2] hover:text-[#ef4444]"
-                          >
-                            <Trash2 className="size-4" />
-                          </button>
+                          <Can permission="quiz:update">
+                            <button
+                              type="button"
+                              aria-label="Edit question"
+                              onClick={() => { setEditQuestion(q); setQuestionFormOpen(true); }}
+                              className="rounded-lg p-1.5 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#f0a500]"
+                            >
+                              <Pencil className="size-4" />
+                            </button>
+                          </Can>
+                          <Can permission="quiz:update">
+                            <button
+                              type="button"
+                              aria-label="Delete question"
+                              onClick={() => setDeleteTarget(q)}
+                              className="rounded-lg p-1.5 text-[#9ca3af] transition hover:bg-[#fef2f2] hover:text-[#ef4444]"
+                            >
+                              <Trash2 className="size-4" />
+                            </button>
+                          </Can>
                         </div>
                       </td>
                     </tr>
@@ -125,13 +132,15 @@ export function QuestionBank({ questions, totalTime, onQuestionsChange, onPrevie
 
         {!readonly ? (
           <div className="mt-5 flex flex-col items-center gap-2">
-            <button
-              type="button"
-              onClick={() => { setEditQuestion(null); setQuestionFormOpen(true); }}
-              className="flex size-10 items-center justify-center rounded-full bg-[#ede9fe] text-[#7c3aed] transition hover:bg-[#ddd6fe]"
-            >
-              <Plus className="size-5" />
-            </button>
+            <Can permission="quiz:update">
+              <button
+                type="button"
+                onClick={() => { setEditQuestion(null); setQuestionFormOpen(true); }}
+                className="flex size-10 items-center justify-center rounded-full bg-[#ede9fe] text-[#7c3aed] transition hover:bg-[#ddd6fe]"
+              >
+                <Plus className="size-5" />
+              </button>
+            </Can>
             <span className="text-sm font-medium text-[#6b7280]">Add more Questions</span>
           </div>
         ) : null}

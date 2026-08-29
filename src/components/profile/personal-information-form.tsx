@@ -1,65 +1,179 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Camera, Loader2, UserRound } from "lucide-react";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import type { Value } from "react-phone-number-input";
 
+import { SearchableSelect } from "@/components/common/searchable-select";
+import { TextField } from "@/components/ui/text-field";
+import { CustomPhoneNumber } from "@/components/ui/phone-field";
 import { useProfile } from "@/hooks/profile/use-profile";
+import { useCountryStateCity } from "@/hooks/locations/use-country-state-city";
+import { cn } from "@/lib/utils";
+import {
+  profileSchema,
+  type ProfileFormInput,
+  type ProfileFormOutput,
+} from "@/schemas/profile.schema";
+import type { ProfileDetail, ProfileInfo, UpdateProfilePayload } from "@/types/profile.types";
 
-function ProfileField({
-  label,
-  required,
+const inputClassName = "text-[#4b5563] placeholder:text-[#b0b0b0]";
+const readOnlyClassName = "cursor-default bg-white text-[#4b5563]";
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="col-span-full text-[16px] font-bold text-[#111111]">
+      {children}
+    </h2>
+  );
+}
+
+function FieldLabel({
   children,
+  required,
 }: {
-  label: string;
-  required?: boolean;
   children: React.ReactNode;
+  required?: boolean;
 }) {
   return (
-    <label className="block space-y-1.5">
-      <span className="text-sm font-medium text-[#374151]">
-        {label}
-        {required ? <span className="ml-0.5 text-[#ef4444]">*</span> : null}
-      </span>
+    <label className="mb-[10px] block text-[14px] font-medium text-[#111111]">
       {children}
+      {required ? <span className="ml-0.5 text-[#ff0000]">*</span> : null}
     </label>
   );
 }
 
-const fieldInputClassName =
-  "h-11 w-full rounded-xl border border-[#e5e7eb] bg-white px-3.5 text-sm font-medium text-[#111827] outline-none transition placeholder:text-[#9ca3af] focus:border-[#3b82f6] focus:ring-0";
+function toFormString(value: string | number | null | undefined): string {
+  if (value == null) return "";
+  return String(value);
+}
 
-const readOnlyInputClassName =
-  "h-11 w-full cursor-default rounded-xl border border-[#e5e7eb] bg-[#f8fafc] px-3.5 text-sm font-medium text-[#111827]";
+function resolveLocationId(
+  detailId: number | null | undefined,
+  refId: number | null | undefined,
+): string {
+  const id = detailId ?? refId;
+  return id ? String(id) : "";
+}
+
+function buildProfileFormValues(
+  info: ProfileInfo | null,
+  detail: ProfileDetail | null,
+): ProfileFormInput {
+  return {
+    fullName: info?.username ?? detail?.username ?? "",
+    email: info?.email ?? detail?.email ?? "",
+    phone: detail?.phone ?? "",
+    country: resolveLocationId(detail?.country_id, info?.country?.id),
+    state: resolveLocationId(detail?.state_id, info?.state?.id),
+    city: resolveLocationId(detail?.city_id, info?.city?.id),
+    postalCode: toFormString(detail?.postal_code),
+    address: detail?.summary ?? "",
+  };
+}
+
+function toPostalCodePayload(value: string): string | number | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const numeric = Number(trimmed);
+  return Number.isFinite(numeric) ? numeric : trimmed;
+}
 
 export function PersonalInformationForm() {
   const { info, detail, loading, mutating, error, updateProfile } = useProfile();
 
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [countryName, setCountryName] = useState("");
-  const [cityName, setCityName] = useState("");
-  const [postalCode, setPostalCode] = useState("");
   const [image, setImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState("");
-  const [prevDataKey, setPrevDataKey] = useState("");
+  const [facebook, setFacebook] = useState("");
+  const [linkedin, setLinkedin] = useState("");
+  const [xProfile, setXProfile] = useState("");
+  const [instagram, setInstagram] = useState("");
 
-  const dataKey = `${info?.id ?? ""}:${detail?.id ?? ""}`;
-  if (dataKey !== prevDataKey) {
-    setPrevDataKey(dataKey);
-    if (info) {
-      setFullName(info.username ?? "");
-      setEmail(info.email ?? "");
-      setCountryName(info.country?.name ?? "");
-      setPreviewUrl(info.image_url ?? "");
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    setValue,
+    watch,
+    formState: { errors, isDirty },
+  } = useForm<ProfileFormInput, unknown, ProfileFormOutput>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: buildProfileFormValues(info, detail),
+  });
+
+  const {
+    countryId,
+    stateId,
+    setCountryId,
+    setStateId,
+    setCityId,
+    countryOptions,
+    stateOptions,
+    cityOptions,
+    isCountriesLoading,
+    isStatesLoading,
+    isCitiesLoading,
+  } = useCountryStateCity({
+    initialCountryId: detail?.country_id ?? info?.country?.id ?? null,
+    initialStateId: detail?.state_id ?? info?.state?.id ?? null,
+    initialCityId: detail?.city_id ?? info?.city?.id ?? null,
+    onStateResolved: (resolvedStateId) => {
+      setValue("state", String(resolvedStateId), { shouldValidate: true });
+    },
+  });
+
+  useEffect(() => {
+    if (!image && info?.image_url) {
+      setPreviewUrl(info.image_url);
     }
-    if (detail) {
-      setPhone(detail.phone ?? "");
-      setCityName(detail.city ?? "");
-      setPostalCode(detail.postal_code ?? "");
+  }, [info?.image_url, image]);
+
+  useEffect(() => {
+    if (!info && !detail) return;
+    reset(buildProfileFormValues(info, detail));
+  }, [info, detail, reset]);
+
+  const selectedCountry = watch("country");
+  const selectedState = watch("state");
+  const selectedCity = watch("city");
+  const fullName = watch("fullName");
+  const hasChanges = isDirty || image !== null;
+
+  useEffect(() => {
+    if (isDirty || (!info && !detail)) return;
+    const nextState = resolveLocationId(detail?.state_id, info?.state?.id);
+    const nextCity = resolveLocationId(detail?.city_id, info?.city?.id);
+    if (nextState && selectedState !== nextState) {
+      setValue("state", nextState);
+      setStateId(Number(nextState));
     }
-  }
+    if (nextCity && selectedCity !== nextCity) {
+      setValue("city", nextCity);
+      setCityId(Number(nextCity));
+    }
+  }, [
+    detail,
+    info,
+    isDirty,
+    selectedState,
+    selectedCity,
+    setValue,
+    setStateId,
+    setCityId,
+  ]);
+
+  const countryFallbackLabel = info?.country?.name ?? detail?.country?.name ?? "";
+  const stateFallbackLabel =
+    info?.state?.name ??
+    detail?.state?.name ??
+    stateOptions.find((option) => option.value === selectedState)?.label ??
+    stateOptions.find((option) => option.value === String(stateId))?.label ??
+    "";
+  const cityFallbackLabel = info?.city?.name ?? detail?.city?.name ?? "";
 
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] ?? null;
@@ -70,24 +184,55 @@ export function PersonalInformationForm() {
     setPreviewUrl(file ? URL.createObjectURL(file) : (info?.image_url ?? ""));
   }
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const payload = {
-      phone: phone.trim() || undefined,
-      postal_code: postalCode.trim() || undefined,
-      country_id: info?.country?.id ?? detail?.country_id ?? undefined,
-      city_id: detail?.city_id ?? undefined,
+  const handleCountryChange = (value: string) => {
+    setValue("country", value, { shouldValidate: true, shouldDirty: true });
+    const numericId = Number(value);
+    setCountryId(Number.isFinite(numericId) ? numericId : null);
+    setValue("state", "", { shouldValidate: true, shouldDirty: true });
+    setValue("city", "", { shouldValidate: true, shouldDirty: true });
+  };
+
+  const handleStateChange = (value: string) => {
+    setValue("state", value, { shouldValidate: true, shouldDirty: true });
+    const numericId = Number(value);
+    setStateId(Number.isFinite(numericId) ? numericId : null);
+    setValue("city", "", { shouldValidate: true, shouldDirty: true });
+    setCityId(null);
+  };
+
+  const handleCityChange = (value: string) => {
+    setValue("city", value, { shouldValidate: true, shouldDirty: true });
+    const numericId = Number(value);
+    setCityId(Number.isFinite(numericId) ? numericId : null);
+  };
+
+  async function onSubmit(data: ProfileFormOutput) {
+    const payload: UpdateProfilePayload = {
+      data: {
+        phone: data.phone.trim(),
+        country_id: data.country ? Number(data.country) : null,
+        state_id: data.state ? Number(data.state) : null,
+        city_id: data.city ? Number(data.city) : null,
+        postal_code: toPostalCodePayload(data.postalCode),
+        summary: data.address?.trim() || "",
+        gender: detail?.gender ?? null,
+        dob: detail?.dob ?? "",
+        ID_number: detail?.ID_number ?? "",
+        skill_level: detail?.skill_level ?? null,
+        educationlevel: detail?.educationlevel ?? null,
+        designation: detail?.designation ?? info?.designation ?? "",
+      },
     };
+
     const success = await updateProfile(payload, image ?? null);
     if (success) {
       setImage(null);
-      setPreviewUrl(info?.image_url ?? "");
     }
   }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center rounded-2xl border border-[#e8ecf2] bg-white py-20">
+      <div className="flex items-center justify-center py-20">
         <Loader2 className="size-6 animate-spin text-[#2563eb]" />
         <span className="ml-2 text-sm text-[#6b7280]">Loading profile...</span>
       </div>
@@ -95,25 +240,25 @@ export function PersonalInformationForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-10">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
-        <div className="relative size-27.5 shrink-0">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-10 pb-8">
+      <div className="flex w-full flex-col items-start gap-4 sm:flex-row sm:items-start sm:gap-5">
+        <div className="relative size-[110px] shrink-0">
           {previewUrl ? (
             <Image
               src={previewUrl}
               alt={fullName || "Profile"}
               width={110}
               height={110}
-              className="size-27.5 rounded-full object-cover"
+              className="size-[110px] rounded-full object-cover"
             />
           ) : (
-            <div className="flex size-27.5 items-center justify-center rounded-full bg-[#eef5ff] text-[#2563eb]">
+            <div className="flex size-[110px] items-center justify-center rounded-full bg-[#eef5ff] text-[#2563eb]">
               <UserRound className="size-10" />
             </div>
           )}
           <label
             aria-label="Change profile photo"
-            className="absolute right-0.5 bottom-0.5 flex size-8 cursor-pointer items-center justify-center rounded-full border-[3px] border-white bg-[#1a1a1a] text-white shadow-sm transition hover:bg-[#111827]"
+            className="absolute right-1 bottom-1 flex size-8 cursor-pointer items-center justify-center rounded-full bg-[#1a1a1a] text-white shadow-sm transition hover:bg-[#111827]"
           >
             <Camera className="size-3.5" />
             <input
@@ -124,76 +269,185 @@ export function PersonalInformationForm() {
             />
           </label>
         </div>
-        <div>
-          <h2 className="text-[22px] font-bold text-[#1e40af]">
+        <div className="text-left">
+          <h2 className="text-left text-[22px] font-bold text-[#1e3a8a]">
             {fullName || "Admin"}
           </h2>
           <p className="mt-1.5 text-[13px] text-[#9ca3af]">
             Supported Formats: PNG, JPG, JPEG. Max File Size: 2 MB.
           </p>
-          {image ? (
-            <p className="mt-1.5 text-[13px] font-medium text-[#16a34a]">
-              New image selected — will upload on save.
-            </p>
-          ) : null}
         </div>
       </div>
 
-      {error && (
+      {error ? (
         <div className="rounded-xl border border-[#fecaca] bg-[#fef2f2] px-4 py-3 text-sm text-[#ef4444]">
           {error}
         </div>
-      )}
+      ) : null}
 
-      <div className="grid gap-x-8 gap-y-6 md:grid-cols-2">
-        <ProfileField label="Full Name">
-          <input
-            value={fullName}
-            readOnly
-            className={readOnlyInputClassName}
+      <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-2">
+        <TextField
+          label="Full Name"
+          required
+          readOnly
+          inputClassName={readOnlyClassName}
+          {...register("fullName")}
+        />
+        <TextField
+          label="Email Address"
+          required
+          type="email"
+          readOnly
+          inputClassName={readOnlyClassName}
+          {...register("email")}
+        />
+
+        <div>
+          <FieldLabel required>Phone No</FieldLabel>
+          <Controller
+            name="phone"
+            control={control}
+            render={({ field }) => (
+              <CustomPhoneNumber
+                value={field.value as Value | undefined}
+                onChange={(value) => field.onChange(value ?? "")}
+                defaultCountry="PK"
+                placeholder="Enter phone number"
+                error={Boolean(errors.phone)}
+              />
+            )}
           />
-        </ProfileField>
-        <ProfileField label="Email Address">
-          <input value={email} readOnly className={readOnlyInputClassName} />
-        </ProfileField>
-        <ProfileField label="Phone No">
-          <input
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="Phone Number"
-            className={fieldInputClassName}
+          {errors.phone ? (
+            <p className="mt-1 text-xs text-[#ef4444]">{errors.phone.message}</p>
+          ) : null}
+        </div>
+        <div className="hidden md:block" aria-hidden />
+
+        <SectionTitle>Personal Address</SectionTitle>
+
+        <div>
+          <FieldLabel required>Country Or Region</FieldLabel>
+          <SearchableSelect
+            value={selectedCountry ?? ""}
+            options={countryOptions}
+            fallbackLabel={countryFallbackLabel}
+            placeholder="Select country"
+            loading={isCountriesLoading}
+            loadingText="Loading countries..."
+            emptyText="No countries found"
+            onChange={handleCountryChange}
           />
-        </ProfileField>
-        <ProfileField label="Country Or Region">
-          <input
-            value={countryName}
-            readOnly
-            placeholder="Country Or Region"
-            className={readOnlyInputClassName}
+          {errors.country ? (
+            <p className="mt-1 text-xs text-[#ef4444]">{errors.country.message}</p>
+          ) : null}
+        </div>
+
+        <div>
+          <FieldLabel>State / Province</FieldLabel>
+          <SearchableSelect
+            value={selectedState ?? ""}
+            options={stateOptions}
+            fallbackLabel={stateFallbackLabel}
+            placeholder={countryId ? "Select state" : "Select country first"}
+            disabled={!countryId}
+            loading={isStatesLoading}
+            loadingText="Loading states..."
+            emptyText={countryId ? "No states found" : "Select country first"}
+            onChange={handleStateChange}
           />
-        </ProfileField>
-        <ProfileField label="City">
-          <input
-            value={cityName}
-            readOnly
-            placeholder="City"
-            className={readOnlyInputClassName}
+          {errors.state ? (
+            <p className="mt-1 text-xs text-[#ef4444]">{errors.state.message}</p>
+          ) : null}
+        </div>
+
+        <div>
+          <FieldLabel required>City</FieldLabel>
+          <SearchableSelect
+            value={selectedCity ?? ""}
+            options={cityOptions}
+            fallbackLabel={cityFallbackLabel}
+            placeholder={
+              selectedState || selectedCity
+                ? isCitiesLoading
+                  ? "Loading cities..."
+                  : "Select city"
+                : "Select state first"
+            }
+            disabled={(!selectedState && !selectedCity) || isCitiesLoading}
+            loading={isCitiesLoading}
+            loadingText="Loading cities..."
+            emptyText={
+              selectedState || selectedCity ? "No cities found" : "Select state first"
+            }
+            onChange={handleCityChange}
           />
-        </ProfileField>
-        <ProfileField label="Postal Code">
-          <input
-            value={postalCode}
-            onChange={(e) => setPostalCode(e.target.value)}
+          {errors.city ? (
+            <p className="mt-1 text-xs text-[#ef4444]">{errors.city.message}</p>
+          ) : null}
+        </div>
+
+        <div className="hidden md:block" aria-hidden />
+
+        <TextField
+          label="Address"
+          placeholder="Address"
+          inputClassName={inputClassName}
+          {...register("address")}
+        />
+
+        <div>
+          <TextField
+            label="Postal Code"
+            required
             placeholder="Postal Code"
-            className={fieldInputClassName}
+            inputClassName={inputClassName}
+            {...register("postalCode")}
           />
-        </ProfileField>
+          {errors.postalCode ? (
+            <p className="mt-1 text-xs text-[#ef4444]">
+              {errors.postalCode.message}
+            </p>
+          ) : null}
+        </div>
+
+        <SectionTitle>Social Information</SectionTitle>
+
+        <TextField
+          label="Facebook"
+          value={facebook}
+          onChange={(e) => setFacebook(e.target.value)}
+          placeholder="Facebook"
+          inputClassName={inputClassName}
+        />
+        <TextField
+          label="X"
+          value={xProfile}
+          onChange={(e) => setXProfile(e.target.value)}
+          placeholder="X"
+          inputClassName={inputClassName}
+        />
+        <TextField
+          label="Linkedin"
+          value={linkedin}
+          onChange={(e) => setLinkedin(e.target.value)}
+          placeholder="Linkedin"
+          inputClassName={inputClassName}
+        />
+        <TextField
+          label="Instagram"
+          value={instagram}
+          onChange={(e) => setInstagram(e.target.value)}
+          placeholder="Instagram"
+          inputClassName={inputClassName}
+        />
       </div>
 
       <button
         type="submit"
-        disabled={mutating}
-        className="inline-flex h-12 min-w-42 items-center justify-center gap-2 rounded-full bg-[#e89b1e] px-8 text-[15px] font-semibold text-white transition hover:bg-[#d18b15] disabled:cursor-not-allowed disabled:opacity-60"
+        disabled={mutating || !hasChanges}
+        className={cn(
+          "inline-flex h-12 min-w-[168px] items-center justify-center gap-2 rounded-full bg-[#e89b1e] px-8 text-[15px] font-semibold text-white transition hover:bg-[#d18b15] disabled:cursor-not-allowed disabled:opacity-60",
+        )}
       >
         {mutating ? <Loader2 className="size-4 animate-spin" /> : null}
         {mutating ? "Saving..." : "Save Changes"}

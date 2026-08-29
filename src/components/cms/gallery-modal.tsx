@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Search, Upload, X } from "lucide-react";
 
 import { Pagination } from "@/components/shared/pagination";
+import { Can } from "@/components/shared/can";
 import { useMedia } from "@/hooks/cms/use-media";
 import { mediaNameFromFile } from "@/lib/media";
 import { cn } from "@/lib/utils";
@@ -140,15 +141,17 @@ export function GalleryModal({
                 className="h-10 w-full rounded-lg border border-[#e5e7eb] bg-white pr-3 pl-9 text-sm outline-none"
               />
             </div>
-            <button
-              type="button"
-              disabled={mutating}
-              onClick={() => fileInputRef.current?.click()}
-              className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#f0a500] px-3 text-sm font-semibold text-white disabled:pointer-events-none disabled:opacity-60"
-            >
-              <Upload className="size-4" />
-              {mutating ? "Uploading..." : "Upload File"}
-            </button>
+            <Can permission="media:create">
+              <button
+                type="button"
+                disabled={mutating}
+                onClick={() => fileInputRef.current?.click()}
+                className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#f0a500] px-3 text-sm font-semibold text-white disabled:pointer-events-none disabled:opacity-60"
+              >
+                <Upload className="size-4" />
+                {mutating ? "Uploading..." : "Upload File"}
+              </button>
+            </Can>
             <input
               ref={fileInputRef}
               type="file"
@@ -327,19 +330,22 @@ function PreviewPanel({
             className={inputClassName}
           />
         </div>
-        <button
-          type="button"
-          disabled={!selected || mutating}
-          onClick={onSaveDetails}
-          className="text-sm font-semibold text-[#2563eb] hover:underline disabled:pointer-events-none disabled:opacity-50"
-        >
-          Save details
-        </button>
+        <Can permission="media:update">
+          <button
+            type="button"
+            disabled={!selected || mutating}
+            onClick={onSaveDetails}
+            className="text-sm font-semibold text-[#2563eb] hover:underline disabled:pointer-events-none disabled:opacity-50"
+          >
+            Save details
+          </button>
+        </Can>
       </div>
       <div className="flex flex-col gap-2">
         {deleteConfirm ? (
           <>
             <p className="text-sm text-[#4b5563]">Delete this file?</p>
+            <Can permission="media:delete">
             <button
               type="button"
               disabled={mutating}
@@ -348,6 +354,7 @@ function PreviewPanel({
             >
               {mutating ? "Deleting..." : "Delete"}
             </button>
+          </Can>
             <button
               type="button"
               onClick={onCancelDelete}
@@ -366,22 +373,26 @@ function PreviewPanel({
             >
               Keep Image
             </button>
-            <button
-              type="button"
-              disabled={mutating}
-              onClick={onReplace}
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-[#2563eb] text-sm font-semibold text-[#2563eb] disabled:pointer-events-none disabled:opacity-60"
-            >
-              Replace Image
-            </button>
-            <button
-              type="button"
-              disabled={!selected || mutating}
-              onClick={onAskDelete}
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-[#ef4444] text-sm font-semibold text-[#ef4444] disabled:pointer-events-none disabled:opacity-50"
-            >
-              Delete
-            </button>
+            <Can permission="media:create">
+              <button
+                type="button"
+                disabled={mutating}
+                onClick={onReplace}
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-[#2563eb] text-sm font-semibold text-[#2563eb] disabled:pointer-events-none disabled:opacity-60"
+              >
+                Replace Image
+              </button>
+            </Can>
+            <Can permission="media:delete">
+              <button
+                type="button"
+                disabled={!selected || mutating}
+                onClick={onAskDelete}
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-[#ef4444] text-sm font-semibold text-[#ef4444] disabled:pointer-events-none disabled:opacity-50"
+              >
+                Delete
+              </button>
+            </Can>
           </>
         )}
       </div>

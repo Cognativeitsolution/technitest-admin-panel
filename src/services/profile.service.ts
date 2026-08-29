@@ -13,7 +13,7 @@ function buildProfileFormData(
   image?: File | null,
 ) {
   const formData = new FormData();
-  formData.append("data", JSON.stringify(payload));
+  formData.append("data", JSON.stringify(payload.data));
   if (image) {
     formData.append("image", image);
   }

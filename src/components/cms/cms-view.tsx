@@ -9,8 +9,10 @@ import { PagesTable } from "@/components/cms/pages-table";
 import { AdvertisementsTable } from "@/components/cms/advertisements-table";
 import { BlogsTable } from "@/components/cms/blogs-table";
 import { AdvertisementDialog } from "@/components/cms/advertisement-dialog";
+import { Can } from "@/components/shared/can";
 import { Pagination } from "@/components/shared/pagination";
 import { DropdownMenu } from "@/components/shared/dropdown-menu";
+import { usePermissions } from "@/hooks/use-permissions";
 import type { CmsTab } from "@/data/cms";
 import { useBanners } from "@/hooks/cms/use-banners";
 import { useBlogs } from "@/hooks/cms/use-blogs";
@@ -40,6 +42,7 @@ function pageEditorPath(page: PageListItem) {
 
 export function CmsView({ initialTab = "pages" }: { initialTab?: string }) {
   const router = useRouter();
+  const { hasModule } = usePermissions();
   const [activeTab, setActiveTab] = useState<CmsTab>(
     initialTab === "advertisements"
       ? "advertisements"
@@ -48,6 +51,19 @@ export function CmsView({ initialTab = "pages" }: { initialTab?: string }) {
         : "pages"
   );
 
+  const tabs: { id: CmsTab; label: string; module: string }[] = [
+    { id: "pages" as const, label: "Pages", module: "page" },
+    { id: "advertisements" as const, label: "Advertisements", module: "banner" },
+    { id: "blogs" as const, label: "Blogs", module: "blog" },
+  ];
+
+  const visibleTabs = tabs.filter((tab) => hasModule(tab.module));
+  const currentTab: CmsTab | undefined = visibleTabs.some(
+    (tab) => tab.id === activeTab,
+  )
+    ? activeTab
+    : (visibleTabs[0]?.id ?? undefined);
+
   const [publishStatus, setPublishStatus] = useState(PUBLISH_PLACEHOLDER);
   const [status, setStatus] = useState(STATUS_PLACEHOLDER);
   const pagesQuery = usePages({
@@ -55,7 +71,7 @@ export function CmsView({ initialTab = "pages" }: { initialTab?: string }) {
     publishStatus:
       publishStatus === PUBLISH_PLACEHOLDER ? undefined : publishStatus,
     status: status === STATUS_PLACEHOLDER ? undefined : status,
-    enabled: activeTab === "pages",
+    enabled: currentTab === "pages",
   });
 
   const [bannerStatus, setBannerStatus] = useState(STATUS_PLACEHOLDER);
@@ -68,7 +84,7 @@ export function CmsView({ initialTab = "pages" }: { initialTab?: string }) {
     perPage: PAGE_SIZE,
     status: bannerStatus === STATUS_PLACEHOLDER ? undefined : bannerStatus,
     pageId: selectedBannerPage?.id,
-    enabled: activeTab === "advertisements",
+    enabled: currentTab === "advertisements",
   });
 
   const [blogPublishStatus, setBlogPublishStatus] = useState(PUBLISH_PLACEHOLDER);
@@ -78,7 +94,7 @@ export function CmsView({ initialTab = "pages" }: { initialTab?: string }) {
     publishStatus:
       blogPublishStatus === PUBLISH_PLACEHOLDER ? undefined : blogPublishStatus,
     status: blogStatus === STATUS_PLACEHOLDER ? undefined : blogStatus,
-    enabled: activeTab === "blogs",
+    enabled: currentTab === "blogs",
   });
 
   const [adDialogOpen, setAdDialogOpen] = useState(false);
@@ -136,29 +152,27 @@ export function CmsView({ initialTab = "pages" }: { initialTab?: string }) {
     return deleteTarget.item.title;
   }
 
-  const tabs = [
-    { id: "pages" as const, label: "Pages" },
-    { id: "advertisements" as const, label: "Advertisements" },
-    { id: "blogs" as const, label: "Blogs" },
-  ];
-
   const addButtonLabel =
-    activeTab === "pages"
+    currentTab === "pages"
       ? "Add New Page"
-      : activeTab === "advertisements"
+      : currentTab === "advertisements"
         ? "Add New Banner"
-        : "Add Blog";
+        : currentTab === "blogs"
+          ? "Add Blog"
+          : "";
 
   function handleAdd() {
-    if (activeTab === "pages") {
+    if (currentTab === "pages") {
       router.push("/cms/pages/new");
       return;
     }
-    if (activeTab === "advertisements") {
+    if (currentTab === "advertisements") {
       openCreateBanner();
       return;
     }
-    router.push("/blogs/new");
+    if (currentTab === "blogs") {
+      router.push("/blogs/new");
+    }
   }
 
   const deleting =
@@ -176,34 +190,52 @@ export function CmsView({ initialTab = "pages" }: { initialTab?: string }) {
         <h1 className="text-[28px] font-bold tracking-tight text-[#111827]">
           Content Management CMS
         </h1>
-        <button
-          type="button"
-          onClick={handleAdd}
-          className="inline-flex h-11 w-fit items-center gap-2 rounded-xl bg-[#f0a500] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d99400]"
+        <Can
+          permission={
+            currentTab === "pages"
+              ? "page:create"
+              : currentTab === "advertisements"
+                ? "banner:create"
+                : "blog:create"
+          }
         >
-          <Plus className="size-4" />
-          {addButtonLabel}
-        </button>
-      </div>
-
-      <div className="flex w-fit items-center gap-1 rounded-xl bg-[#f3f4f6] p-1">
-        {tabs.map((tab) => (
           <button
-            key={tab.id}
             type="button"
-            onClick={() => setActiveTab(tab.id)}
-            className={`inline-flex h-10 items-center justify-center rounded-lg px-6 text-sm font-semibold transition ${
-              activeTab === tab.id
-                ? "bg-[#111827] text-white shadow-sm"
-                : "text-[#6b7280] hover:text-[#374151]"
-            }`}
+            onClick={handleAdd}
+            className="inline-flex h-11 w-fit items-center gap-2 rounded-xl bg-[#f0a500] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d99400]"
           >
-            {tab.label}
+            <Plus className="size-4" />
+            {addButtonLabel}
           </button>
-        ))}
+        </Can>
       </div>
 
-      {activeTab === "pages" ? (
+      {visibleTabs.length > 1 ? (
+        <div className="flex w-fit items-center gap-1 rounded-xl bg-[#f3f4f6] p-1">
+          {visibleTabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`inline-flex h-10 items-center justify-center rounded-lg px-6 text-sm font-semibold transition ${
+                currentTab === tab.id
+                  ? "bg-[#111827] text-white shadow-sm"
+                  : "text-[#6b7280] hover:text-[#374151]"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      {currentTab ? null : (
+        <p className="rounded-2xl border border-[#e8ecf2] bg-white p-6 text-sm text-[#6b7280]">
+          You do not have access to any content section.
+        </p>
+      )}
+
+      {currentTab === "pages" ? (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-3">
             <DropdownMenu
@@ -243,7 +275,7 @@ export function CmsView({ initialTab = "pages" }: { initialTab?: string }) {
         </div>
       ) : null}
 
-      {activeTab === "advertisements" ? (
+      {currentTab === "advertisements" ? (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-3">
             <DropdownMenu
@@ -287,7 +319,7 @@ export function CmsView({ initialTab = "pages" }: { initialTab?: string }) {
         </div>
       ) : null}
 
-      {activeTab === "blogs" ? (
+      {currentTab === "blogs" ? (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-3">
             <DropdownMenu

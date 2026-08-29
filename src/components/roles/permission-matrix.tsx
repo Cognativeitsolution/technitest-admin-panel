@@ -95,8 +95,8 @@ export function PermissionMatrix({
         ) : null}
       </div>
 
-      <div className="overflow-auto rounded-xl border border-[#e5e7eb] max-h-[420px]">
-        <table className="w-full min-w-[720px] border-collapse text-left">
+      <div className="overflow-auto rounded-xl border border-[#e5e7eb] max-h-105">
+        <table className="w-full min-w-180 border-collapse text-left">
           <thead className="sticky top-0 z-10">
             <tr className="bg-[#eef5ff] text-[13px] font-semibold text-[#374151]">
               {onToggleAll ? (

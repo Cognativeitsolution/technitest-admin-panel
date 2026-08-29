@@ -24,8 +24,8 @@ export function useLogin() {
         password: data.password,
       });
 
-      const { tokens, user } = parseLoginResponse(response);
-      await handleAuthSuccess({ tokens, user });
+      const { tokens, user, roles, permissions } = parseLoginResponse(response);
+      await handleAuthSuccess({ tokens, user, roles, permissions });
 
       toast.success("Welcome back!");
       return true;
