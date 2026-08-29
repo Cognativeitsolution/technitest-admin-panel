@@ -9,6 +9,7 @@ import { DateRangePicker, type DateRange } from "@/components/ui/date-range-pick
 import { UsersTable } from "@/components/users/users-table";
 import { useUsers } from "@/hooks/users/use-users";
 import { useCountries } from "@/hooks/locations/use-countries";
+import { mapApiUsersToUserRecords } from "@/lib/map-api-user";
 
 const PAGE_SIZE = 10;
 
@@ -17,12 +18,14 @@ export function UserManagementView() {
   const [country, setCountry] = useState("All Countries");
   const [dateRange, setDateRange] = useState<DateRange>({ start: null, end: null });
 
-  const { items, pagination, loading, goToPage } = useUsers({
+  const { items, pagination, goToPage } = useUsers({
     perPage: PAGE_SIZE,
     country: country === "All Countries" ? undefined : country,
     dateFrom: dateRange.start ? dateRange.start.toISOString() : undefined,
     dateTo: dateRange.end ? dateRange.end.toISOString() : undefined,
   });
+
+  const users = useMemo(() => mapApiUsersToUserRecords(items), [items]);
 
   return (
     <div className="space-y-5">
@@ -56,7 +59,7 @@ export function UserManagementView() {
         />
       </div>
 
-      <UsersTable users={items} loading={loading} />
+      <UsersTable users={users} />
 
       <Pagination
         currentPage={pagination.page || 1}

@@ -2,7 +2,9 @@ import { create } from "zustand";
 
 import { authStorage } from "@/lib/auth-storage";
 import { decodeAccessToken, normalizePermissions, normalizeRoles } from "@/lib/permissions";
+import { resolveUserAvatar } from "@/lib/user-avatar";
 import { authService } from "@/services/auth.service";
+import { profileService } from "@/services/profile.service";
 import type { AuthState, User } from "@/types/auth.types";
 
 type AuthActions = {
@@ -96,8 +98,17 @@ export const useAuthStore = create<AuthStore>((set) => ({
         id: String(rawUser?.id ?? rawUser?._id ?? "admin"),
         fullName: String(rawUser?.fullName ?? rawUser?.full_name ?? rawUser?.username ?? "Admin User"),
         email: String(rawUser?.email ?? ""),
-        avatar: rawUser?.avatar ? String(rawUser.avatar) : undefined,
+        avatar: resolveUserAvatar(rawUser as Record<string, unknown>),
       };
+
+      try {
+        const profileInfo = await profileService.getInfo();
+        if (profileInfo.image_url) {
+          user.avatar = profileInfo.image_url;
+        }
+      } catch {
+        // profile info is optional for session bootstrap
+      }
 
       set({ user, roles, permissions, isAuthenticated: true, isLoading: false });
     } catch {

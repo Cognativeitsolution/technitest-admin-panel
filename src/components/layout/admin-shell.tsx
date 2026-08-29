@@ -7,8 +7,8 @@ import { AccessDenied } from "@/components/auth/access-denied";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { GuestRoute } from "@/components/auth/guest-route";
 import { findNavItemForPath } from "@/config/navigation";
+import { getSidebarWidthPx } from "@/config/layout";
 import { usePermissions } from "@/hooks/use-permissions";
-import { cn } from "@/lib/utils";
 import { useSidebarStore } from "@/store/sidebar-store";
 
 type AdminShellProps = {
@@ -40,16 +40,18 @@ export function AdminShell({ children }: AdminShellProps) {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-[#f5f6fa]">
+      <div
+        className="min-h-screen bg-[#f5f6fa]"
+        style={
+          {
+            "--sidebar-width": `${getSidebarWidthPx(collapsed)}px`,
+          } as React.CSSProperties
+        }
+      >
         <Sidebar />
-        <div
-          className={cn(
-            "flex min-h-screen flex-col transition-[padding] duration-300",
-            collapsed ? "lg:pl-21" : "lg:pl-65"
-          )}
-        >
+        <div className="admin-main-offset flex min-h-screen min-w-0 flex-col transition-[padding-left] duration-300">
           <Header />
-          <main className="flex-1 px-6 py-7 sm:px-10 lg:px-12 xl:px-16">
+          <main className="min-w-0 flex-1 overflow-x-hidden px-6 py-7 pb-16 sm:px-10 lg:px-12 xl:px-16">
             {authorized ? children : <AccessDenied />}
           </main>
         </div>

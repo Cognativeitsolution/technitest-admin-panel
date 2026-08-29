@@ -1,5 +1,7 @@
 import { authStorage } from "@/lib/auth-storage";
+import { resolveUserAvatar } from "@/lib/user-avatar";
 import { authService } from "@/services/auth.service";
+import { profileService } from "@/services/profile.service";
 import { useAuthStore } from "@/store/auth-store";
 import type { AuthTokens, User } from "@/types/auth.types";
 
@@ -25,7 +27,7 @@ function toUser(raw: Record<string, unknown>): User {
     id: String(raw.id ?? raw._id ?? ""),
     fullName: String(raw.fullName ?? raw.full_name ?? raw.username ?? "Admin"),
     email: String(raw.email ?? ""),
-    avatar: raw.avatar ? String(raw.avatar) : undefined,
+    avatar: resolveUserAvatar(raw),
   };
 }
 
@@ -63,6 +65,15 @@ export async function handleAuthSuccess({
 
   const finalUser =
     resolvedUser || { id: "admin", fullName: "Admin User", email: "" };
+
+  try {
+    const profileInfo = await profileService.getInfo();
+    if (profileInfo.image_url) {
+      finalUser.avatar = profileInfo.image_url;
+    }
+  } catch {
+    // optional profile bootstrap
+  }
 
   useAuthStore
     .getState()

@@ -1,5 +1,7 @@
 import type { AuthTokens, User } from "@/types/auth.types";
 
+import { resolveUserAvatar } from "@/lib/user-avatar";
+
 function readDeep(root: unknown, paths: string[]): unknown {
   let value: unknown = root;
   for (const key of paths) {
@@ -35,7 +37,7 @@ function toParsedUser(rawUser: Record<string, unknown>): User | null {
       rawUser.fullName ?? rawUser.full_name ?? rawUser.username ?? "Admin",
     ),
     email: String(rawUser.email ?? ""),
-    avatar: rawUser.avatar ? String(rawUser.avatar) : undefined,
+    avatar: resolveUserAvatar(rawUser),
   };
 }
 
