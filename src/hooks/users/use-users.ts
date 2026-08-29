@@ -8,16 +8,16 @@ import type { PaginationMeta } from "@/types/api.types";
 
 export type UseUsersOptions = {
   perPage?: number;
-  country?: string;
-  dateFrom?: string;
-  dateTo?: string;
+  country_id?: string;
+  start_date?: string;
+  end_date?: string;
 };
 
 export function useUsers({
   perPage = 10,
-  country,
-  dateFrom,
-  dateTo,
+  country_id,
+  start_date,
+  end_date,
 }: UseUsersOptions = {}) {
   const [page, setPage] = useState(1);
   const [nonce, setNonce] = useState(0);
@@ -31,18 +31,18 @@ export function useUsers({
   const [error, setError] = useState<string | null>(null);
   const [settledKey, setSettledKey] = useState<string | null>(null);
 
-  const queryKey = `${page}|${perPage}|${country ?? ""}|${dateFrom ?? ""}|${dateTo ?? ""}|${nonce}`;
+  const queryKey = `${page}|${perPage}|${country_id ?? ""}|${start_date ?? ""}|${end_date ?? ""}|${nonce}`;
 
   useEffect(() => {
     let cancelled = false;
-    
+
     userService
       .getUsers({
         page,
         per_page: perPage,
-        country,
-        date_from: dateFrom,
-        date_to: dateTo,
+        country_id,
+        start_date,
+        end_date,
       })
       .then((data) => {
         if (cancelled) return;
@@ -78,12 +78,12 @@ export function useUsers({
     return () => {
       cancelled = true;
     };
-  }, [page, perPage, nonce, queryKey, country, dateFrom, dateTo]);
+  }, [page, perPage, nonce, queryKey, country_id, start_date, end_date]);
 
   // Reset page to 1 when filters change
   useEffect(() => {
     setPage(1);
-  }, [country, dateFrom, dateTo]);
+  }, [country_id, start_date, end_date]);
 
   return {
     items,
@@ -92,5 +92,6 @@ export function useUsers({
     error,
     goToPage: useCallback((nextPage: number) => setPage(nextPage), []),
     refresh: useCallback(() => setNonce((prev) => prev + 1), []),
+    mutateItems: setItems,
   };
 }

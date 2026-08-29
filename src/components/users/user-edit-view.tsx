@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Award,
@@ -18,13 +19,15 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { userService } from "@/services/user.service";
 
-type UserDetailViewProps = {
+type UserEditViewProps = {
   userId: string;
 };
 
-export function UserDetailView({ userId }: UserDetailViewProps) {
+export function UserEditView({ userId }: UserEditViewProps) {
+  const router = useRouter();
   const [user, setUser] = useState<UserRecord | null>(null);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   const [certificates, setCertificates] = useState<CertificateRecord[]>([]);
 
@@ -39,10 +42,6 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
       .then(([apiUser, certsData]) => {
         if (cancelled) return;
 
-        // Log the certificates data for the user to see the keys
-        console.log("Certificates API Response:", certsData);
-
-        // Map ApiUser to UserRecord for compatibility with existing UI
         const mappedUser: UserRecord = {
           id: String(apiUser.id),
           name: apiUser.username,
@@ -66,25 +65,8 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
         };
         setUser(mappedUser);
 
-        // Set certificates state by mapping API keys to the CertificateRecord keys used in the UI
-        let certsList = [];
-        if (Array.isArray(certsData?.items)) {
-          certsList = certsData.items;
-        } else if (Array.isArray(certsData)) {
-          certsList = certsData;
-        }
-        
-        const mappedCertificates: CertificateRecord[] = certsList.map((cert: any) => ({
-          id: String(cert.id),
-          certificate: cert.certificate_number || "Certificate",
-          issuedFor: cert.quiz_title || "-",
-          score: cert.percentage !== undefined ? `${cert.percentage}%` : "-",
-          issuedOn: cert.issued_at 
-            ? new Date(cert.issued_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-            : "-",
-          quizAttemptId: cert.quiz_attempt_id,
-        }));
-        setCertificates(mappedCertificates);
+        const certArray = Array.isArray(certsData?.data) ? certsData.data : (Array.isArray(certsData) ? certsData : []);
+        setCertificates(certArray as any[]);
       })
       .catch((error) => {
         if (cancelled) return;
@@ -100,6 +82,50 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
       cancelled = true;
     };
   }, [userId]);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    
+    // Construct the data payload based on API requirement
+    const dataObj = {
+      username: formData.get("username") as string,
+      phone: formData.get("phone") as string,
+      ID_number: formData.get("ID_number") as string,
+      educationlevel: formData.get("educationlevel") as string,
+      skill_level: formData.get("skill_level") as string,
+      dob: formData.get("dob") as string,
+      // Provide mock / default values for fields not present in UI but required by API
+      postal_code: 0,
+      gender: "male",
+      role_id: 2, 
+      country_id: 1, 
+      summary: "",
+      state_id: 1, 
+      city_id: 1, 
+      designation: "",
+    };
+
+    const apiFormData = new FormData();
+    apiFormData.append("data", JSON.stringify(dataObj));
+    
+    const imageFile = formData.get("image") as File;
+    if (imageFile && imageFile.size > 0) {
+      apiFormData.append("image", imageFile);
+    }
+
+    try {
+      setSubmitting(true);
+      await userService.updateUser(userId, apiFormData);
+      toast.success("User updated successfully");
+      router.push("/users");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to update user");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   if (loading) {
     return <div className="p-8 text-center">Loading user details...</div>;
@@ -117,7 +143,7 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
           className="inline-flex items-center gap-2 text-[22px] font-bold tracking-tight text-[#111827] transition hover:text-[#3b82f6]"
         >
           <ArrowLeft className="size-5" />
-          User Detail
+          Edit User
         </Link>
         <span className="hidden h-6 w-px bg-[#d1d5db] sm:block" />
         <span className="rounded-full bg-[#111827] px-3.5 py-1.5 text-sm font-semibold text-white">
@@ -156,23 +182,26 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
         />
       </div>
 
-      <UserProfileInfo user={user} readonly />
-      <UserCertificatesTable certificates={certificates} />
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <UserProfileInfo user={user} readonly={false} />
+        <UserCertificatesTable certificates={certificates} />
 
-      {/* <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <button
-          type="button"
-          className="inline-flex h-12 items-center justify-center rounded-xl bg-[#f0a500] px-8 text-sm font-semibold text-white transition hover:bg-[#d99400]"
-        >
-          Save Changes
-        </button>
-        <button
-          type="button"
-          className="inline-flex h-12 items-center justify-center rounded-xl bg-[#e5e7eb] px-8 text-sm font-semibold text-[#374151] transition hover:bg-[#d1d5db]"
-        >
-          Delete Account
-        </button>
-      </div> */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <button
+            type="submit"
+            disabled={submitting}
+            className="inline-flex h-12 items-center justify-center rounded-xl bg-[#f0a500] px-8 text-sm font-semibold text-white transition hover:bg-[#d99400] disabled:opacity-50"
+          >
+            {submitting ? "Saving..." : "Save Changes"}
+          </button>
+          <Link
+            href={`/users`}
+            className="inline-flex h-12 items-center justify-center rounded-xl bg-[#e5e7eb] px-8 text-sm font-semibold text-[#374151] transition hover:bg-[#d1d5db]"
+          >
+            Cancel
+          </Link>
+        </div>
+      </form>
     </div>
   );
 }

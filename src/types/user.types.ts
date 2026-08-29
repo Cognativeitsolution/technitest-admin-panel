@@ -18,6 +18,8 @@ export type ApiUser = {
     name: string;
     iso2: string;
   } | null;
-  total_quizzes_attempted: number;
-  total_certificates_issued: number;
+  total_quizzes_attempted: number | string;
+  total_certificates_issued: number | string;
+  total_successful_referral?: number | string;
+  total_earned_coin?: number | string;
 };

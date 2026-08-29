@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { Download } from "lucide-react";
+import { toast } from "sonner";
+import { certificateService } from "@/services/certificate.service";
 
 import { DropdownMenu } from "@/components/shared/dropdown-menu";
 import type { CertificateRecord } from "@/data/users";
@@ -21,6 +23,24 @@ export function UserCertificatesTable({
   certificates,
 }: UserCertificatesTableProps) {
   const [filter, setFilter] = useState("Last 30 Days");
+
+  const handleDownload = async (quizAttemptId?: number) => {
+    if (!quizAttemptId) {
+      toast.error("Quiz Attempt ID is missing");
+      return;
+    }
+    const toastId = `download-${quizAttemptId}`;
+    try {
+      toast.loading("Fetching certificate...", { id: toastId });
+      const data = await certificateService.getCertificate(quizAttemptId);
+      console.log("Certificate downloaded:", data);
+      toast.success("Certificate details fetched successfully", { id: toastId });
+      // Note: Implement PDF generation or file download logic here if needed
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to fetch certificate", { id: toastId });
+    }
+  };
 
   return (
     <section className="rounded-2xl border border-[#eef1f6] bg-white p-5 shadow-[0_1px_3px_rgba(16,24,40,0.04)] sm:p-6">
@@ -66,6 +86,7 @@ export function UserCertificatesTable({
                       <button
                         type="button"
                         aria-label={`Download ${item.certificate}`}
+                        onClick={() => handleDownload(item.quizAttemptId)}
                         className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#3b82f6]"
                       >
                         <Download className="size-4" />

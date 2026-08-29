@@ -42,21 +42,27 @@ export function UserProfileInfo({ user, readonly = false }: UserProfileInfoProps
 
       <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="relative size-[88px] shrink-0">
-          <Image
-            src={user.avatar}
-            alt={user.name}
-            width={88}
-            height={88}
-            className="size-[88px] rounded-full object-cover"
-          />
+          {user.avatar ? (
+            <Image
+              src={user.avatar}
+              alt={user.name}
+              width={88}
+              height={88}
+              className="size-[88px] rounded-full object-cover"
+            />
+          ) : (
+            <div className="flex size-[88px] items-center justify-center rounded-full bg-gray-200 text-3xl font-semibold text-gray-500">
+              {user.name ? user.name.charAt(0).toUpperCase() : "U"}
+            </div>
+          )}
           {readonly ? null : (
-            <button
-              type="button"
+            <label
               aria-label="Change profile photo"
-              className="absolute right-0 bottom-0 flex size-8 items-center justify-center rounded-full border-2 border-white bg-[#111827] text-white shadow-sm"
+              className="absolute right-0 bottom-0 flex size-8 cursor-pointer items-center justify-center rounded-full border-2 border-white bg-[#111827] text-white shadow-sm"
             >
               <Camera className="size-3.5" />
-            </button>
+              <input type="file" name="image" accept="image/*" className="hidden" />
+            </label>
           )}
         </div>
         <div className="flex flex-col gap-1">
@@ -80,6 +86,7 @@ export function UserProfileInfo({ user, readonly = false }: UserProfileInfoProps
           ) : (
             <input
               type="text"
+              name="username"
               defaultValue={user.name}
               className={inputClassName}
             />
@@ -98,6 +105,7 @@ export function UserProfileInfo({ user, readonly = false }: UserProfileInfoProps
           ) : (
             <input
               type="email"
+              name="email"
               defaultValue={user.email}
               className={inputClassName}
             />
@@ -116,6 +124,7 @@ export function UserProfileInfo({ user, readonly = false }: UserProfileInfoProps
           ) : (
             <input
               type="text"
+              name="phone"
               defaultValue={user.phone}
               className={inputClassName}
             />
@@ -134,6 +143,7 @@ export function UserProfileInfo({ user, readonly = false }: UserProfileInfoProps
           ) : (
             <input
               type="text"
+              name="country"
               defaultValue={user.country}
               className={inputClassName}
             />
@@ -152,6 +162,7 @@ export function UserProfileInfo({ user, readonly = false }: UserProfileInfoProps
           ) : (
             <input
               type="text"
+              name="state"
               defaultValue={user.state}
               className={inputClassName}
             />
@@ -170,6 +181,7 @@ export function UserProfileInfo({ user, readonly = false }: UserProfileInfoProps
           ) : (
             <input
               type="text"
+              name="city"
               defaultValue={user.city}
               className={inputClassName}
             />
@@ -188,6 +200,7 @@ export function UserProfileInfo({ user, readonly = false }: UserProfileInfoProps
           ) : (
             <input
               type="text"
+              name="ID_number"
               defaultValue={user.identificationNo}
               className={inputClassName}
             />
@@ -209,13 +222,22 @@ export function UserProfileInfo({ user, readonly = false }: UserProfileInfoProps
           ) : (
             <div className="relative">
               <select
+                name="educationlevel"
                 defaultValue={user.highestEducation}
                 className={cn(inputClassName, "appearance-none pr-10")}
               >
-                <option>Intermediate</option>
-                <option>Bachelor</option>
-                <option>Master</option>
-                <option>PhD</option>
+                <option value="no_formal_education">No Formal Education</option>
+                <option value="elementary">Elementary</option>
+                <option value="high_school">High School</option>
+                <option value="vocational_trade">Vocational Trade</option>
+                <option value="college_diploma">College Diploma</option>
+                <option value="associate_degree">Associate Degree</option>
+                <option value="bachelors_degree">Bachelor's Degree</option>
+                <option value="graduate_certificate">Graduate Certificate</option>
+                <option value="masters_degree">Master's Degree</option>
+                <option value="professional_degree">Professional Degree</option>
+                <option value="doctoral_degree">Doctoral Degree</option>
+                <option value="other">Other</option>
               </select>
               <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-[#9ca3af]" />
             </div>
@@ -237,12 +259,12 @@ export function UserProfileInfo({ user, readonly = false }: UserProfileInfoProps
           ) : (
             <div className="relative">
               <select
+                name="skill_level"
                 defaultValue={user.level}
                 className={cn(inputClassName, "appearance-none pr-10")}
               >
-                <option>Beginner</option>
-                <option>Intermediate</option>
-                <option>Advanced</option>
+                <option value="student">Student</option>
+                <option value="professional">Professional</option>
               </select>
               <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-[#9ca3af]" />
             </div>
@@ -265,6 +287,7 @@ export function UserProfileInfo({ user, readonly = false }: UserProfileInfoProps
             <div className="relative">
               <input
                 type="text"
+                name="dob"
                 defaultValue={user.dateOfBirth}
                 className={cn(inputClassName, "pr-10")}
               />
@@ -289,7 +312,7 @@ export function UserProfileInfo({ user, readonly = false }: UserProfileInfoProps
           </div>
         </div>
 
-        <div>
+        {/* <div>
           <p className="mb-1.5 text-sm font-medium text-[#374151]">
             Mobile Verification
           </p>
@@ -301,7 +324,7 @@ export function UserProfileInfo({ user, readonly = false }: UserProfileInfoProps
           >
             {user.mobileVerified ? "Verified" : "Unverified"}
           </div>
-        </div>
+        </div> */}
       </div>
     </section>
   );

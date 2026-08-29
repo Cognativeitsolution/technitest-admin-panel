@@ -7,17 +7,19 @@ import { toast } from "sonner";
 
 export function useCountries() {
   const [countries, setCountries] = useState<string[]>(["All Countries"]);
+  const [countryData, setCountryData] = useState<import("@/services/location.service").Country[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    
+
     setLoading(true);
     locationService
       .getCountries()
       .then((data) => {
         if (cancelled) return;
+        setCountryData(data);
         const countryNames = data.map((c) => c.name);
         setCountries(["All Countries", ...countryNames]);
         setError(null);
@@ -37,5 +39,5 @@ export function useCountries() {
     };
   }, []);
 
-  return { countries, loading, error };
+  return { countries, countryData, loading, error };
 }
