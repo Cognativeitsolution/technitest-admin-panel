@@ -19,7 +19,7 @@ export function mapApiUserToUserRecord(user: ApiUser): UserRecord {
     level: "",
     dateOfBirth: "",
     coinsEarned: 0,
-    successfulReferrals: 0,
+    total_successful_referral: 0,
     emailVerified: user.is_email_verified,
     mobileVerified: false,
   };

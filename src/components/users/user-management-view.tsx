@@ -9,8 +9,8 @@ import { DateRangePicker, type DateRange } from "@/components/ui/date-range-pick
 import { UsersTable } from "@/components/users/users-table";
 import { useUsers } from "@/hooks/users/use-users";
 import { useCountries } from "@/hooks/locations/use-countries";
-import { UserDialog } from "@/components/roles/user-dialog";
-import type { AdminUser } from "@/data/roles";
+// import { UserDialog } from "@/components/roles/user-dialog";
+// import type { AdminUser } from "@/data/roles";
 import { Dialog } from "@/components/ui/dialog";
 import type { ApiUser } from "@/types/user.types";
 import { toast } from "sonner";
@@ -34,7 +34,7 @@ export function UserManagementView() {
 
   const [userDialogOpen, setUserDialogOpen] = useState(false);
   const [userDialogMode, setUserDialogMode] = useState<"create" | "edit">("create");
-  const [userDialogTarget, setUserDialogTarget] = useState<AdminUser | null>(null);
+  // const [userDialogTarget, setUserDialogTarget] = useState<AdminUser | null>(null);
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<ApiUser | null>(null);
@@ -53,7 +53,7 @@ export function UserManagementView() {
 
   function openCreateUser() {
     setUserDialogMode("create");
-    setUserDialogTarget(null);
+    // setUserDialogTarget(null);
     setUserDialogOpen(true);
   }
 
@@ -69,12 +69,12 @@ export function UserManagementView() {
       await userService.deleteUser(userToDelete.id);
       toast.success("User deleted successfully");
       setDeleteDialogOpen(false);
-      
+
       // Immediately remove the user from the UI (Optimistic update)
       mutateItems((prevItems) => prevItems.filter(u => u.id !== userToDelete.id));
-      
+
       setUserToDelete(null);
-      
+
       // Removed immediate refresh() to prevent fetching stale data before DB commit.
       // The optimistic update above handles the UI state.
     } catch (error) {
@@ -127,10 +127,10 @@ export function UserManagementView() {
         />
       </div>
 
-      <UsersTable 
-        users={items} 
-        loading={loading} 
-        onDelete={handleDeleteUserClick} 
+      <UsersTable
+        users={items}
+        loading={loading}
+        onDelete={handleDeleteUserClick}
       />
 
       <Pagination
@@ -139,13 +139,13 @@ export function UserManagementView() {
         onPageChange={goToPage}
       />
 
-      <UserDialog
+      {/* <UserDialog
         open={userDialogOpen}
         onClose={() => setUserDialogOpen(false)}
         mode={userDialogMode}
         user={userDialogTarget}
         roleNames={roleNames}
-      />
+      /> */}
 
       <Dialog
         open={deleteDialogOpen}

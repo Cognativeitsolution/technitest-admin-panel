@@ -7,7 +7,7 @@ import { toast } from "sonner";
 
 export function useCountries() {
   const [countries, setCountries] = useState<string[]>(["All Countries"]);
-  const [countryData, setCountryData] = useState<import("@/services/location.service").Country[]>([]);
+  const [countryData, setCountryData] = useState<import("@/types/location.types").Country[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
