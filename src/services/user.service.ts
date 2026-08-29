@@ -36,4 +36,24 @@ export const userService = {
     console.log("getUserCertificates response data:", data);
     return (data as any)?.response?.data || data;
   },
+  updateUser: async (id: string | number, formData: FormData) => {
+    const { data } = await apiClient.put<ApiEnvelope<ApiUser>>(
+      `/api/v1/users/${id}`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+    console.log("updateUser response data:", data);
+    return data.response?.data || (data as unknown as ApiUser);
+  },
+  deleteUser: async (id: string | number) => {
+    const { data } = await apiClient.delete<ApiEnvelope<unknown>>(
+      `/api/v1/users/${id}`
+    );
+    console.log("deleteUser response data:", data);
+    return data;
+  },
 }; 

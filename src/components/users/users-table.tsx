@@ -70,6 +70,7 @@ export function UsersTable({ users, loading, onEdit, onDelete }: UsersTableProps
 
 
                       {/* username */}
+
                       {/* <p className="truncate text-[13px] font-medium text-[#3b82f6]">
                         @{user.username}
                       </p> */}
@@ -105,14 +106,13 @@ export function UsersTable({ users, loading, onEdit, onDelete }: UsersTableProps
                     >
                       <Eye className="size-4" />
                     </Link>
-                    <button
-                      type="button"
+                    <Link
+                      href={`/users/${user.id}/edit`}
                       aria-label={`Edit ${user.username}`}
-                      onClick={() => onEdit?.(user)}
                       className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#f0a500]"
                     >
                       <Pencil className="size-4" />
-                    </button>
+                    </Link>
                     <button
                       type="button"
                       aria-label={`Delete ${user.username}`}

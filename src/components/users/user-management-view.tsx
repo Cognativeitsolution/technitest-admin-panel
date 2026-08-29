@@ -10,8 +10,13 @@ import { UsersTable } from "@/components/users/users-table";
 import { useUsers } from "@/hooks/users/use-users";
 import { useCountries } from "@/hooks/locations/use-countries";
 import { UserDialog } from "@/components/roles/user-dialog";
-import { roles as initialRoles } from "@/data/roles";
 import type { AdminUser } from "@/data/roles";
+import { Dialog } from "@/components/ui/dialog";
+import type { ApiUser } from "@/types/user.types";
+import { toast } from "sonner";
+import { userService } from "@/services/user.service";
+
+import { ApiError } from "@/lib/api-error";
 
 const PAGE_SIZE = 10;
 
@@ -31,21 +36,53 @@ export function UserManagementView() {
   const [userDialogMode, setUserDialogMode] = useState<"create" | "edit">("create");
   const [userDialogTarget, setUserDialogTarget] = useState<AdminUser | null>(null);
 
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<ApiUser | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
   const selectedCountryId = country === "All Countries" ? undefined : countryData?.find((c) => c.name === country)?.id;
 
-  const { items, pagination, loading, goToPage } = useUsers({
+  const { items, pagination, loading, goToPage, refresh, mutateItems } = useUsers({
     perPage: PAGE_SIZE,
     country_id: selectedCountryId ? String(selectedCountryId) : undefined,
     start_date: dateRange.start ? formatDate(dateRange.start) : undefined,
     end_date: dateRange.end ? formatDate(dateRange.end) : undefined,
   });
 
-  const roleNames = initialRoles.map((r) => r.name);
+  const roleNames = ["Super Admin", "Content Admin", "CMS Admin", "System Settings Admin"];
 
   function openCreateUser() {
     setUserDialogMode("create");
     setUserDialogTarget(null);
     setUserDialogOpen(true);
+  }
+
+  function handleDeleteUserClick(user: ApiUser) {
+    setUserToDelete(user);
+    setDeleteDialogOpen(true);
+  }
+
+  async function handleConfirmDelete() {
+    if (!userToDelete) return;
+    setDeleting(true);
+    try {
+      await userService.deleteUser(userToDelete.id);
+      toast.success("User deleted successfully");
+      setDeleteDialogOpen(false);
+      
+      // Immediately remove the user from the UI (Optimistic update)
+      mutateItems((prevItems) => prevItems.filter(u => u.id !== userToDelete.id));
+      
+      setUserToDelete(null);
+      
+      // Removed immediate refresh() to prevent fetching stale data before DB commit.
+      // The optimistic update above handles the UI state.
+    } catch (error) {
+      console.error(error);
+      toast.error(ApiError.fromAxiosError(error).message || "Failed to delete user");
+    } finally {
+      setDeleting(false);
+    }
   }
 
   return (
@@ -90,7 +127,11 @@ export function UserManagementView() {
         />
       </div>
 
-      <UsersTable users={items} loading={loading} />
+      <UsersTable 
+        users={items} 
+        loading={loading} 
+        onDelete={handleDeleteUserClick} 
+      />
 
       <Pagination
         currentPage={pagination.page || 1}
@@ -105,6 +146,36 @@ export function UserManagementView() {
         user={userDialogTarget}
         roleNames={roleNames}
       />
+
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => !deleting && setDeleteDialogOpen(false)}
+        title="Delete User"
+      >
+        <div className="space-y-5">
+          <p className="text-sm text-[#4b5563]">
+            Are you sure you want to delete <strong className="font-semibold">{userToDelete?.username}</strong>? This action cannot be undone.
+          </p>
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              disabled={deleting}
+              onClick={() => setDeleteDialogOpen(false)}
+              className="inline-flex h-10 items-center justify-center rounded-xl bg-[#f3f4f6] px-5 text-sm font-semibold text-[#111827] transition hover:bg-[#e5e7eb]"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={deleting}
+              onClick={handleConfirmDelete}
+              className="inline-flex h-10 items-center justify-center rounded-xl bg-[#ef4444] px-5 text-sm font-semibold text-white transition hover:bg-[#dc2626] disabled:opacity-50"
+            >
+              {deleting ? "Deleting..." : "Delete"}
+            </button>
+          </div>
+        </div>
+      </Dialog>
     </div>
   );
 }

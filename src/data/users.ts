@@ -26,6 +26,7 @@ export type CertificateRecord = {
   issuedFor: string;
   score: string;
   issuedOn: string;
+  quizAttemptId?: number;
 };
 
 export const users: UserRecord[] = [
