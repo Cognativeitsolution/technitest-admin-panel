@@ -42,7 +42,7 @@ export function UserManagementView() {
 
   const selectedCountryId = country === "All Countries" ? undefined : countryData?.find((c) => c.name === country)?.id;
 
-  const { items, pagination, loading, goToPage, refresh, mutateItems } = useUsers({
+  const { items, pagination, loading, goToPage, mutateItems } = useUsers({
     perPage: PAGE_SIZE,
     country_id: selectedCountryId ? String(selectedCountryId) : undefined,
     start_date: dateRange.start ? formatDate(dateRange.start) : undefined,
