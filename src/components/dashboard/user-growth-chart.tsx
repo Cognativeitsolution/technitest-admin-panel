@@ -33,7 +33,14 @@ export function UserGrowthChart({ data }: UserGrowthChartProps) {
     { month_name: "Dec", students: 560, professionals: 480, month: 12, year: 2026 },
   ];
 
-  const chartData = data && data.length > 0 ? data : defaultData;
+  const chartData =
+    data && data.length > 0
+      ? data.map((item) => ({
+          ...item,
+          students: Number(item.students) || 0,
+          professionals: Number(item.professionals) || 0,
+        }))
+      : defaultData;
   const hasData = (data?.length ?? 0) > 0;
 
   return (
@@ -82,6 +89,7 @@ export function UserGrowthChart({ data }: UserGrowthChartProps) {
                 axisLine={false}
                 tickLine={false}
                 tick={{ fill: "#9ca3af", fontSize: 12 }}
+                domain={[0, "auto"]}
               />
               <Tooltip
                 contentStyle={{
@@ -95,7 +103,7 @@ export function UserGrowthChart({ data }: UserGrowthChartProps) {
                 dataKey="students"
                 stroke="#22c55e"
                 strokeWidth={3}
-                dot={false}
+                dot={{ r: 3 }}
                 activeDot={{ r: 5 }}
               />
               <Line
@@ -103,7 +111,7 @@ export function UserGrowthChart({ data }: UserGrowthChartProps) {
                 dataKey="professionals"
                 stroke="#8b5cf6"
                 strokeWidth={3}
-                dot={false}
+                dot={{ r: 3 }}
                 activeDot={{ r: 5 }}
               />
             </LineChart>
