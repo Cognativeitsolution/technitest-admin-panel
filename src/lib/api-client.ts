@@ -10,7 +10,8 @@ declare module "axios" {
 }
 
 const apiClient = axios.create({
-  baseURL: typeof window !== "undefined" ? "" : env.API_BASE_URL,
+  baseURL: env.API_BASE_URL,
+  headers: { "Content-Type": "application/json" },
   timeout: 30000,
 });
 
