@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Award, BookOpenCheck, Users, Wallet, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { DashboardToolbar } from "@/components/dashboard/dashboard-toolbar";
 import { QuizAttemptChart } from "@/components/dashboard/quiz-attempt-chart";
@@ -10,11 +11,23 @@ import { StatCard } from "@/components/dashboard/stat-card";
 import { TopScorers } from "@/components/dashboard/top-scorers";
 import { UserGrowthChart } from "@/components/dashboard/user-growth-chart";
 import { useDashboardStats } from "@/hooks/dashboard/use-dashboard-stats";
+import { dashboardService } from "@/services/dashboard.service";
 
 export default function DashboardPage() {
   const [dateFrom, setDateFrom] = useState<string | null>(null);
   const [dateTo, setDateTo] = useState<string | null>(null);
   const { stats, loading } = useDashboardStats({ dateFrom, dateTo });
+
+  const handleGenerateReport = async () => {
+    try {
+      const result = await dashboardService.generateReport(dateFrom, dateTo);
+      if (!result) {
+        toast.error("No report available for the selected range.");
+      }
+    } catch (error) {
+      toast.error("Failed to generate dashboard report.");
+    }
+  };
 
   if (!stats) {
     return (
@@ -93,10 +106,13 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <DashboardToolbar onDateChange={(from, to) => {
-        setDateFrom(from);
-        setDateTo(to);
-      }} />
+      <DashboardToolbar
+        onDateChange={(from, to) => {
+          setDateFrom(from);
+          setDateTo(to);
+        }}
+        onGenerateReport={handleGenerateReport}
+      />
 
       {loading && (
         <div className="mb-4 flex items-center justify-center gap-2 rounded-lg border border-[#e5e7eb] bg-white px-4 py-3 text-sm text-[#6b7280]">

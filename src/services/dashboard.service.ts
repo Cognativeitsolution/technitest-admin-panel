@@ -82,6 +82,29 @@ export interface DashboardStats {
 
 const BASE = "/api/v1/dashboard";
 
+function triggerDownload(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.rel = "noopener";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function parseFilenameFromHeader(contentDisposition?: string | null) {
+  if (!contentDisposition) return "dashboard-report";
+
+  const match = contentDisposition.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i);
+  if (match?.[1]) {
+    return decodeURIComponent(match[1].replace(/['"]/g, ""));
+  }
+
+  return "dashboard-report";
+}
+
 export const dashboardService = {
   getStats: async (dateFrom?: string | null, dateTo?: string | null) => {
     const params = new URLSearchParams();
@@ -93,5 +116,43 @@ export const dashboardService = {
 
     const { data } = await apiClient.get<ApiEnvelope<DashboardStats>>(url);
     return data.response.data;
+  },
+
+  generateReport: async (dateFrom?: string | null, dateTo?: string | null) => {
+    const params = new URLSearchParams();
+    if (dateFrom) params.append("date_from", dateFrom);
+    if (dateTo) params.append("date_to", dateTo);
+
+    const queryString = params.toString();
+    const url = queryString ? `${BASE}/report?${queryString}` : `${BASE}/report`;
+
+    const response = await apiClient.get(url, { responseType: "blob" });
+
+    const payload = response.data as Blob | { download_url?: string; url?: string } | null;
+
+    if (payload && typeof payload === "object" && !(payload instanceof Blob)) {
+      const urlFromPayload = payload.download_url ?? payload.url;
+      if (typeof urlFromPayload === "string" && urlFromPayload) {
+        if (typeof window !== "undefined") {
+          window.open(urlFromPayload, "_blank", "noopener,noreferrer");
+        }
+        return urlFromPayload;
+      }
+    }
+
+    if (payload instanceof Blob) {
+      const filename = parseFilenameFromHeader(response.headers["content-disposition"]);
+      triggerDownload(payload, filename);
+      return filename;
+    }
+
+    if (typeof payload === "string" && payload) {
+      if (typeof window !== "undefined") {
+        window.open(payload, "_blank", "noopener,noreferrer");
+      }
+      return payload;
+    }
+
+    return null;
   },
 };
