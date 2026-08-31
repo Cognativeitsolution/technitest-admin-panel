@@ -135,13 +135,26 @@ export function PersonalInformationForm() {
   useEffect(() => {
     if (!info && !detail) return;
     reset(buildProfileFormValues(info, detail));
+    // Populate social media fields from detail
+    setFacebook(detail?.facebook ?? "");
+    setLinkedin(detail?.linkedin ?? "");
+    setXProfile(detail?.x ?? "");
+    setInstagram(detail?.instagram ?? "");
   }, [info, detail, reset]);
 
   const selectedCountry = watch("country");
   const selectedState = watch("state");
   const selectedCity = watch("city");
   const fullName = watch("fullName");
-  const hasChanges = isDirty || image !== null;
+  
+  // Track social media changes
+  const socialMediaChanged =
+    facebook !== (detail?.facebook ?? "") ||
+    linkedin !== (detail?.linkedin ?? "") ||
+    xProfile !== (detail?.x ?? "") ||
+    instagram !== (detail?.instagram ?? "");
+  
+  const hasChanges = isDirty || image !== null || socialMediaChanged;
 
   useEffect(() => {
     if (isDirty || (!info && !detail)) return;
@@ -221,6 +234,11 @@ export function PersonalInformationForm() {
         skill_level: detail?.skill_level ?? null,
         educationlevel: detail?.educationlevel ?? null,
         designation: detail?.designation ?? info?.designation ?? "",
+        // Social media links
+        facebook: facebook?.trim() || null,
+        linkedin: linkedin?.trim() || null,
+        x: xProfile?.trim() || null,
+        instagram: instagram?.trim() || null,
       },
     };
 

@@ -4,12 +4,15 @@ import { useState } from "react";
 
 import { ChangePasswordForm } from "@/components/profile/change-password-form";
 import { PersonalInformationForm } from "@/components/profile/personal-information-form";
+import { SocialMediaDisplay } from "@/components/profile/social-media-display";
 import { ProfileTabs } from "@/components/profile/profile-tabs";
+import { useProfile } from "@/hooks/profile/use-profile";
 
 export function ProfileView() {
   const [activeTab, setActiveTab] = useState<"personal" | "password">(
     "personal",
   );
+  const { detail } = useProfile();
 
   return (
     <div className="w-full max-w-4xl space-y-10">
@@ -22,7 +25,10 @@ export function ProfileView() {
       </div>
 
       {activeTab === "personal" ? (
-        <PersonalInformationForm />
+        <>
+          <PersonalInformationForm />
+          {detail && <SocialMediaDisplay profile={detail} className="mt-8 p-6 border border-[#e5e7eb] rounded-lg" />}
+        </>
       ) : (
         <ChangePasswordForm />
       )}

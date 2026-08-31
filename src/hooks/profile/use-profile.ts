@@ -9,6 +9,7 @@ import { useAuthStore } from "@/store/auth-store";
 import type {
   ProfileDetail,
   ProfileInfo,
+  ProfileUpdateData,
   UpdateProfilePayload,
 } from "@/types/profile.types";
 
@@ -56,7 +57,10 @@ export function useProfile() {
   }, [refetchProfile]);
 
   const updateProfile = useCallback(
-    async (payload: UpdateProfilePayload, image?: File | null) => {
+    async (
+      payload: UpdateProfilePayload | ProfileUpdateData,
+      image?: File | null,
+    ) => {
       setMutating(true);
       try {
         await profileService.updateProfile(payload, image);

@@ -3,17 +3,33 @@ import type { ApiEnvelope } from "@/types/api.types";
 import type {
   ProfileDetail,
   ProfileInfo,
+  ProfileUpdateData,
   UpdateProfilePayload,
 } from "@/types/profile.types";
 
 const BASE = "/api/v1/profile";
 
+/**
+ * Normalize profile update payload to ensure proper structure
+ * Handles both direct data and wrapped UpdateProfilePayload formats
+ */
+function normalizeProfilePayload(
+  payload: UpdateProfilePayload | ProfileUpdateData,
+): UpdateProfilePayload {
+  if ("data" in payload && payload.data) {
+    return payload as UpdateProfilePayload;
+  }
+  // If payload is direct data without wrapper, wrap it
+  return { data: payload as ProfileUpdateData };
+}
+
 function buildProfileFormData(
-  payload: UpdateProfilePayload,
+  payload: UpdateProfilePayload | ProfileUpdateData,
   image?: File | null,
 ) {
+  const normalizedPayload = normalizeProfilePayload(payload);
   const formData = new FormData();
-  formData.append("data", JSON.stringify(payload.data));
+  formData.append("data", JSON.stringify(normalizedPayload.data));
   if (image) {
     formData.append("image", image);
   }
@@ -35,7 +51,10 @@ export const profileService = {
     return data.response.data;
   },
 
-  updateProfile: async (payload: UpdateProfilePayload, image?: File | null) => {
+  updateProfile: async (
+    payload: UpdateProfilePayload | ProfileUpdateData,
+    image?: File | null,
+  ) => {
     const { data } = await apiClient.patch<ApiEnvelope<ProfileDetail>>(
       BASE,
       buildProfileFormData(payload, image),
