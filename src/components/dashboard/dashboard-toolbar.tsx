@@ -6,9 +6,13 @@ import { DateRangePicker } from "@/components/ui/date-range-picker";
 
 type DashboardToolbarProps = {
   title?: string;
+  onDateChange?: (dateFrom: string | null, dateTo: string | null) => void;
 };
 
-export function DashboardToolbar({ title = "Dashboard" }: DashboardToolbarProps) {
+export function DashboardToolbar({ 
+  title = "Dashboard",
+  onDateChange 
+}: DashboardToolbarProps) {
   return (
     <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
       <h1 className="text-[28px] font-bold tracking-tight text-[#111827]">
@@ -16,7 +20,10 @@ export function DashboardToolbar({ title = "Dashboard" }: DashboardToolbarProps)
       </h1>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <DateRangePicker dualMonth />
+        <DateRangePicker 
+          dualMonth 
+          onDateChange={onDateChange}
+        />
 
         <button
           type="button"
