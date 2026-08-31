@@ -56,6 +56,11 @@ export type ProfileDetail = {
   dob: string | null;
   ID_number: string | null;
   educationlevel: string | null;
+  // Social Media Links
+  facebook?: string | null;
+  instagram?: string | null;
+  linkedin?: string | null;
+  x?: string | null;
 };
 
 export type ProfileUpdateData = {
@@ -71,6 +76,11 @@ export type ProfileUpdateData = {
   educationlevel?: string | null;
   summary?: string | null;
   designation?: string | null;
+  // Social Media Links
+  facebook?: string | null;
+  instagram?: string | null;
+  linkedin?: string | null;
+  x?: string | null;
 };
 
 export type UpdateProfilePayload = {

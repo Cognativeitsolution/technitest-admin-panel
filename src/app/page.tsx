@@ -1,4 +1,7 @@
-import { Award, BookOpenCheck, Users, Wallet } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { Award, BookOpenCheck, Users, Wallet, Loader2 } from "lucide-react";
 
 import { DashboardToolbar } from "@/components/dashboard/dashboard-toolbar";
 import { QuizAttemptChart } from "@/components/dashboard/quiz-attempt-chart";
@@ -6,68 +9,119 @@ import { RecentActivity } from "@/components/dashboard/recent-activity";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { TopScorers } from "@/components/dashboard/top-scorers";
 import { UserGrowthChart } from "@/components/dashboard/user-growth-chart";
-
-const stats = [
-  {
-    title: "Total User",
-    value: "40,689",
-    trend: { value: "8.5%", direction: "up" as const, label: "from yesterday" },
-    icon: Users,
-    iconWrapClassName: "bg-[#dbeafe]",
-    iconClassName: "text-[#2563eb]",
-  },
-  {
-    title: "Total Quizzes",
-    value: "145,697",
-    trend: { value: "8.5%", direction: "up" as const, label: "from yesterday" },
-    icon: BookOpenCheck,
-    iconWrapClassName: "bg-[#ffedd5]",
-    iconClassName: "text-[#ea580c]",
-  },
-  {
-    title: "Certificates Issued",
-    value: "45K+",
-    trend: {
-      value: "8.5%",
-      direction: "down" as const,
-      label: "from yesterday",
-    },
-    icon: Award,
-    iconWrapClassName: "bg-[#dcfce7]",
-    iconClassName: "text-[#16a34a]",
-  },
-  {
-    title: "Payments Received",
-    value: "$110,000",
-    trend: { value: "8.5%", direction: "up" as const, label: "from yesterday" },
-    icon: Wallet,
-    iconWrapClassName: "bg-[#e0f2fe]",
-    iconClassName: "text-[#0284c7]",
-  },
-];
+import { useDashboardStats } from "@/hooks/dashboard/use-dashboard-stats";
 
 export default function DashboardPage() {
+  const [dateFrom, setDateFrom] = useState<string | null>(null);
+  const [dateTo, setDateTo] = useState<string | null>(null);
+  const { stats, loading } = useDashboardStats({ dateFrom, dateTo });
+
+  if (!stats) {
+    return (
+      <div>
+        <DashboardToolbar onDateChange={(from, to) => {
+          setDateFrom(from);
+          setDateTo(to);
+        }} />
+
+        <div className="flex items-center justify-center rounded-xl border border-[#e5e7eb] bg-white p-12">
+          <Loader2 className="size-8 animate-spin text-[#2563eb]" />
+          <span className="ml-3 text-lg text-[#6b7280]">Loading dashboard...</span>
+        </div>
+      </div>
+    );
+  }
+
+  const statCardsData = [
+    {
+      title: "Verified Users",
+      value: stats.verified_users.count.toString(),
+      trend: {
+        value: Math.abs(stats.verified_users.daily_change_percent).toFixed(1) + "%",
+        direction: (
+          stats.verified_users.daily_change_percent >= 0 ? "up" : "down"
+        ) as "up" | "down",
+        label: "from yesterday",
+      },
+      icon: Users,
+      iconWrapClassName: "bg-[#dbeafe]",
+      iconClassName: "text-[#2563eb]",
+    },
+    {
+      title: "Total Quizzes",
+      value: stats.total_quizzes.count.toString(),
+      trend: {
+        value: Math.abs(stats.total_quizzes.daily_change_percent).toFixed(1) + "%",
+        direction: (
+          stats.total_quizzes.daily_change_percent >= 0 ? "up" : "down"
+        ) as "up" | "down",
+        label: "from yesterday",
+      },
+      icon: BookOpenCheck,
+      iconWrapClassName: "bg-[#ffedd5]",
+      iconClassName: "text-[#ea580c]",
+    },
+    {
+      title: "Certificates Issued",
+      value: stats.total_certificates.count.toString(),
+      trend: {
+        value: Math.abs(stats.total_certificates.daily_change_percent).toFixed(1) + "%",
+        direction: (
+          stats.total_certificates.daily_change_percent >= 0 ? "up" : "down"
+        ) as "up" | "down",
+        label: "from yesterday",
+      },
+      icon: Award,
+      iconWrapClassName: "bg-[#dcfce7]",
+      iconClassName: "text-[#16a34a]",
+    },
+    {
+      title: "Payments Received",
+      value: `$${stats.total_payments.total_amount.toLocaleString()}`,
+      trend: {
+        value: Math.abs(stats.total_payments.daily_change_percent).toFixed(1) + "%",
+        direction: (
+          stats.total_payments.daily_change_percent >= 0 ? "up" : "down"
+        ) as "up" | "down",
+        label: "from yesterday",
+      },
+      icon: Wallet,
+      iconWrapClassName: "bg-[#e0f2fe]",
+      iconClassName: "text-[#0284c7]",
+    },
+  ];
+
   return (
     <div>
-      <DashboardToolbar />
+      <DashboardToolbar onDateChange={(from, to) => {
+        setDateFrom(from);
+        setDateTo(to);
+      }} />
+
+      {loading && (
+        <div className="mb-4 flex items-center justify-center gap-2 rounded-lg border border-[#e5e7eb] bg-white px-4 py-3 text-sm text-[#6b7280]">
+          <Loader2 className="size-4 animate-spin text-[#2563eb]" />
+          Refreshing dashboard...
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {stats.map((stat) => (
+        {statCardsData.map((stat) => (
           <StatCard key={stat.title} {...stat} />
         ))}
       </div>
 
       <div className="mt-4 grid gap-4 xl:grid-cols-3">
         <div className="xl:col-span-2">
-          <UserGrowthChart />
+          <UserGrowthChart data={stats.user_growth.data} />
         </div>
-        <QuizAttemptChart />
+        <QuizAttemptChart data={stats.quiz_trend.data} />
       </div>
 
       <div className="mt-4 grid gap-4 xl:grid-cols-3">
-        <TopScorers />
+        <TopScorers scorers={stats.top_scorers ?? []} />
         <div className="xl:col-span-2">
-          <RecentActivity />
+          <RecentActivity activities={stats.recent_activity ?? []} />
         </div>
       </div>
     </div>
