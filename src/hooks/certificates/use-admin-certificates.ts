@@ -75,6 +75,11 @@ export function useAdminCertificates({
     };
   }, [page, perPage, nonce, queryKey, status, category, level, dateFrom, dateTo]);
 
+  // Reset page to 1 when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [status, category, level, dateFrom, dateTo]);
+
   return {
     items,
     pagination,

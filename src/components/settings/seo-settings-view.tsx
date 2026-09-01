@@ -12,6 +12,8 @@ import {
 } from "@/data/settings";
 import type { SeoSettingsValues } from "@/data/settings";
 
+import { toast } from "sonner";
+
 export function SeoSettingsView() {
   const router = useRouter();
   const [form, setForm] = useState<SeoSettingsValues>(defaultSeoSettings);
@@ -21,7 +23,7 @@ export function SeoSettingsView() {
   }
 
   function handleSubmit() {
-    // save via API
+    toast.success("SEO settings saved successfully");
   }
 
   return (

@@ -71,6 +71,10 @@ export function usePages({
     };
   }, [enabled, page, perPage, publishStatus, status, nonce, queryKey]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [publishStatus, status]);
+
   const deletePage = useCallback(async (pageId: number) => {
     setMutating(true);
     try {

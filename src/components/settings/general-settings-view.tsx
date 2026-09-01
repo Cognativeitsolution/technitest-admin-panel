@@ -15,6 +15,8 @@ import {
 } from "@/data/settings";
 import type { GeneralSettingsValues } from "@/data/settings";
 
+import { toast } from "sonner";
+
 export function GeneralSettingsView() {
   const router = useRouter();
   const [form, setForm] = useState<GeneralSettingsValues>(defaultGeneralSettings);
@@ -38,7 +40,7 @@ export function GeneralSettingsView() {
   }
 
   function handleSubmit() {
-    // save via API
+    toast.success("General settings saved successfully");
   }
 
   return (

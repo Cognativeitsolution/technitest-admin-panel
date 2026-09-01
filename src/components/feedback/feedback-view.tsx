@@ -21,8 +21,8 @@ import type { WebsiteReviewRecord } from "@/types/website-review.types";
 import type { FeedbackAnalysisRecord } from "@/types/user-feedback.types";
 
 const featuredOptions = ["Featured", "Not Featured"];
-const targetOptions = ["quiz", "question"];
-const analysisStatusOptions = ["pending", "completed"];
+const targetOptions = ["Quiz", "Question"];
+const analysisStatusOptions = ["Pending", "Completed"];
 
 export function FeedbackView({
   initialTab = "website-reviews",
@@ -87,11 +87,13 @@ export function FeedbackView({
 
   const filteredWebsiteReviews = useMemo(() => {
     return websiteReviews.filter((r) => {
-      if (
-        ratingFilter.length > 0 &&
-        !ratingFilter.includes(`${r.rating} Stars`)
-      ) {
-        return false;
+      if (ratingFilter.length > 0) {
+        const selectedRatingNums = ratingFilter
+          .map((rf) => parseInt(rf, 10))
+          .filter((n) => !isNaN(n));
+        if (!selectedRatingNums.includes(Math.round(r.rating))) {
+          return false;
+        }
       }
       if (featuredFilter.includes("Featured") && !featuredFilter.includes("Not Featured")) {
         return r.is_featured;
@@ -105,17 +107,18 @@ export function FeedbackView({
 
   const filteredUserReviews = useMemo(() => {
     return userReviews.filter((r) => {
-      if (
-        ratingFilter.length > 0 &&
-        !ratingFilter.includes(`${r.rating} Stars`)
-      ) {
-        return false;
+      if (ratingFilter.length > 0) {
+        const selectedRatingNums = ratingFilter
+          .map((rf) => parseInt(rf, 10))
+          .filter((n) => !isNaN(n));
+        if (!selectedRatingNums.includes(Math.round(r.rating))) {
+          return false;
+        }
       }
-      if (
-        targetFilter.length > 0 &&
-        !targetFilter.includes(r.target.toLowerCase())
-      ) {
-        return false;
+      if (targetFilter.length > 0) {
+        const t = (r.target || "").toLowerCase().trim();
+        const matched = targetFilter.some((tf) => tf.toLowerCase().trim() === t);
+        if (!matched) return false;
       }
       return true;
     });
@@ -127,24 +130,25 @@ export function FeedbackView({
         item.sentiment_label ||
         item.sentiment_summary ||
         ""
-      ).toLowerCase();
-      const status = (item.sentiment_status || "").toLowerCase();
+      ).toLowerCase().trim();
+      const status = (item.sentiment_status || "").toLowerCase().trim();
+      const target = (item.target || "").toLowerCase().trim();
 
       if (
         sentimentFilter.length > 0 &&
-        !sentimentFilter.some((s) => s.toLowerCase() === sentiment)
+        !sentimentFilter.some((s) => s.toLowerCase().trim() === sentiment)
       ) {
         return false;
       }
       if (
         statusFilter.length > 0 &&
-        !statusFilter.some((s) => s.toLowerCase() === status)
+        !statusFilter.some((s) => s.toLowerCase().trim() === status)
       ) {
         return false;
       }
       if (
         feedbackTargetFilter.length > 0 &&
-        !feedbackTargetFilter.includes(item.target.toLowerCase())
+        !feedbackTargetFilter.some((ft) => ft.toLowerCase().trim() === target)
       ) {
         return false;
       }

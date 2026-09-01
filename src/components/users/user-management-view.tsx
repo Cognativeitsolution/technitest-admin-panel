@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { Download, Plus } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ChevronDown, Download, FileSpreadsheet, FileText, Loader2, Plus } from "lucide-react";
+import { toast } from "sonner";
 
 import { DropdownMenu } from "@/components/shared/dropdown-menu";
 import { Pagination } from "@/components/shared/pagination";
@@ -13,10 +14,10 @@ import { UserDialog } from "@/components/users/user-dialog";
 import type { AdminUser } from "@/data/roles";
 import { Dialog } from "@/components/ui/dialog";
 import type { ApiUser } from "@/types/user.types";
-import { toast } from "sonner";
 import { userService } from "@/services/user.service";
-
 import { ApiError } from "@/lib/api-error";
+import { downloadCsv, downloadPdf } from "@/lib/export-file";
+import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 10;
 
@@ -32,6 +33,10 @@ export function UserManagementView() {
   const [country, setCountry] = useState("All Countries");
   const [dateRange, setDateRange] = useState<DateRange>({ start: null, end: null });
 
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const exportRef = useRef<HTMLDivElement>(null);
+
   const [userDialogOpen, setUserDialogOpen] = useState(false);
   const [userDialogMode, setUserDialogMode] = useState<"create" | "edit">("create");
   const [userDialogTarget, setUserDialogTarget] = useState<AdminUser | null>(null);
@@ -40,7 +45,20 @@ export function UserManagementView() {
   const [userToDelete, setUserToDelete] = useState<ApiUser | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const selectedCountryId = country === "All Countries" ? undefined : countryData?.find((c) => c.name === country)?.id;
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (exportRef.current && !exportRef.current.contains(e.target as Node)) {
+        setExportOpen(false);
+      }
+    }
+    if (exportOpen) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [exportOpen]);
+
+  const selectedCountryId =
+    country === "All Countries"
+      ? undefined
+      : countryData?.find((c) => c.name === country)?.id;
 
   const { items, pagination, loading, goToPage, mutateItems } = useUsers({
     perPage: PAGE_SIZE,
@@ -69,19 +87,73 @@ export function UserManagementView() {
       await userService.deleteUser(userToDelete.id);
       toast.success("User deleted successfully");
       setDeleteDialogOpen(false);
-      
-      // Immediately remove the user from the UI (Optimistic update)
-      mutateItems((prevItems) => prevItems.filter(u => u.id !== userToDelete.id));
-      
+      mutateItems((prevItems) => prevItems.filter((u) => u.id !== userToDelete.id));
       setUserToDelete(null);
-      
-      // Removed immediate refresh() to prevent fetching stale data before DB commit.
-      // The optimistic update above handles the UI state.
     } catch (error) {
       console.error(error);
       toast.error(ApiError.fromAxiosError(error).message || "Failed to delete user");
     } finally {
       setDeleting(false);
+    }
+  }
+
+  async function handleExport(format: "csv" | "pdf") {
+    if (exporting) return;
+    setExportOpen(false);
+    setExporting(true);
+
+    const toastId = toast.loading(`Preparing ${format.toUpperCase()} export...`);
+
+    try {
+      let usersToExport: ApiUser[] = [];
+      try {
+        const result = await userService.getUsers({
+          page: 1,
+          per_page: 500,
+          country_id: selectedCountryId ? String(selectedCountryId) : undefined,
+          start_date: dateRange.start ? formatDate(dateRange.start) : undefined,
+          end_date: dateRange.end ? formatDate(dateRange.end) : undefined,
+        });
+        if (Array.isArray(result)) {
+          usersToExport = result;
+        } else if (result && result.items) {
+          usersToExport = result.items;
+        } else {
+          usersToExport = items;
+        }
+      } catch {
+        usersToExport = items;
+      }
+
+      if (usersToExport.length === 0) {
+        toast.error("No user data available to export.", { id: toastId });
+        return;
+      }
+
+      const dateStr = new Date().toISOString().slice(0, 10);
+      const filename = `users-report-${dateStr}`;
+      const title = "Technitest Users Management Report";
+      const headers = ["Username", "Email", "Phone", "Country", "Quizzes Taken", "Certificates Issued"];
+      const rows = usersToExport.map((u) => [
+        u.username || "-",
+        u.email || "-",
+        u.phone || "-",
+        u.country?.name || "-",
+        String(u.total_quizzes_attempted || 0),
+        String(u.total_certificates_issued || 0),
+      ]);
+
+      if (format === "csv") {
+        downloadCsv(`${filename}.csv`, headers, rows);
+      } else {
+        downloadPdf(`${filename}.pdf`, title, headers, rows);
+      }
+
+      toast.success(`Exported ${usersToExport.length} users as ${format.toUpperCase()}!`, { id: toastId });
+    } catch (err) {
+      toast.error(ApiError.fromAxiosError(err).message || "Export failed", { id: toastId });
+    } finally {
+      setExporting(false);
     }
   }
 
@@ -92,14 +164,42 @@ export function UserManagementView() {
           User Management
         </h1>
 
-        <div className="flex gap-2">
-          <button
-            type="button"
-            className="inline-flex h-11 w-fit items-center gap-2 rounded-xl bg-[#f0a500] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d99400]"
-          >
-            <Download className="size-4" />
-            Export Logs (CSV / PDF)
-          </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Export Dropdown */}
+          <div className="relative" ref={exportRef}>
+            <button
+              type="button"
+              onClick={() => setExportOpen((prev) => !prev)}
+              disabled={exporting}
+              className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#f0a500] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d99400] disabled:opacity-60"
+            >
+              {exporting ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
+              Export Logs (CSV / PDF)
+              <ChevronDown className={cn("size-4 transition-transform", exportOpen && "rotate-180")} />
+            </button>
+
+            {exportOpen ? (
+              <div className="absolute right-0 top-[calc(100%+6px)] z-30 w-44 overflow-hidden rounded-xl border border-[#eef1f6] bg-white py-1 shadow-lg">
+                <button
+                  type="button"
+                  onClick={() => void handleExport("csv")}
+                  className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-xs font-semibold text-[#374151] transition hover:bg-[#f8fafc]"
+                >
+                  <FileSpreadsheet className="size-4 text-[#16a34a]" />
+                  Export as CSV
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleExport("pdf")}
+                  className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-xs font-semibold text-[#374151] transition hover:bg-[#f8fafc]"
+                >
+                  <FileText className="size-4 text-[#dc2626]" />
+                  Export as PDF
+                </button>
+              </div>
+            ) : null}
+          </div>
+
           <button
             type="button"
             onClick={openCreateUser}
@@ -111,6 +211,7 @@ export function UserManagementView() {
         </div>
       </div>
 
+      {/* Original Filters: Country and DateRange */}
       <div className="flex flex-wrap items-center gap-3">
         <DropdownMenu
           label={countriesLoading ? "Loading..." : "Country"}
