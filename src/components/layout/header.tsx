@@ -31,11 +31,11 @@ export function Header({ className }: HeaderProps) {
           <Menu className="size-5" />
         </button>
         <Image
-          src="/TechLogo.png"
+          src="/TechLogo2.png"
           alt="Technitest"
           width={160}
-          height={40}
-          className="h-9 w-auto object-contain"
+          height={120}
+          className="h-12 w-auto object-contain"
           priority
         />
       </div>
