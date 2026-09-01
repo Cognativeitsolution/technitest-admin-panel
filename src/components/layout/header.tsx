@@ -17,7 +17,7 @@ export function Header({ className }: HeaderProps) {
   return (
     <header
       className={cn(
-        "sticky top-0 z-30 flex h-[72px] items-center justify-between gap-3 border-b border-[#eef1f6] bg-white px-6 sm:px-10 lg:px-12 xl:px-16",
+        "sticky top-0 z-30 flex h-23 items-center justify-between gap-3 border-b border-[#eef1f6] bg-white px-6 sm:px-10 lg:px-12 xl:px-16",
         className
       )}
     >
@@ -35,7 +35,7 @@ export function Header({ className }: HeaderProps) {
           alt="Technitest"
           width={160}
           height={120}
-          className="h-12 w-auto object-contain"
+          className="w-auto object-contain"
           priority
         />
       </div>
