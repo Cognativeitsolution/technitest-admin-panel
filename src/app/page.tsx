@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Award, BookOpenCheck, Users, Wallet } from "lucide-react";
+import { Award, BookOpenCheck, Users, Wallet, Loader2 } from "lucide-react";
 
 import { DashboardToolbar } from "@/components/dashboard/dashboard-toolbar";
 import { GenerateReportModal } from "@/components/dashboard/generate-report-modal";
@@ -11,24 +11,113 @@ import { StatCard } from "@/components/dashboard/stat-card";
 import { TopScorers } from "@/components/dashboard/top-scorers";
 import { UserGrowthChart } from "@/components/dashboard/user-growth-chart";
 import { DateRange } from "@/components/ui/date-range-picker";
-import { getFilteredStats } from "@/lib/dashboard-data";
+import { useDashboardStats } from "@/hooks/dashboard/use-dashboard-stats";
 
-const ICONS = {
-  users: Users,
-  quizzes: BookOpenCheck,
-  certificates: Award,
-  payments: Wallet,
-};
+function formatLocalIsoDate(date: Date | null): string | null {
+  if (!date) return null;
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
 export default function DashboardPage() {
   const [dateRange, setDateRange] = useState<DateRange>({ start: null, end: null });
   const [reportModalOpen, setReportModalOpen] = useState(false);
 
+  const hasCompleteRange = Boolean(dateRange.start && dateRange.end);
+  const dateFrom = hasCompleteRange ? formatLocalIsoDate(dateRange.start) : null;
+  const dateTo = hasCompleteRange ? formatLocalIsoDate(dateRange.end) : null;
+
+  const { stats, loading } = useDashboardStats({ dateFrom, dateTo });
+
   function handleResetFilters() {
     setDateRange({ start: null, end: null });
   }
 
-  const currentStats = getFilteredStats("all", dateRange);
+  if (!stats) {
+    return (
+      <div>
+        <DashboardToolbar
+          dateRange={dateRange}
+          onDateRangeChange={setDateRange}
+          onOpenReportModal={() => setReportModalOpen(true)}
+          onResetFilters={handleResetFilters}
+        />
+
+        <div className="flex items-center justify-center rounded-xl border border-[#e5e7eb] bg-white p-12">
+          <Loader2 className="size-8 animate-spin text-[#2563eb]" />
+          <span className="ml-3 text-lg text-[#6b7280]">Loading dashboard...</span>
+        </div>
+
+        <GenerateReportModal
+          open={reportModalOpen}
+          onClose={() => setReportModalOpen(false)}
+          dateFrom={dateFrom}
+          dateTo={dateTo}
+        />
+      </div>
+    );
+  }
+
+  const statCardsData = [
+    {
+      title: "Verified Users",
+      value: stats.verified_users.count.toString(),
+      trend: {
+        value: Math.abs(stats.verified_users.daily_change_percent).toFixed(1) + "%",
+        direction: (
+          stats.verified_users.daily_change_percent >= 0 ? "up" : "down"
+        ) as "up" | "down",
+        label: "from yesterday",
+      },
+      icon: Users,
+      iconWrapClassName: "bg-[#dbeafe]",
+      iconClassName: "text-[#2563eb]",
+    },
+    {
+      title: "Total Quizzes",
+      value: stats.total_quizzes.count.toString(),
+      trend: {
+        value: Math.abs(stats.total_quizzes.daily_change_percent).toFixed(1) + "%",
+        direction: (
+          stats.total_quizzes.daily_change_percent >= 0 ? "up" : "down"
+        ) as "up" | "down",
+        label: "from yesterday",
+      },
+      icon: BookOpenCheck,
+      iconWrapClassName: "bg-[#ffedd5]",
+      iconClassName: "text-[#ea580c]",
+    },
+    {
+      title: "Certificates Issued",
+      value: stats.total_certificates.count.toString(),
+      trend: {
+        value: Math.abs(stats.total_certificates.daily_change_percent).toFixed(1) + "%",
+        direction: (
+          stats.total_certificates.daily_change_percent >= 0 ? "up" : "down"
+        ) as "up" | "down",
+        label: "from yesterday",
+      },
+      icon: Award,
+      iconWrapClassName: "bg-[#dcfce7]",
+      iconClassName: "text-[#16a34a]",
+    },
+    {
+      title: "Payments Received",
+      value: `$${stats.total_payments.total_amount.toLocaleString()}`,
+      trend: {
+        value: Math.abs(stats.total_payments.daily_change_percent).toFixed(1) + "%",
+        direction: (
+          stats.total_payments.daily_change_percent >= 0 ? "up" : "down"
+        ) as "up" | "down",
+        label: "from yesterday",
+      },
+      icon: Wallet,
+      iconWrapClassName: "bg-[#e0f2fe]",
+      iconClassName: "text-[#0284c7]",
+    },
+  ];
 
   return (
     <div>
@@ -39,37 +128,33 @@ export default function DashboardPage() {
         onResetFilters={handleResetFilters}
       />
 
+      {loading && (
+        <div className="mb-4 flex items-center justify-center gap-2 rounded-lg border border-[#e5e7eb] bg-white px-4 py-3 text-sm text-[#6b7280]">
+          <Loader2 className="size-4 animate-spin text-[#2563eb]" />
+          Refreshing dashboard...
+        </div>
+      )}
+
       {/* KPI Stats Grid */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {currentStats.map((stat) => {
-          const Icon = ICONS[stat.iconName] || Users;
-          return (
-            <StatCard
-              key={stat.title}
-              title={stat.title}
-              value={stat.value}
-              trend={stat.trend}
-              icon={Icon}
-              iconWrapClassName={stat.iconWrapClassName}
-              iconClassName={stat.iconClassName}
-            />
-          );
-        })}
+        {statCardsData.map((stat) => (
+          <StatCard key={stat.title} {...stat} />
+        ))}
       </div>
 
       {/* Growth & Quiz Trends Charts */}
       <div className="mt-4 grid gap-4 xl:grid-cols-3">
         <div className="xl:col-span-2">
-          <UserGrowthChart />
+          <UserGrowthChart data={stats.user_growth.data} />
         </div>
-        <QuizAttemptChart />
+        <QuizAttemptChart data={stats.quiz_trend.data} />
       </div>
 
       {/* Top Scorers & Recent Activity */}
       <div className="mt-4 grid gap-4 xl:grid-cols-3">
-        <TopScorers />
+        <TopScorers scorers={stats.top_scorers ?? []} />
         <div className="xl:col-span-2">
-          <RecentActivity />
+          <RecentActivity activities={stats.recent_activity ?? []} />
         </div>
       </div>
 
@@ -77,6 +162,8 @@ export default function DashboardPage() {
       <GenerateReportModal
         open={reportModalOpen}
         onClose={() => setReportModalOpen(false)}
+        dateFrom={dateFrom}
+        dateTo={dateTo}
       />
     </div>
   );
