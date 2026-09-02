@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Check, ChevronDown, Star, Trophy } from "lucide-react";
 
-import { filterTopScorers, TOP_SCORERS } from "@/lib/dashboard-data";
+import type { TopScorerItem } from "@/services/dashboard.service";
 import { TopScorerPeriod } from "@/types/dashboard.types";
 import { cn } from "@/lib/utils";
 
@@ -14,7 +14,31 @@ const PERIOD_OPTIONS: { id: TopScorerPeriod; label: string }[] = [
   { id: "this_week", label: "This Week" },
 ];
 
-export function TopScorers() {
+type TopScorersProps = {
+  scorers?: TopScorerItem[];
+};
+
+function filterTopScorers(scorers: TopScorerItem[], period: TopScorerPeriod) {
+  if (period === "all") return scorers;
+
+  const now = new Date();
+  return scorers.filter((scorer) => {
+    const issuedAt = new Date(scorer.issued_at);
+    if (Number.isNaN(issuedAt.getTime())) return false;
+
+    if (period === "this_month") {
+      return issuedAt.getMonth() === now.getMonth() && issuedAt.getFullYear() === now.getFullYear();
+    }
+
+    const start = new Date(now);
+    const weekday = start.getDay() || 7;
+    start.setDate(start.getDate() - (weekday - 1));
+    start.setHours(0, 0, 0, 0);
+    return issuedAt >= start;
+  });
+}
+
+export function TopScorers({ scorers = [] }: TopScorersProps) {
   const [period, setPeriod] = useState<TopScorerPeriod>("all");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -33,7 +57,7 @@ export function TopScorers() {
     };
   }, [dropdownOpen]);
 
-  const filteredScorers = filterTopScorers(TOP_SCORERS, period);
+  const filteredScorers = filterTopScorers(scorers, period);
   const currentPeriodLabel = PERIOD_OPTIONS.find((p) => p.id === period)?.label || "All Time";
 
   return (
@@ -44,7 +68,6 @@ export function TopScorers() {
           <h2 className="text-lg font-bold text-[#111827]">Top Scorers</h2>
         </div>
 
-        {/* Timeframe Filter Dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
             type="button"
@@ -84,43 +107,66 @@ export function TopScorers() {
         </div>
       </div>
 
-      <ul className="space-y-3">
-        {filteredScorers.map((scorer, index) => (
-          <li
-            key={scorer.name}
-            className="flex items-center gap-3 rounded-xl border border-[#f1f3f7] bg-[#fafbfc] px-3 py-2.5 transition hover:bg-[#f3f6fa]"
-          >
-            <div className="relative">
-              <Image
-                src={scorer.avatar}
-                alt={scorer.name}
-                width={40}
-                height={40}
-                className="size-10 rounded-full object-cover"
-              />
-              <span className="absolute -bottom-1 -right-1 flex size-4.5 items-center justify-center rounded-full bg-[#111827] text-[10px] font-bold text-white">
-                {index + 1}
-              </span>
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-[#111827]">
-                {scorer.name}
-              </p>
-              <div className="mt-0.5 flex items-center gap-2 text-xs text-[#6b7280]">
-                <span>{scorer.quizzesTaken} quizzes</span>
-                <span>•</span>
-                <div className="flex items-center gap-0.5">
-                  <Star className="size-3 fill-[#fbbf24] text-[#fbbf24]" />
-                  <span className="font-medium text-[#111827]">5.0</span>
+      {filteredScorers.length === 0 ? (
+        <div className="flex min-h-[120px] items-center justify-center rounded-xl border border-dashed border-[#e5e7eb] bg-[#fafbfc] text-sm font-medium text-[#6b7280]">
+          No data found
+        </div>
+      ) : (
+        <ul className="space-y-3">
+          {filteredScorers.map((scorer, index) => {
+            const starCount = scorer.stars ?? Math.max(1, Math.min(5, Math.round(scorer.percentage / 20)));
+
+            return (
+              <li
+                key={`${scorer.user_id}-${scorer.certificate_id}`}
+                className="flex items-center gap-3 rounded-xl border border-[#f1f3f7] bg-[#fafbfc] px-3 py-2.5 transition hover:bg-[#f3f6fa]"
+              >
+                <div className="relative">
+                  {scorer.avatar_url ? (
+                    <Image
+                      src={scorer.avatar_url}
+                      alt={scorer.username}
+                      width={40}
+                      height={40}
+                      className="size-10 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex size-10 items-center justify-center rounded-full bg-gray-200 text-sm font-semibold text-gray-500">
+                      {scorer.username?.charAt(0).toUpperCase() || "U"}
+                    </div>
+                  )}
+                  <span className="absolute -bottom-1 -right-1 flex size-4.5 items-center justify-center rounded-full bg-[#111827] text-[10px] font-bold text-white">
+                    {index + 1}
+                  </span>
                 </div>
-              </div>
-            </div>
-            <span className="rounded-lg bg-[#dbeafe] px-2 py-1 text-xs font-bold text-[#1d4ed8]">
-              {scorer.score}
-            </span>
-          </li>
-        ))}
-      </ul>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-[#111827]">
+                    {scorer.username}
+                  </p>
+                  <div className="mt-0.5 flex items-center gap-2 text-xs text-[#6b7280]">
+                    <span className="truncate">{scorer.quiz_name}</span>
+                    <span>•</span>
+                    <div className="flex items-center gap-0.5">
+                      {Array.from({ length: 5 }).map((_, starIndex) => (
+                        <Star
+                          key={`${scorer.user_id}-${starIndex}`}
+                          className={cn(
+                            "size-3",
+                            starIndex < starCount ? "fill-[#fbbf24] text-[#fbbf24]" : "text-[#d1d5db]"
+                          )}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <span className="rounded-lg bg-[#dbeafe] px-2 py-1 text-xs font-bold text-[#1d4ed8]">
+                  {Math.round(scorer.percentage)}%
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </section>
   );
 }
