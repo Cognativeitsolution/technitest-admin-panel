@@ -12,19 +12,51 @@ import {
 } from "recharts";
 import { Calendar, Check, ChevronDown } from "lucide-react";
 
-import { QUIZ_ATTEMPT_DATASETS } from "@/lib/dashboard-data";
+import type { QuizTrendItem } from "@/services/dashboard.service";
 import { QuizAttemptPeriod } from "@/types/dashboard.types";
 import { cn } from "@/lib/utils";
 
-const PERIOD_OPTIONS: { id: QuizAttemptPeriod; label: string }[] = [
+type ChartPeriod = QuizAttemptPeriod | "all";
+
+const PERIOD_OPTIONS: { id: ChartPeriod; label: string }[] = [
+  { id: "all", label: "All" },
   { id: "this_week", label: "This Week" },
   { id: "last_week", label: "Last Week" },
   { id: "this_month", label: "This Month" },
   { id: "last_30d", label: "Last 30 Days" },
 ];
 
-export function QuizAttemptChart() {
-  const [period, setPeriod] = useState<QuizAttemptPeriod>("this_week");
+interface QuizAttemptChartProps {
+  data?: QuizTrendItem[];
+}
+
+function startOfDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function getPeriodBounds(period: Exclude<ChartPeriod, "all">) {
+  const now = startOfDay(new Date());
+  const start = new Date(now);
+  const end = new Date(now);
+
+  if (period === "this_week") {
+    const weekday = now.getDay() || 7;
+    start.setDate(now.getDate() - (weekday - 1));
+  } else if (period === "last_week") {
+    const weekday = now.getDay() || 7;
+    end.setDate(now.getDate() - (weekday - 1) - 1);
+    start.setDate(end.getDate() - 6);
+  } else if (period === "this_month") {
+    start.setDate(1);
+  } else {
+    start.setDate(now.getDate() - 29);
+  }
+
+  return { start, end };
+}
+
+export function QuizAttemptChart({ data }: QuizAttemptChartProps) {
+  const [period, setPeriod] = useState<ChartPeriod>("all");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -42,12 +74,33 @@ export function QuizAttemptChart() {
     };
   }, [dropdownOpen]);
 
-  const rawData = QUIZ_ATTEMPT_DATASETS[period] || QUIZ_ATTEMPT_DATASETS.this_week;
-  const currentPeriodLabel = PERIOD_OPTIONS.find((p) => p.id === period)?.label || "This Week";
+  const sourceData = data ?? [];
+  const hasData = sourceData.length > 0;
+
+  const chartData = useMemo(() => {
+    const scopedData =
+      period === "all"
+        ? sourceData
+        : sourceData.filter((item) => {
+            const { start, end } = getPeriodBounds(period);
+            const date = startOfDay(new Date(item.date));
+            return date >= start && date <= end;
+          });
+
+    return scopedData.map((item) => ({
+      day: new Date(item.date).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      }),
+      attempts: item.count,
+    }));
+  }, [sourceData, period]);
+
+  const currentPeriodLabel = PERIOD_OPTIONS.find((p) => p.id === period)?.label || "All";
 
   const totalAttempts = useMemo(() => {
-    return rawData.reduce((acc, curr) => acc + curr.attempts, 0);
-  }, [rawData]);
+    return chartData.reduce((acc, curr) => acc + curr.attempts, 0);
+  }, [chartData]);
 
   return (
     <section className="rounded-2xl border border-[#eef1f6] bg-white p-5 shadow-[0_1px_3px_rgba(16,24,40,0.04)]">
@@ -61,7 +114,6 @@ export function QuizAttemptChart() {
           </p>
         </div>
 
-        {/* Timeframe Dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
             type="button"
@@ -102,39 +154,45 @@ export function QuizAttemptChart() {
         </div>
       </div>
 
-      <div className="h-[280px] w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={rawData} margin={{ top: 8, right: 4, left: -18, bottom: 0 }}>
-            <CartesianGrid stroke="#eef2f7" vertical={false} />
-            <XAxis
-              dataKey="day"
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: "#9ca3af", fontSize: 12 }}
-            />
-            <YAxis
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: "#9ca3af", fontSize: 12 }}
-            />
-            <Tooltip
-              cursor={{ fill: "rgba(59,130,246,0.08)" }}
-              contentStyle={{
-                borderRadius: 12,
-                border: "1px solid #e5e7eb",
-                boxShadow: "0 8px 20px rgba(0,0,0,0.06)",
-              }}
-            />
-            <Bar
-              name="Attempts"
-              dataKey="attempts"
-              fill="#3b82f6"
-              radius={[8, 8, 0, 0]}
-              barSize={28}
-            />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+      {!hasData || chartData.length === 0 ? (
+        <div className="flex h-[280px] items-center justify-center rounded-xl border border-dashed border-[#e5e7eb] bg-[#fafbfc] text-sm font-medium text-[#6b7280]">
+          No data found
+        </div>
+      ) : (
+        <div className="h-[280px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} margin={{ top: 8, right: 4, left: -18, bottom: 0 }}>
+              <CartesianGrid stroke="#eef2f7" vertical={false} />
+              <XAxis
+                dataKey="day"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "#9ca3af", fontSize: 12 }}
+              />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "#9ca3af", fontSize: 12 }}
+              />
+              <Tooltip
+                cursor={{ fill: "rgba(59,130,246,0.08)" }}
+                contentStyle={{
+                  borderRadius: 12,
+                  border: "1px solid #e5e7eb",
+                  boxShadow: "0 8px 20px rgba(0,0,0,0.06)",
+                }}
+              />
+              <Bar
+                name="Attempts"
+                dataKey="attempts"
+                fill="#3b82f6"
+                radius={[8, 8, 0, 0]}
+                barSize={28}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
     </section>
   );
 }
