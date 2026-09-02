@@ -72,6 +72,10 @@ export function useTransactions({
     };
   }, [page, perPage, nonce, queryKey, statusParam, dateFrom, dateTo]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [statusParam, dateFrom, dateTo]);
+
   const refresh = useCallback(() => {
     setNonce((prev) => prev + 1);
   }, []);

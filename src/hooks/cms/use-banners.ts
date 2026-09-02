@@ -71,6 +71,10 @@ export function useBanners({
     };
   }, [enabled, page, perPage, status, pageId, nonce, queryKey]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [status, pageId]);
+
   const createBanner = useCallback(
     async (payload: BannerPayload, image: File | null) => {
       setMutating(true);

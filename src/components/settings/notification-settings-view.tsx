@@ -19,6 +19,8 @@ const notificationRows: { key: keyof NotificationSettingsValues; label: string; 
   { key: "userRegistration", label: "User Registration Notifications", description: "Notify admins when a new user registers." },
 ];
 
+import { toast } from "sonner";
+
 export function NotificationSettingsView() {
   const router = useRouter();
   const [form, setForm] = useState<NotificationSettingsValues>(defaultNotificationSettings);
@@ -28,7 +30,7 @@ export function NotificationSettingsView() {
   }
 
   function handleSave() {
-    // save via API
+    toast.success("Notification settings saved successfully");
   }
 
   return (

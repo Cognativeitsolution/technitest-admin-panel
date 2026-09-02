@@ -60,7 +60,12 @@ export function CoinsReferralsView({ initialTab = "coins" }: { initialTab?: stri
   const referralsQuery = useReferralUsers({ perPage: PAGE_SIZE });
 
   function handleSelectUser(username: string) {
-    if (username === USER_PLACEHOLDER || username === activeUsername) return;
+    if (username === USER_PLACEHOLDER) {
+      setSelectedUsername(USER_PLACEHOLDER);
+      historyQuery.goToPage(1);
+      return;
+    }
+    if (username === activeUsername) return;
     setSelectedUsername(username);
     historyQuery.goToPage(1);
   }
@@ -233,6 +238,7 @@ export function CoinsReferralsView({ initialTab = "coins" }: { initialTab?: stri
               label={USER_PLACEHOLDER}
               options={userOptions}
               value={activeUsername ?? USER_PLACEHOLDER}
+              searchable
               onChange={handleSelectUser}
             />
             {userOptionsQuery.error ? (

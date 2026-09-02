@@ -55,6 +55,8 @@ function mergeSettingRows(
   return [...apiRows, ...extras];
 }
 
+import { toast } from "sonner";
+
 export function GeneralSettingsView() {
   const router = useRouter();
   const [rows, setRows] = useState<GeneralSettingRow[]>([]);

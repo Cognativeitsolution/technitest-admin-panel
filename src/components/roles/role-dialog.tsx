@@ -101,7 +101,7 @@ export function RoleDialog({
         ) : null}
       </div>
 
-      <div className="flex gap-2">
+      <div className="mt-6 flex justify-end gap-3 border-t border-[#eef1f6] pt-5">
         <button
           type="button"
           onClick={onClose}
