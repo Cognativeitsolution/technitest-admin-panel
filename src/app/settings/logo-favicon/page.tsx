@@ -1,5 +1,5 @@
-import { LogoFaviconView } from "@/components/settings/logo-favicon-view";
+import { LogosSettingsView } from "@/components/settings/logos-settings-view";
 
 export default function LogoFaviconPage() {
-  return <LogoFaviconView />;
+  return <LogosSettingsView />;
 }
