@@ -17,7 +17,7 @@ export function Header({ className }: HeaderProps) {
   return (
     <header
       className={cn(
-        "sticky top-0 z-30 flex h-[72px] items-center justify-between gap-3 border-b border-[#eef1f6] bg-white px-6 sm:px-10 lg:px-12 xl:px-16",
+        "sticky top-0 z-30 flex h-23 items-center justify-between gap-3 border-b border-[#eef1f6] bg-white px-6 sm:px-10 lg:px-12 xl:px-16",
         className
       )}
     >
@@ -31,11 +31,11 @@ export function Header({ className }: HeaderProps) {
           <Menu className="size-5" />
         </button>
         <Image
-          src="/TechLogo.png"
+          src="/TechLogo2.png"
           alt="Technitest"
           width={160}
-          height={40}
-          className="h-9 w-auto object-contain"
+          height={120}
+          className="w-auto object-contain"
           priority
         />
       </div>

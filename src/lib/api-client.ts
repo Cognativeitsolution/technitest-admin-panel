@@ -16,6 +16,16 @@ const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use((config) => {
+  if (config.data instanceof FormData) {
+    // Default json Content-Type breaks multipart uploads — let axios set boundary.
+    if (typeof config.headers?.delete === "function") {
+      config.headers.delete("Content-Type");
+    } else if (config.headers) {
+      delete config.headers["Content-Type"];
+      delete config.headers["content-type"];
+    }
+  }
+
   if (!config.skipAuth) {
     const token = authStorage.getAccessToken();
     if (token) {

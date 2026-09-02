@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { PanelLeftOpen, X } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 
 import { navItems } from "@/config/navigation";
 import {
@@ -44,34 +44,35 @@ export function Sidebar() {
       >
         <div
           className={cn(
-            "flex h-14 items-center border-b border-[#e8ecf2] px-4",
-            collapsed ? "justify-center" : "justify-between"
+            "flex h-14 shrink-0 items-center border-b border-[#e8ecf2] px-3",
+            collapsed ? "justify-center" : "justify-between gap-2",
           )}
         >
           {!collapsed ? (
             <button
               type="button"
               onClick={toggleCollapsed}
-              className="inline-flex items-center gap-2 text-sm font-medium text-[#6b7280] transition hover:text-[#111827]"
+              aria-label="Collapse sidebar"
+              className="hidden lg:inline-flex items-center gap-2 rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-xs font-medium text-[#6b7280] shadow-sm transition hover:border-[#d1d5db] hover:bg-[#fafbfc] hover:text-[#111827]"
             >
-              <X className="size-4.5" />
-              Collapse
+              <PanelLeftClose className="size-4" />
+              <span>Collapse sidebar</span>
             </button>
           ) : (
             <button
               type="button"
               aria-label="Expand sidebar"
               onClick={toggleCollapsed}
-              className="rounded-lg p-2 text-[#6b7280] transition hover:bg-white hover:text-[#111827]"
+              className="hidden lg:inline-flex size-9 items-center justify-center rounded-lg border border-[#e5e7eb] bg-white text-[#6b7280] shadow-sm transition hover:border-[#d1d5db] hover:bg-[#fafbfc] hover:text-[#111827]"
             >
-              <PanelLeftOpen className="size-4.5" />
+              <PanelLeftOpen className="size-4" />
             </button>
           )}
 
           <button
             type="button"
             aria-label="Close sidebar"
-            className="rounded-lg p-1.5 text-[#6b7280] transition hover:bg-white hover:text-[#111827] lg:hidden"
+            className="ml-auto inline-flex size-9 items-center justify-center rounded-lg border border-[#e5e7eb] bg-white text-[#6b7280] shadow-sm transition hover:border-[#d1d5db] hover:bg-[#fafbfc] hover:text-[#111827] lg:hidden"
             onClick={() => setMobileOpen(false)}
           >
             <X className="size-4" />

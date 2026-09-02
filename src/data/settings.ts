@@ -11,6 +11,25 @@ export type GeneralSettingsValues = {
   certificateExpiry: string;
 };
 
+export const mapGeneralSettingsApiToForm = (
+  data: Record<string, { value?: string | null } | null | undefined> | null | undefined,
+): GeneralSettingsValues => {
+  const value = (key: string, fallback = "") => {
+    const entry = data?.[key];
+    return entry && typeof entry.value !== "undefined" && entry.value !== null ? String(entry.value) : fallback;
+  };
+
+  return {
+    siteTitle: value("site_name", defaultGeneralSettings.siteTitle),
+    siteBaseColor: "#2533F1",
+    recordsPerPage: value("records_per_page", defaultGeneralSettings.recordsPerPage),
+    quizAttemptsLimit: value("quiz_attempts_limit", defaultGeneralSettings.quizAttemptsLimit),
+    defaultUserRole: value("default_user_role", defaultGeneralSettings.defaultUserRole),
+    coinsExpiry: value("soft_delete_scheduled_users_days", defaultGeneralSettings.coinsExpiry),
+    certificateExpiry: value("force_delete_scheduled_users_days", defaultGeneralSettings.certificateExpiry),
+  };
+};
+
 export type SeoSettingsValues = {
   page: SitePageOption;
   metaTitle: string;
