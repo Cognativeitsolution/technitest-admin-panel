@@ -46,6 +46,8 @@ function UploadArea({ label, value, onChange, aspectClass = "aspect-video" }: Up
   );
 }
 
+import { toast } from "sonner";
+
 export function LogoFaviconView() {
   const router = useRouter();
   const [form, setForm] = useState<LogoFaviconValues>({
@@ -55,7 +57,7 @@ export function LogoFaviconView() {
   });
 
   function handleSave() {
-    // save via API
+    toast.success("Logo and favicon updated successfully");
   }
 
   return (

@@ -179,6 +179,41 @@
   p {
     line-height: 1.65;
   }
+
+  button,
+  [role="button"],
+  [type="button"],
+  [type="reset"],
+  [type="submit"],
+  [type="checkbox"],
+  [type="radio"],
+  [type="file"]::file-selector-button,
+  select,
+  summary,
+  a[href],
+  label[for],
+  label:has(input:not([type="hidden"])),
+  label:has(button),
+  label:has(select),
+  [data-slot="button"],
+  [data-slot="switch"],
+  [data-slot="checkbox"],
+  [data-slot="tab"],
+  [data-slot="menu-item"],
+  [data-slot="dropdown-menu-item"] {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [role="button"][aria-disabled="true"],
+  input:disabled,
+  select:disabled,
+  textarea:disabled,
+  [aria-disabled="true"],
+  button:disabled *,
+  [role="button"][aria-disabled="true"] * {
+    cursor: not-allowed;
+  }
 }
 
 @layer utilities {

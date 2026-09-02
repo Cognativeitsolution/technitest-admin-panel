@@ -63,8 +63,8 @@ export function RolesTable({
             <tr className="bg-[#eef5ff] text-[13px] font-semibold text-[#374151]">
               <th className="px-5 py-3.5">Role</th>
               <th className="px-5 py-3.5">Description</th>
-              <th className="px-5 py-3.5">Permissions</th>
-              <th className="px-5 py-3.5 text-right">Actions</th>
+              <th className="px-5 py-3.5 whitespace-nowrap">Permissions</th>
+              <th className="px-5 py-3.5 text-right whitespace-nowrap">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -103,8 +103,8 @@ export function RolesTable({
                         {role.description || "No description provided"}
                       </span>
                     </td>
-                    <td className="px-5 py-4">
-                      <span className="inline-flex h-7 items-center rounded-full bg-[#f3f4f6] px-3 text-xs font-semibold text-[#374151]">
+                    <td className="px-5 py-4 whitespace-nowrap">
+                      <span className="inline-flex h-7 shrink-0 whitespace-nowrap items-center rounded-full bg-[#f3f4f6] px-3 text-xs font-semibold text-[#374151]">
                         {role.permissions.length} permission
                         {role.permissions.length === 1 ? "" : "s"}
                       </span>

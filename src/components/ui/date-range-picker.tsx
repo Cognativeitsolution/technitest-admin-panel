@@ -13,6 +13,7 @@ export type DateRange = {
 type DateRangePickerProps = {
   value?: DateRange;
   onChange?: (range: DateRange) => void;
+  onDateChange?: (dateFrom: string | null, dateTo: string | null) => void;
   className?: string;
   dualMonth?: boolean;
   placeholder?: string;
@@ -224,6 +225,7 @@ function MonthCalendar({
 export function DateRangePicker({
   value,
   onChange,
+  onDateChange,
   className,
   dualMonth = true,
   placeholder,
@@ -312,9 +314,14 @@ export function DateRangePicker({
     setRange(next);
     onChange?.(next);
 
-    if (next.start && next.end) {
-      setOpen(false);
+    if (!next.start || !next.end) {
+      return;
     }
+
+    const dateFromStr = next.start.toISOString().split("T")[0];
+    const dateToStr = next.end.toISOString().split("T")[0];
+    onDateChange?.(dateFromStr, dateToStr);
+    setOpen(false);
   }
 
   function shiftMonths(offset: number) {

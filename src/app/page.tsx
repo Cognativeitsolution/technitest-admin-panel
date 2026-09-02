@@ -1,62 +1,63 @@
+"use client";
+
+import { useState } from "react";
 import { Award, BookOpenCheck, Users, Wallet } from "lucide-react";
 
 import { DashboardToolbar } from "@/components/dashboard/dashboard-toolbar";
+import { GenerateReportModal } from "@/components/dashboard/generate-report-modal";
 import { QuizAttemptChart } from "@/components/dashboard/quiz-attempt-chart";
 import { RecentActivity } from "@/components/dashboard/recent-activity";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { TopScorers } from "@/components/dashboard/top-scorers";
 import { UserGrowthChart } from "@/components/dashboard/user-growth-chart";
+import { DateRange } from "@/components/ui/date-range-picker";
+import { getFilteredStats } from "@/lib/dashboard-data";
 
-const stats = [
-  {
-    title: "Total User",
-    value: "40,689",
-    trend: { value: "8.5%", direction: "up" as const, label: "from yesterday" },
-    icon: Users,
-    iconWrapClassName: "bg-[#dbeafe]",
-    iconClassName: "text-[#2563eb]",
-  },
-  {
-    title: "Total Quizzes",
-    value: "145,697",
-    trend: { value: "8.5%", direction: "up" as const, label: "from yesterday" },
-    icon: BookOpenCheck,
-    iconWrapClassName: "bg-[#ffedd5]",
-    iconClassName: "text-[#ea580c]",
-  },
-  {
-    title: "Certificates Issued",
-    value: "45K+",
-    trend: {
-      value: "8.5%",
-      direction: "down" as const,
-      label: "from yesterday",
-    },
-    icon: Award,
-    iconWrapClassName: "bg-[#dcfce7]",
-    iconClassName: "text-[#16a34a]",
-  },
-  {
-    title: "Payments Received",
-    value: "$110,000",
-    trend: { value: "8.5%", direction: "up" as const, label: "from yesterday" },
-    icon: Wallet,
-    iconWrapClassName: "bg-[#e0f2fe]",
-    iconClassName: "text-[#0284c7]",
-  },
-];
+const ICONS = {
+  users: Users,
+  quizzes: BookOpenCheck,
+  certificates: Award,
+  payments: Wallet,
+};
 
 export default function DashboardPage() {
+  const [dateRange, setDateRange] = useState<DateRange>({ start: null, end: null });
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+
+  function handleResetFilters() {
+    setDateRange({ start: null, end: null });
+  }
+
+  const currentStats = getFilteredStats("all", dateRange);
+
   return (
     <div>
-      <DashboardToolbar />
+      <DashboardToolbar
+        dateRange={dateRange}
+        onDateRangeChange={setDateRange}
+        onOpenReportModal={() => setReportModalOpen(true)}
+        onResetFilters={handleResetFilters}
+      />
 
+      {/* KPI Stats Grid */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {stats.map((stat) => (
-          <StatCard key={stat.title} {...stat} />
-        ))}
+        {currentStats.map((stat) => {
+          const Icon = ICONS[stat.iconName] || Users;
+          return (
+            <StatCard
+              key={stat.title}
+              title={stat.title}
+              value={stat.value}
+              trend={stat.trend}
+              icon={Icon}
+              iconWrapClassName={stat.iconWrapClassName}
+              iconClassName={stat.iconClassName}
+            />
+          );
+        })}
       </div>
 
+      {/* Growth & Quiz Trends Charts */}
       <div className="mt-4 grid gap-4 xl:grid-cols-3">
         <div className="xl:col-span-2">
           <UserGrowthChart />
@@ -64,12 +65,19 @@ export default function DashboardPage() {
         <QuizAttemptChart />
       </div>
 
+      {/* Top Scorers & Recent Activity */}
       <div className="mt-4 grid gap-4 xl:grid-cols-3">
         <TopScorers />
         <div className="xl:col-span-2">
           <RecentActivity />
         </div>
       </div>
+
+      {/* Generate Report Dialog */}
+      <GenerateReportModal
+        open={reportModalOpen}
+        onClose={() => setReportModalOpen(false)}
+      />
     </div>
   );
 }

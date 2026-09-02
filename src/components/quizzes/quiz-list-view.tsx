@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -13,15 +13,30 @@ import { QuizTable } from "@/components/quizzes/quiz-table";
 import { QuizPreviewDialog } from "@/components/quizzes/quiz-preview-dialog";
 import { useQuizAdminList } from "@/hooks/quizzes/use-quiz-admin-list";
 import { quizInfoService } from "@/services/quiz-info.service";
+import { categoryService } from "@/services/category.service";
 import { ApiError } from "@/lib/api-error";
 import type { QuizInfoListItem } from "@/types/quiz-info.types";
 
-const levelOptions = ["beginner", "intermediate", "advance"];
-const skillOptions = ["student", "professional"];
+const levelOptions = ["Beginner", "Intermediate", "Advance"];
+const skillOptions = ["Student", "Professional"];
 const statusOptions = ["Active", "Inactive"];
 
 function capitalize(value: string) {
+  if (!value) return "";
   return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function normalizeLevel(level?: string | null): string {
+  const l = (level || "").toLowerCase().trim();
+  if (l === "advance" || l === "advanced") return "advance";
+  return l;
+}
+
+function normalizeSkill(skill?: string | null): string {
+  const s = (skill || "").toLowerCase().trim();
+  if (s === "students" || s === "student") return "student";
+  if (s === "professionals" || s === "professional") return "professional";
+  return s;
 }
 
 export function QuizListView() {
@@ -34,6 +49,7 @@ export function QuizListView() {
     refresh,
   } = useQuizAdminList({ perPage: 15 });
 
+  const [dbCategories, setDbCategories] = useState<string[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [levels, setLevels] = useState<string[]>([]);
   const [skills, setSkills] = useState<string[]>([]);
@@ -42,38 +58,49 @@ export function QuizListView() {
   const [deleting, setDeleting] = useState(false);
   const [previewTarget, setPreviewTarget] = useState<QuizInfoListItem | null>(null);
 
+  useEffect(() => {
+    categoryService
+      .getAdminList({ per_page: 100 })
+      .then((res) => {
+        const catTitles = (res.items ?? []).map((c) => c.title).filter(Boolean);
+        setDbCategories(catTitles);
+      })
+      .catch(() => {});
+  }, []);
+
   const categoryOptions = useMemo(() => {
-    const titles = new Set<string>();
+    const titles = new Set<string>(dbCategories);
     for (const quiz of items) {
       if (quiz.category?.title) titles.add(quiz.category.title);
     }
     return Array.from(titles).sort((a, b) => a.localeCompare(b));
-  }, [items]);
+  }, [items, dbCategories]);
 
   const filtered = useMemo(() => {
     return items.filter((quiz) => {
-      if (
-        categories.length > 0 &&
-        !categories.includes(quiz.category?.title ?? "")
-      ) {
-        return false;
+      if (categories.length > 0) {
+        const quizCat = quiz.category?.title?.toLowerCase().trim() ?? "";
+        const matched = categories.some((c) => c.toLowerCase().trim() === quizCat);
+        if (!matched) return false;
       }
-      if (
-        levels.length > 0 &&
-        !levels.includes((quiz.difficulty_level ?? "").toLowerCase())
-      ) {
-        return false;
+
+      if (levels.length > 0) {
+        const quizLevel = normalizeLevel(quiz.difficulty_level);
+        const matched = levels.some((l) => normalizeLevel(l) === quizLevel);
+        if (!matched) return false;
       }
-      if (
-        skills.length > 0 &&
-        !skills.includes((quiz.skill_level ?? "").toLowerCase())
-      ) {
-        return false;
+
+      if (skills.length > 0) {
+        const quizSkill = normalizeSkill(quiz.skill_level);
+        const matched = skills.some((s) => normalizeSkill(s) === quizSkill);
+        if (!matched) return false;
       }
+
       if (statuses.length > 0) {
         const status = quiz.is_active ? "Active" : "Inactive";
         if (!statuses.includes(status)) return false;
       }
+
       return true;
     });
   }, [items, categories, levels, skills, statuses]);
@@ -123,19 +150,19 @@ export function QuizListView() {
         />
         <MultiSelectFilter
           label="Level"
-          options={levelOptions.map(capitalize)}
-          selected={levels.map(capitalize)}
+          options={levelOptions}
+          selected={levels}
           onChange={(v) => {
-            setLevels(v.map((item) => item.toLowerCase()));
+            setLevels(v);
             goToPage(1);
           }}
         />
         <MultiSelectFilter
           label="Skill"
-          options={skillOptions.map(capitalize)}
-          selected={skills.map(capitalize)}
+          options={skillOptions}
+          selected={skills}
           onChange={(v) => {
-            setSkills(v.map((item) => item.toLowerCase()));
+            setSkills(v);
             goToPage(1);
           }}
         />

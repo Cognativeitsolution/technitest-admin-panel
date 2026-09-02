@@ -71,6 +71,10 @@ export function useBlogs({
     };
   }, [enabled, page, perPage, publishStatus, status, nonce, queryKey]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [publishStatus, status]);
+
   const deleteBlog = useCallback(async (blogId: number) => {
     setMutating(true);
     try {
