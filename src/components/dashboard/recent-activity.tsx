@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Award, BookOpen, Check, ChevronDown, MessageSquare, Sparkles, Users } from "lucide-react";
 
-import { filterActivities, RECENT_ACTIVITIES } from "@/lib/dashboard-data";
-import { ActivityFilter, ActivityItem } from "@/types/dashboard.types";
+import type { RecentActivityItem } from "@/services/dashboard.service";
+import { ActivityFilter } from "@/types/dashboard.types";
 import { cn } from "@/lib/utils";
 
 const FILTER_OPTIONS: { id: ActivityFilter; label: string }[] = [
@@ -18,7 +18,22 @@ const FILTER_OPTIONS: { id: ActivityFilter; label: string }[] = [
   { id: "reviews", label: "Reviews & Feedback" },
 ];
 
-function getActivityIcon(category: ActivityItem["category"]) {
+type ActivityCategory = "quizzes" | "certificates" | "referrals" | "reviews" | "other";
+
+type RecentActivityProps = {
+  activities?: RecentActivityItem[];
+};
+
+function mapActivityCategory(type: string): ActivityCategory {
+  const value = type.toLowerCase();
+  if (value.includes("quiz")) return "quizzes";
+  if (value.includes("certificate")) return "certificates";
+  if (value.includes("refer") || value.includes("coin")) return "referrals";
+  if (value.includes("review") || value.includes("feedback")) return "reviews";
+  return "other";
+}
+
+function getActivityIcon(category: ActivityCategory) {
   switch (category) {
     case "quizzes":
       return <BookOpen className="size-4 text-[#ea580c]" />;
@@ -33,7 +48,7 @@ function getActivityIcon(category: ActivityItem["category"]) {
   }
 }
 
-function getActivityBadgeClass(category: ActivityItem["category"]) {
+function getActivityBadgeClass(category: ActivityCategory) {
   switch (category) {
     case "quizzes":
       return "bg-[#ffedd5]";
@@ -48,7 +63,46 @@ function getActivityBadgeClass(category: ActivityItem["category"]) {
   }
 }
 
-export function RecentActivity() {
+function formatActivityTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function isToday(value: string) {
+  const date = new Date(value);
+  const now = new Date();
+  return date.toDateString() === now.toDateString();
+}
+
+function isWithinDays(value: string, days: number) {
+  const date = new Date(value);
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+  cutoff.setHours(0, 0, 0, 0);
+  return date >= cutoff;
+}
+
+function filterActivities(activities: RecentActivityItem[], filter: ActivityFilter) {
+  return activities.filter((activity) => {
+    const category = mapActivityCategory(activity.type);
+
+    if (filter === "all") return true;
+    if (filter === "today") return isToday(activity.created_at);
+    if (filter === "7d") return isWithinDays(activity.created_at, 7);
+    if (filter === "30d") return isWithinDays(activity.created_at, 30);
+    return category === filter;
+  });
+}
+
+export function RecentActivity({ activities = [] }: RecentActivityProps) {
   const [filter, setFilter] = useState<ActivityFilter>("all");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -67,7 +121,7 @@ export function RecentActivity() {
     };
   }, [dropdownOpen]);
 
-  const filteredActivities = filterActivities(RECENT_ACTIVITIES, filter);
+  const filteredActivities = filterActivities(activities, filter);
   const currentFilterLabel = FILTER_OPTIONS.find((f) => f.id === filter)?.label || "All Activities";
 
   return (
@@ -82,7 +136,6 @@ export function RecentActivity() {
           </p>
         </div>
 
-        {/* Filter Dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
             type="button"
@@ -125,32 +178,37 @@ export function RecentActivity() {
       {filteredActivities.length === 0 ? (
         <div className="py-12 text-center">
           <p className="text-sm font-medium text-[#6b7280]">No activities found for this filter.</p>
-          <button
-            type="button"
-            onClick={() => setFilter("all")}
-            className="mt-2 text-xs font-semibold text-[#2563eb] hover:underline"
-          >
-            Clear Filter
-          </button>
+          {filter !== "all" ? (
+            <button
+              type="button"
+              onClick={() => setFilter("all")}
+              className="mt-2 text-xs font-semibold text-[#2563eb] hover:underline"
+            >
+              Clear Filter
+            </button>
+          ) : null}
         </div>
       ) : (
         <ul className="divide-y divide-[#eef1f6]">
-          {filteredActivities.map((activity) => (
-            <li
-              key={activity.id}
-              className="flex flex-col gap-2 py-3.5 first:pt-1 last:pb-1 sm:flex-row sm:items-center sm:justify-between sm:gap-4 transition hover:bg-[#fafbfc] px-2 rounded-lg"
-            >
-              <div className="flex items-center gap-3">
-                <div className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg", getActivityBadgeClass(activity.category))}>
-                  {getActivityIcon(activity.category)}
+          {filteredActivities.map((activity) => {
+            const category = mapActivityCategory(activity.type);
+            return (
+              <li
+                key={`${activity.type}-${activity.reference_id}`}
+                className="flex flex-col gap-2 py-3.5 first:pt-1 last:pb-1 sm:flex-row sm:items-center sm:justify-between sm:gap-4 transition hover:bg-[#fafbfc] px-2 rounded-lg"
+              >
+                <div className="flex items-center gap-3">
+                  <div className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg", getActivityBadgeClass(category))}>
+                    {getActivityIcon(category)}
+                  </div>
+                  <p className="text-sm font-medium text-[#374151]">{activity.description}</p>
                 </div>
-                <p className="text-sm font-medium text-[#374151]">{activity.text}</p>
-              </div>
-              <span className="shrink-0 text-xs font-medium text-[#9ca3af] sm:text-right">
-                {activity.time}
-              </span>
-            </li>
-          ))}
+                <span className="shrink-0 text-xs font-medium text-[#9ca3af] sm:text-right">
+                  {formatActivityTime(activity.created_at)}
+                </span>
+              </li>
+            );
+          })}
         </ul>
       )}
     </section>
