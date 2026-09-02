@@ -50,10 +50,10 @@ export const settingsCards = [
     href: "/settings/notifications",
     icon: <Bell className="size-6" />,
   },
-  {
-    title: "SEO Configuration",
-    description: "Configure SEO etc to make the system SEO-friendly.",
-    href: "/settings/seo",
-    icon: <Search className="size-6" />,
-  },
+  // {
+  //   title: "SEO Configuration",
+  //   description: "Configure SEO etc to make the system SEO-friendly.",
+  //   href: "/settings/seo",
+  //   icon: <Search className="size-6" />,
+  // },
 ];
