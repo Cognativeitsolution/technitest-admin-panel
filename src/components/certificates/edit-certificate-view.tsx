@@ -6,6 +6,8 @@ import { ArrowLeft, Eraser, Upload } from "lucide-react";
 
 import { FileUpload } from "@/components/ui/file-upload";
 import { TextField } from "@/components/ui/text-field";
+import { TestReportCertificate } from "@/components/certificates/test-report-certificate";
+import { toTestReportPropsFromLegacy } from "@/lib/certificate-report";
 import type { Certificate } from "@/data/certificates";
 
 type EditCertificateViewProps = {
@@ -32,7 +34,7 @@ export function EditCertificateView({ certificate }: EditCertificateViewProps) {
         Edit Certificate
       </Link>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+      <div className="space-y-6">
         <div className="space-y-5 rounded-2xl border border-[#eef1f6] bg-white p-5 shadow-[0_1px_3px_rgba(16,24,40,0.04)] sm:p-6">
           <FileUpload label="Upload Logo" helperText="Choose File" />
 
@@ -126,45 +128,16 @@ export function EditCertificateView({ certificate }: EditCertificateViewProps) {
           <p className="text-sm font-semibold text-[#374151]">
             Certificate Preview
           </p>
-          <div className="overflow-hidden rounded-2xl border border-[#e8ecf2] bg-white shadow-[0_8px_24px_rgba(16,24,40,0.08)]">
-            <div className="relative aspect-[4/3] bg-gradient-to-br from-[#f8fafc] via-white to-[#eff6ff] p-6">
-              <div className="absolute inset-4 rounded-xl border border-[#e5e7eb] bg-white/90 p-5 text-center shadow-sm">
-                <div className="mb-3 flex items-center justify-center gap-2">
-                  <div className="flex size-8 items-center justify-center rounded-lg bg-[#1a73e8] text-[10px] font-bold text-white">
-                    TT
-                  </div>
-                  <span className="text-xs font-extrabold tracking-wide text-[#111827]">
-                    TECHNITEST
-                  </span>
-                </div>
-
-                <p className="text-[11px] font-semibold tracking-[0.2em] text-[#6b7280]">
-                  {heading || "CERTIFICATE"}
-                </p>
-                <p className="mt-2 text-[10px] text-[#9ca3af]">{openingLine}</p>
-                <p className="mt-2 text-lg font-bold text-[#1d4ed8]">
-                  {recipientName}
-                </p>
-                <p className="mt-1 text-[10px] text-[#9ca3af]">
-                  {completionStatement}
-                </p>
-                <p className="mt-2 text-sm font-semibold text-[#111827]">
-                  {title}
-                </p>
-                <p className="mx-auto mt-3 line-clamp-3 max-w-[260px] text-[9px] leading-relaxed text-[#6b7280]">
-                  {description}
-                </p>
-
-                <div className="mt-5 flex items-end justify-between px-2">
-                  <div className="text-left">
-                    <div className="mb-1 h-6 w-16 border-b border-[#111827]" />
-                    <p className="text-[8px] text-[#9ca3af]">Signature</p>
-                  </div>
-                  <div className="size-10 rounded bg-[repeating-linear-gradient(45deg,#111827_0,#111827_1px,transparent_1px,transparent_3px)] opacity-80" />
-                </div>
-              </div>
-            </div>
-          </div>
+          <TestReportCertificate
+            {...toTestReportPropsFromLegacy(certificate, {
+              heading: heading || "TEST REPORT",
+              openingLine,
+              statement: completionStatement,
+              pointsConsidered: description,
+              candidateName: recipientName,
+              jobTitle: title,
+            })}
+          />
         </aside>
       </div>
     </div>

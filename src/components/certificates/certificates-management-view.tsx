@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { Pencil } from "lucide-react";
 
 import { CertificatesTable } from "@/components/certificates/certificates-table";
+import { TestReportCertificate } from "@/components/certificates/test-report-certificate";
 import { Dialog } from "@/components/ui/dialog";
 import { Can } from "@/components/shared/can";
 import { DateRangePicker, type DateRange } from "@/components/ui/date-range-picker";
@@ -14,7 +15,7 @@ import { useAdminCertificates } from "@/hooks/certificates/use-admin-certificate
 import { useCertificateDetail } from "@/hooks/certificates/use-certificate-detail";
 import { useCertificateFilterOptions } from "@/hooks/certificates/use-certificate-filter-options";
 import { useVerifyCertificate } from "@/hooks/certificates/use-verify-certificate";
-import { formatDateTime } from "@/lib/utils";
+import { toTestReportProps } from "@/lib/certificate-report";
 import { cn } from "@/lib/utils";
 import type { UserCertificateItem } from "@/types/certificate.types";
 
@@ -223,7 +224,7 @@ export function CertificatesManagementView() {
         open={Boolean(detailTarget)}
         onClose={() => setDetailTarget(null)}
         title="Certificate Details"
-        maxWidth="max-w-xl"
+        maxWidth="max-w-5xl"
       >
         {detailLoading ? (
           <p className="py-6 text-center text-sm text-[#6b7280]">
@@ -234,102 +235,16 @@ export function CertificatesManagementView() {
             {detailError}
           </p>
         ) : detail ? (
-          <div className="space-y-5">
-            <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
-              <div>
-                <dt className="text-xs font-medium uppercase tracking-wide text-[#9ca3af]">
-                  Certificate #
-                </dt>
-                <dd className="text-sm font-semibold text-[#111827]">
-                  {detail.certificate.certificate_number}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-xs font-medium uppercase tracking-wide text-[#9ca3af]">
-                  User
-                </dt>
-                <dd className="text-sm text-[#374151]">
-                  {detail.certificate.user_name}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-xs font-medium uppercase tracking-wide text-[#9ca3af]">
-                  Quiz
-                </dt>
-                <dd className="text-sm text-[#374151]">
-                  {detail.certificate.quiz_title}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-xs font-medium uppercase tracking-wide text-[#9ca3af]">
-                  Category / Level
-                </dt>
-                <dd className="text-sm text-[#374151]">
-                  {detail.certificate.category || "--"} ·{" "}
-                  {detail.certificate.level || "--"}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-xs font-medium uppercase tracking-wide text-[#9ca3af]">
-                  Score
-                </dt>
-                <dd className="text-sm font-semibold text-[#111827]">
-                  {detail.certificate.score} ({detail.certificate.percentage}%)
-                </dd>
-              </div>
-              <div>
-                <dt className="text-xs font-medium uppercase tracking-wide text-[#9ca3af]">
-                  Badge
-                </dt>
-                <dd className="text-sm text-[#374151]">
-                  {detail.certificate.badge_name || "--"}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-xs font-medium uppercase tracking-wide text-[#9ca3af]">
-                  Issued At
-                </dt>
-                <dd className="text-sm text-[#374151]">
-                  {formatDateTime(detail.certificate.issued_at)}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-xs font-medium uppercase tracking-wide text-[#9ca3af]">
-                  Expires At
-                </dt>
-                <dd className="text-sm text-[#374151]">
-                  {formatDateTime(detail.certificate.expires_at ?? null)}
-                </dd>
-              </div>
-            </dl>
-
-            {detail.template ? (
-              <div className="rounded-xl border border-[#eef1f6] bg-[#f8fafc] p-4">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#9ca3af]">
-                  Applied Template
-                </p>
-                <p className="text-sm font-bold text-[#111827]">
-                  {detail.template.heading}
-                </p>
-                <p className="mt-1 text-sm italic text-[#6b7280]">
-                  {detail.template.opening_line}
-                </p>
-                <p className="mt-1 text-sm text-[#374151]">
-                  {detail.template.statement}
-                </p>
-                <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-[#6b7280]">
-                  {detail.template.description}
-                </p>
-                <p className="mt-2 text-xs font-medium text-[#374151]">
-                  Signed: {detail.template.signature_text}
-                </p>
-              </div>
-            ) : (
-              <p className="rounded-xl border border-dashed border-[#d1d5db] p-4 text-sm text-[#6b7280]">
-                No certificate template has been configured yet.
-              </p>
-            )}
-          </div>
+          <TestReportCertificate
+            {...toTestReportProps({
+              certificate: detail.certificate,
+              template: detail.template,
+            })}
+          />
+        ) : detailTarget ? (
+          <TestReportCertificate
+            {...toTestReportProps({ certificate: detailTarget })}
+          />
         ) : (
           <p className="py-6 text-center text-sm text-[#6b7280]">
             No certificate data available.
