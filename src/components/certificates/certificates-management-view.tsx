@@ -224,7 +224,7 @@ export function CertificatesManagementView() {
         open={Boolean(detailTarget)}
         onClose={() => setDetailTarget(null)}
         title="Certificate Details"
-        maxWidth="max-w-5xl"
+        maxWidth="max-w-6xl"
       >
         {detailLoading ? (
           <p className="py-6 text-center text-sm text-[#6b7280]">

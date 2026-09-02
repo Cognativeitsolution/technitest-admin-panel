@@ -5,6 +5,54 @@ import type {
   UserCertificateItem,
 } from "@/types/certificate.types";
 
+const DESIGN = {
+  heading: "TEST REPORT",
+  openingLine: "This is to Certify that",
+  statement:
+    "has successfully appeared in the TECH-NI-TEST Trade Test conducted for the post of",
+  description:
+    "Install, maintains adjust and repairs electrical wiring systems, distribution boards, circuit breakers, and related equipment in accordance with applicable standards.",
+} as const;
+
+const PLACEHOLDER_HEADINGS = new Set([
+  "certificate heading",
+  "certificate",
+  "heading",
+  "certificates",
+]);
+
+const PLACEHOLDER_OPENING = new Set([
+  "opening line",
+  "this is to certify that",
+  "this is to certify",
+]);
+
+const PLACEHOLDER_STATEMENT = new Set([
+  "completion statement",
+  "has successfully completed the test of",
+  "statement",
+]);
+
+function resolveTemplateField(
+  value: string | null | undefined,
+  fallback: string,
+  placeholders: Set<string>,
+) {
+  const trimmed = value?.trim();
+  if (!trimmed) return fallback;
+  if (placeholders.has(trimmed.toLowerCase())) return fallback;
+  return trimmed;
+}
+
+function resolveDescription(value: string | null | undefined) {
+  const trimmed = value?.trim();
+  if (!trimmed) return DESIGN.description;
+  const lower = trimmed.toLowerCase();
+  if (lower === "description") return DESIGN.description;
+  if (/^(description\s*)+$/.test(lower)) return DESIGN.description;
+  return trimmed;
+}
+
 export function formatCertificateDate(value: string | null | undefined) {
   if (!value) return "--";
   const date = new Date(value);
@@ -18,12 +66,48 @@ export function formatCertificateDate(value: string | null | undefined) {
 
 export function gradeFromPercentage(percentage: number | null | undefined) {
   const value = Number(percentage);
-  if (!Number.isFinite(value)) return "--";
+  if (!Number.isFinite(value)) return "A+";
   if (value >= 90) return "A+";
   if (value >= 80) return "A";
   if (value >= 70) return "B";
   if (value >= 60) return "C";
   return "D";
+}
+
+function letterGradeFromBadge(badgeName: string | null, percentage: number) {
+  if (badgeName) {
+    const match = badgeName.match(/\b(A\+|A|B\+|B|C\+|C|D)\b/i);
+    if (match) return match[0].toUpperCase();
+  }
+  return gradeFromPercentage(percentage);
+}
+
+function estimateTotalMarks(score: number, percentage: number) {
+  if (!percentage || percentage <= 0) return 100;
+  return Math.max(Math.round(score / (percentage / 100)), score, 100);
+}
+
+export function resolveCertificateTemplateCopy(
+  template: Partial<CertificateTemplate> | null | undefined,
+) {
+  return {
+    heading: resolveTemplateField(
+      template?.heading,
+      DESIGN.heading,
+      PLACEHOLDER_HEADINGS,
+    ),
+    openingLine: resolveTemplateField(
+      template?.opening_line,
+      DESIGN.openingLine,
+      PLACEHOLDER_OPENING,
+    ),
+    statement: resolveTemplateField(
+      template?.statement,
+      DESIGN.statement,
+      PLACEHOLDER_STATEMENT,
+    ),
+    description: resolveDescription(template?.description),
+  };
 }
 
 export function toTestReportProps({
@@ -35,12 +119,17 @@ export function toTestReportProps({
   template?: CertificateTemplate | null;
   photoUrl?: string | null;
 }): TestReportCertificateProps {
-  const grade =
-    certificate.badge_name?.trim() ||
-    gradeFromPercentage(certificate.percentage);
+  const letterGrade = letterGradeFromBadge(
+    certificate.badge_name,
+    certificate.percentage,
+  );
   const obtained = Number.isFinite(certificate.score)
     ? certificate.score
     : certificate.percentage;
+  const totalMarks = estimateTotalMarks(
+    certificate.score,
+    certificate.percentage,
+  );
 
   return {
     reportNumber: certificate.certificate_number || "--",
@@ -51,22 +140,32 @@ export function toTestReportProps({
     referenceNo: certificate.category
       ? `TNT-${certificate.category}`
       : certificate.certificate_number,
-    remarks: `${grade} Grade`,
-    totalMarks: 100,
+    remarks: `${letterGrade} Grade`,
+    totalMarks,
     marksObtained: obtained,
-    grade,
-    pointsConsidered:
-      template?.description ||
-      "The candidate was assessed on core trade knowledge, practical application, safety standards, and problem-solving ability required for the role.",
-    heading: template?.heading || "TEST REPORT",
-    openingLine: template?.opening_line || "This is to Certify that",
-    statement:
-      template?.statement ||
-      "has successfully appeared in the TECH-NI-TEST Trade Test conducted for the post of",
-    logoUrl: template?.logo_url,
+    grade: letterGrade,
+    pointsConsidered: resolveDescription(template?.description),
+    heading: resolveTemplateField(
+      template?.heading,
+      DESIGN.heading,
+      PLACEHOLDER_HEADINGS,
+    ),
+    openingLine: resolveTemplateField(
+      template?.opening_line,
+      DESIGN.openingLine,
+      PLACEHOLDER_OPENING,
+    ),
+    statement: resolveTemplateField(
+      template?.statement,
+      DESIGN.statement,
+      PLACEHOLDER_STATEMENT,
+    ),
     signatureImageUrl: template?.signature_image_url,
-    signatureText: template?.signature_text || "Signature",
-    sealLabel: certificate.level || "BEGINNER",
+    signatureText: template?.signature_text?.trim() || "Signature",
+    sealLabel:
+      certificate.level?.trim() ||
+      certificate.badge_name?.split(/\s+/)[0] ||
+      "BEGINNER",
     qrValue: certificate.certificate_number,
   };
 }
@@ -86,9 +185,21 @@ export function toTestReportPropsFromLegacy(
     marksObtained: "--",
     grade: certificate.level === "Advanced" ? "A+" : "A",
     pointsConsidered: certificate.description,
-    heading: certificate.certificateHeading,
-    openingLine: certificate.openingLine,
-    statement: certificate.completionStatement,
+    heading: resolveTemplateField(
+      certificate.certificateHeading,
+      DESIGN.heading,
+      PLACEHOLDER_HEADINGS,
+    ),
+    openingLine: resolveTemplateField(
+      certificate.openingLine,
+      DESIGN.openingLine,
+      PLACEHOLDER_OPENING,
+    ),
+    statement: resolveTemplateField(
+      certificate.completionStatement,
+      DESIGN.statement,
+      PLACEHOLDER_STATEMENT,
+    ),
     sealLabel: certificate.level,
     qrValue: certificate.id,
     ...extras,

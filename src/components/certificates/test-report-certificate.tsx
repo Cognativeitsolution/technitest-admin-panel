@@ -19,10 +19,6 @@ export type TestReportCertificateProps = {
   heading?: string;
   openingLine?: string;
   statement?: string;
-  companyName?: string;
-  tagline?: string;
-  subtitle?: string;
-  logoUrl?: string | null;
   signatureImageUrl?: string | null;
   signatureText?: string;
   sealLabel?: string;
@@ -33,62 +29,35 @@ export type TestReportCertificateProps = {
 
 const W = 1480;
 const H = 860;
-const NAVY = "#1B365D";
+const NAVY = "#002E5D";
 const GOLD = "#C9A227";
-const ORANGE = "#E38A1D";
+const ORANGE = "#E8950A";
 const BADGE = "#E87A12";
 const LABEL_GRAY = "#8A8F98";
 
-const DEFAULT_LOGO = "/certificates/logo.png";
+const HEADER_LOGO = "/certificates/header-logo.png";
 const DEFAULT_SEAL = "/certificates/seal-beginner.png";
-const DEFAULT_QR = "/certificates/qr-default.png";
 const WATERMARK_BG = "/certificates/watermark-bg.jpg";
 
 function CornerAccents() {
   return (
     <>
-      <svg
-        className="pointer-events-none absolute top-0 left-0"
-        width="210"
-        height="118"
-        viewBox="0 0 210 118"
-        aria-hidden
-      >
-        <polygon points="0,0 210,0 0,118" fill={NAVY} />
-        <polygon points="0,0 158,0 0,88" fill={GOLD} />
-        <polygon points="0,0 104,0 0,58" fill={NAVY} />
-      </svg>
-      <svg
-        className="pointer-events-none absolute top-0 right-0"
-        width="210"
-        height="118"
-        viewBox="0 0 210 118"
-        aria-hidden
-      >
-        <polygon points="210,0 0,0 210,118" fill={NAVY} />
-        <polygon points="210,0 52,0 210,88" fill={GOLD} />
-        <polygon points="210,0 106,0 210,58" fill={NAVY} />
-      </svg>
-      <svg
-        className="pointer-events-none absolute bottom-0 left-0"
-        width="170"
-        height="92"
-        viewBox="0 0 170 92"
-        aria-hidden
-      >
-        <polygon points="0,92 170,92 0,0" fill={NAVY} />
-        <polygon points="0,92 118,92 0,28" fill={GOLD} />
-      </svg>
-      <svg
-        className="pointer-events-none absolute right-0 bottom-0"
-        width="170"
-        height="92"
-        viewBox="0 0 170 92"
-        aria-hidden
-      >
-        <polygon points="170,92 0,92 170,0" fill={NAVY} />
-        <polygon points="170,92 52,92 170,28" fill={GOLD} />
-      </svg>
+      <div
+        className="pointer-events-none absolute right-0 top-0 size-0 border-l-[110px] border-t-[110px] border-l-transparent"
+        style={{ borderTopColor: GOLD }}
+      />
+      <div
+        className="pointer-events-none absolute right-0 top-0 size-0 border-l-[68px] border-t-[68px] border-l-transparent"
+        style={{ borderTopColor: NAVY }}
+      />
+      <div
+        className="pointer-events-none absolute bottom-0 left-0 size-0 border-r-[90px] border-b-[90px] border-r-transparent"
+        style={{ borderBottomColor: GOLD }}
+      />
+      <div
+        className="pointer-events-none absolute bottom-0 left-0 h-[6px] w-[120px]"
+        style={{ backgroundColor: NAVY }}
+      />
     </>
   );
 }
@@ -131,7 +100,7 @@ export function TestReportCertificate({
     qrCodeUrl ||
     (qrValue
       ? `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=8&data=${encodeURIComponent(qrValue)}`
-      : DEFAULT_QR);
+      : undefined);
 
   return (
     <div
@@ -141,7 +110,7 @@ export function TestReportCertificate({
       style={{ height: H * scale }}
     >
       <article
-        className="absolute top-0 left-0 origin-top-left overflow-hidden text-[#111]"
+        className="absolute top-0 left-0 origin-top-left overflow-hidden font-sans text-[#111]"
         style={{
           width: W,
           height: H,
@@ -156,52 +125,40 @@ export function TestReportCertificate({
       >
         <CornerAccents />
 
-        <div
-          className="pointer-events-none absolute"
-          style={{
-            inset: 16,
-            border: `1.5px solid ${GOLD}`,
-            borderRadius: 2,
-          }}
-        />
-
-        <div
-          className="absolute"
-          style={{ top: 44, left: 56, zIndex: 2 }}
-        >
+        <div className="absolute" style={{ top: 44, left: 56, zIndex: 2 }}>
           <span
-            className="inline-flex items-center rounded-[8px] px-[16px] py-[7px] text-[13px] font-extrabold tracking-[0.14em] text-white uppercase"
+            className="inline-flex items-center rounded-[8px] px-[16px] py-[7px] text-[13px] font-extrabold tracking-[0.12em] text-white uppercase"
             style={{ background: BADGE }}
           >
             {heading}
           </span>
           <p
-            className="mt-[16px] text-[11px] font-semibold tracking-[0.18em] uppercase"
+            className="mt-[16px] text-[11px] font-semibold tracking-[0.16em] uppercase"
             style={{ color: LABEL_GRAY }}
           >
             REPORT NO
           </p>
-          <p className="mt-[3px] text-[22px] leading-none font-extrabold">
+          <p className="mt-[3px] text-[22px] leading-none font-extrabold text-[#111827]">
             {reportNumber}
           </p>
         </div>
 
         <img
-          src={DEFAULT_LOGO}
+          src={HEADER_LOGO}
           alt="TECH-NI-TEST"
           className="absolute object-contain object-center"
           style={{
-            top: 32,
+            top: 28,
             left: "50%",
-            width: 460,
-            height: 102,
+            width: 480,
+            height: 108,
             transform: "translateX(-50%)",
             zIndex: 2,
           }}
         />
 
         <div
-          className="absolute overflow-hidden rounded-[8px] bg-white"
+          className="absolute overflow-hidden rounded-[8px] bg-[#f8fafc]"
           style={{
             top: 36,
             right: 56,
@@ -219,19 +176,18 @@ export function TestReportCertificate({
               className="h-full w-full rounded-[4px] object-cover"
             />
           ) : (
-            <div className="flex h-full items-center justify-center text-[11px] font-semibold tracking-[0.16em] text-[#9ca3af] uppercase">
+            <div className="flex h-full items-center justify-center text-[11px] font-semibold tracking-[0.14em] text-[#9ca3af] uppercase">
               Photo
             </div>
           )}
         </div>
 
         <div
-          className="absolute rounded-[10px] px-[20px] py-[18px]"
+          className="absolute rounded-[10px] bg-white/80 px-[20px] py-[18px]"
           style={{
-            top: 292,
+            top: 288,
             left: 56,
             width: 268,
-            background: "rgba(255,255,255,0.55)",
             border: `1.5px solid ${GOLD}`,
             zIndex: 2,
           }}
@@ -243,26 +199,29 @@ export function TestReportCertificate({
 
         <div
           className="absolute text-center"
-          style={{ top: 196, left: 352, right: 56, zIndex: 2 }}
+          style={{ top: 188, left: 340, right: 56, zIndex: 2 }}
         >
           <p
-            className="text-[17px] text-[#222]"
-            style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontStyle: "italic" }}
+            className="text-[16px] text-[#9ca3af]"
+            style={{
+              fontFamily: "Georgia, 'Times New Roman', serif",
+              fontStyle: "italic",
+            }}
           >
             {openingLine}
           </p>
           <h1
-            className="mt-[10px] text-[48px] leading-none font-extrabold tracking-[0.04em] uppercase"
+            className="mt-[8px] font-sans text-[50px] leading-none font-extrabold tracking-[0.03em] uppercase"
             style={{ color: ORANGE }}
           >
             {candidateName}
           </h1>
-          <p className="mx-auto mt-[12px] max-w-[620px] text-[15px] leading-[1.45] text-[#222]">
+          <p className="mx-auto mt-[10px] max-w-[640px] text-[15px] leading-[1.45] text-[#374151]">
             {statement}
           </p>
-          <div className="mt-[16px] flex justify-center">
+          <div className="mt-[14px] flex justify-center">
             <span
-              className="inline-flex max-w-full rounded-full px-[28px] py-[9px] text-[16px] font-bold tracking-[0.08em] text-white uppercase"
+              className="inline-flex max-w-full rounded-full px-[30px] py-[9px] text-[15px] font-bold tracking-[0.06em] text-white uppercase"
               style={{ background: NAVY }}
             >
               <span className="truncate">{jobTitle}</span>
@@ -270,11 +229,10 @@ export function TestReportCertificate({
           </div>
 
           <div
-            className="mx-auto mt-[22px] grid grid-cols-3 overflow-hidden rounded-[10px]"
+            className="mx-auto mt-[20px] grid grid-cols-3 overflow-hidden rounded-[10px] bg-white/85"
             style={{
-              width: 520,
+              width: 540,
               border: `1.5px solid ${GOLD}`,
-              background: "rgba(255,255,255,0.72)",
             }}
           >
             <ScoreCell label="TOTAL MARKS" value={totalMarks} />
@@ -285,12 +243,12 @@ export function TestReportCertificate({
 
         <div
           className="absolute"
-          style={{ left: 56, bottom: 48, width: 430, zIndex: 2 }}
+          style={{ left: 56, bottom: 44, width: 440, zIndex: 2 }}
         >
-          <p className="text-[12px] font-extrabold tracking-[0.08em] uppercase">
+          <p className="text-[11px] font-extrabold tracking-[0.06em] text-[#111827] uppercase">
             The following points were considered
           </p>
-          <p className="mt-[8px] text-[12px] leading-[1.5] text-[#333]">
+          <p className="mt-[8px] text-[11px] leading-[1.55] text-[#374151]">
             {pointsConsidered}
           </p>
         </div>
@@ -301,49 +259,60 @@ export function TestReportCertificate({
           className="absolute object-contain"
           style={{
             left: "50%",
-            bottom: 22,
-            width: 128,
-            height: 210,
-            transform: "translateX(-50%)",
+            bottom: 18,
+            width: 124,
+            height: 200,
+            transform: "translateX(-58%)",
             zIndex: 3,
           }}
         />
 
         <div
-          className="absolute flex flex-col items-center"
-          style={{ left: 860, bottom: 72, width: 240, zIndex: 2 }}
+          className="absolute flex items-end gap-3"
+          style={{ left: 848, bottom: 68, width: 260, zIndex: 2 }}
         >
-          {signatureImageUrl ? (
-            <img
-              src={signatureImageUrl}
-              alt=""
-              className="mb-[2px] h-[46px] w-auto max-w-full object-contain"
-            />
-          ) : (
-            <svg
-              viewBox="0 0 180 44"
-              className="mb-[2px] h-[44px] w-[180px] text-[#111]"
-              fill="none"
-              aria-hidden
-            >
-              <path
-                d="M4 30c18-18 28 2 44-8 14-9 18 15 36 6 14-7 20-20 34-13 12 6 14 18 28 11 9-4 16-16 28-9"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeLinecap="round"
+          <p className="shrink-0 pb-[10px] text-[13px] text-[#9ca3af]">
+            Signature
+          </p>
+          <div className="min-w-0 flex-1">
+            {signatureImageUrl ? (
+              <img
+                src={signatureImageUrl}
+                alt=""
+                className="mb-[2px] h-[44px] w-full object-contain object-bottom"
               />
-            </svg>
-          )}
-          <div className="h-[1px] w-full bg-[#111]" />
-          <p className="mt-[6px] text-[14px] text-[#444]">{signatureText}</p>
+            ) : (
+              <svg
+                viewBox="0 0 180 44"
+                className="mb-[2px] h-[44px] w-full text-[#111]"
+                fill="none"
+                aria-hidden
+              >
+                <path
+                  d="M4 30c18-18 28 2 44-8 14-9 18 15 36 6 14-7 20-20 34-13 12 6 14 18 28 11 9-4 16-16 28-9"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            )}
+            <div className="h-px w-full bg-[#374151]" />
+            {signatureText && signatureText !== "Signature" ? (
+              <p className="mt-[4px] text-center text-[12px] font-medium text-[#374151]">
+                {signatureText}
+              </p>
+            ) : null}
+          </div>
         </div>
 
-        <img
-          src={qrSrc}
-          alt="Certificate QR code"
-          className="absolute bg-white object-contain"
-          style={{ right: 56, bottom: 48, width: 96, height: 96, zIndex: 2 }}
-        />
+        {qrSrc ? (
+          <img
+            src={qrSrc}
+            alt="Certificate QR code"
+            className="absolute bg-white object-contain"
+            style={{ right: 56, bottom: 44, width: 96, height: 96, zIndex: 2 }}
+          />
+        ) : null}
       </article>
     </div>
   );
@@ -363,7 +332,9 @@ function Field({
       <p className="text-[13px] font-semibold" style={{ color: ORANGE }}>
         {label}
       </p>
-      <p className="mt-[3px] text-[15px] leading-tight font-semibold">{value}</p>
+      <p className="mt-[3px] text-[15px] leading-tight font-semibold text-[#111827]">
+        {value}
+      </p>
     </div>
   );
 }
@@ -379,17 +350,17 @@ function ScoreCell({
 }) {
   return (
     <div
-      className={cn("px-[10px] py-[14px] text-center", divider && "border-l")}
-      style={divider ? { borderLeftColor: "#d6d3d1" } : undefined}
+      className={cn("px-[12px] py-[14px] text-center", divider && "border-l")}
+      style={divider ? { borderLeftColor: GOLD } : undefined}
     >
       <p
-        className="text-[10px] font-bold tracking-[0.1em]"
+        className="text-[10px] font-bold tracking-[0.08em] uppercase"
         style={{ color: LABEL_GRAY }}
       >
         {label}
       </p>
       <p
-        className="mt-[6px] text-[30px] leading-none font-extrabold"
+        className="mt-[6px] text-[32px] leading-none font-extrabold"
         style={{ color: NAVY }}
       >
         {value}
@@ -409,7 +380,7 @@ export const SAMPLE_TEST_REPORT: TestReportCertificateProps = {
   marksObtained: 80,
   grade: "A+",
   pointsConsidered:
-    "Install, maintains, adjust and repairs electrical wiring systems, fixtures, motors, generators, apparatus and control equipment. Interprets drawings and performs trade calculations for safe installation.",
+    "Install, maintains adjust and repairs electrical wiring systems, fixtures, motors, generators, apparatus and control equipment. Interprets drawings and performs trade calculations for safe installation.",
   heading: "TEST REPORT",
   openingLine: "This is to Certify that",
   statement:

@@ -8,9 +8,10 @@ import { ArrowLeft } from "lucide-react";
 import { FileUpload } from "@/components/ui/file-upload";
 import { TextField } from "@/components/ui/text-field";
 import {
-  SAMPLE_TEST_REPORT,
   TestReportCertificate,
+  SAMPLE_TEST_REPORT,
 } from "@/components/certificates/test-report-certificate";
+import { resolveCertificateTemplateCopy } from "@/lib/certificate-report";
 import {
   useCertificateTemplate,
   type SaveTemplateInput,
@@ -68,8 +69,15 @@ function TemplateForm({ template, saving, onSave }: TemplateFormProps) {
     await onSave({ payload, logo: logoFile, signatureImage: signatureFile });
   }
 
+  const previewCopy = resolveCertificateTemplateCopy({
+    heading,
+    opening_line: openingLine,
+    statement,
+    description,
+  });
+
   return (
-    <div className="space-y-6">
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(520px,640px)]">
       <div className="space-y-5 rounded-2xl border border-[#eef1f6] bg-white p-5 shadow-[0_1px_3px_rgba(16,24,40,0.04)] sm:p-6">
         <div className="grid gap-5 sm:grid-cols-2">
           <div>
@@ -117,7 +125,7 @@ function TemplateForm({ template, saving, onSave }: TemplateFormProps) {
           value={heading}
           onChange={(e) => setHeading(e.target.value)}
           inputClassName="text-[#4b5563]"
-          placeholder="CERTIFICATE"
+          placeholder="TEST REPORT"
         />
 
         <TextField
@@ -125,7 +133,7 @@ function TemplateForm({ template, saving, onSave }: TemplateFormProps) {
           value={openingLine}
           onChange={(e) => setOpeningLine(e.target.value)}
           inputClassName="text-[#4b5563]"
-          placeholder="This is to Certify That"
+          placeholder="This is to Certify that"
         />
 
         <TextField
@@ -133,7 +141,7 @@ function TemplateForm({ template, saving, onSave }: TemplateFormProps) {
           value={statement}
           onChange={(e) => setStatement(e.target.value)}
           inputClassName="text-[#4b5563]"
-          placeholder="Has Successfully Completed The Test Of"
+          placeholder="has successfully appeared in the TECH-NI-TEST Trade Test conducted for the post of"
         />
 
         <div className="flex flex-col gap-2.5">
@@ -167,19 +175,18 @@ function TemplateForm({ template, saving, onSave }: TemplateFormProps) {
         </button>
       </div>
 
-      <aside className="space-y-3">
+      <aside className="space-y-3 xl:sticky xl:top-6 xl:self-start">
         <p className="text-sm font-semibold text-[#374151]">
           Certificate Preview
         </p>
         <TestReportCertificate
           {...SAMPLE_TEST_REPORT}
-          heading={heading || "TEST REPORT"}
-          openingLine={openingLine || SAMPLE_TEST_REPORT.openingLine}
-          statement={statement || SAMPLE_TEST_REPORT.statement}
-          pointsConsidered={description || SAMPLE_TEST_REPORT.pointsConsidered}
-          logoUrl={logoPreview}
+          heading={previewCopy.heading}
+          openingLine={previewCopy.openingLine}
+          statement={previewCopy.statement}
+          pointsConsidered={previewCopy.description}
           signatureImageUrl={signaturePreview}
-          signatureText={signatureText || "Signature"}
+          signatureText={signatureText.trim() || "Signature"}
         />
       </aside>
     </div>
