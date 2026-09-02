@@ -12,7 +12,7 @@ import {
 } from "recharts";
 import { CalendarDays, Check, ChevronDown } from "lucide-react";
 
-import { USER_GROWTH_DATASETS } from "@/lib/dashboard-data";
+import type { UserGrowthItem } from "@/services/dashboard.service";
 import { UserGrowthPeriod, UserGrowthSegment } from "@/types/dashboard.types";
 import { cn } from "@/lib/utils";
 
@@ -24,7 +24,22 @@ const PERIOD_OPTIONS: { id: UserGrowthPeriod; label: string }[] = [
   { id: "all", label: "All 12 Months" },
 ];
 
-export function UserGrowthChart() {
+interface UserGrowthChartProps {
+  data?: UserGrowthItem[];
+}
+
+function filterGrowthByPeriod(data: UserGrowthItem[], period: UserGrowthPeriod) {
+  if (period === "all") return data;
+  if (period === "this_year") {
+    const currentYear = new Date().getFullYear();
+    return data.filter((item) => item.year === currentYear);
+  }
+
+  const months = period === "30d" ? 1 : period === "3m" ? 3 : 6;
+  return data.slice(-months);
+}
+
+export function UserGrowthChart({ data }: UserGrowthChartProps) {
   const [period, setPeriod] = useState<UserGrowthPeriod>("all");
   const [segment, setSegment] = useState<UserGrowthSegment>("all");
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -44,12 +59,26 @@ export function UserGrowthChart() {
     };
   }, [dropdownOpen]);
 
-  const rawData = USER_GROWTH_DATASETS[period] || USER_GROWTH_DATASETS.all;
+  const sourceData = data ?? [];
+  const hasData = sourceData.length > 0;
+
+  const chartData = useMemo(() => {
+    return filterGrowthByPeriod(sourceData, period).map((item) => {
+      const students = Number(item.students) || 0;
+      const professionals = Number(item.professionals) || 0;
+      return {
+        month: item.month_name,
+        students,
+        professionals,
+        total: students + professionals,
+      };
+    });
+  }, [sourceData, period]);
 
   const currentPeriodLabel = PERIOD_OPTIONS.find((p) => p.id === period)?.label || "Select Period";
 
   const totals = useMemo(() => {
-    return rawData.reduce(
+    return chartData.reduce(
       (acc, curr) => ({
         students: acc.students + curr.students,
         professionals: acc.professionals + curr.professionals,
@@ -57,7 +86,7 @@ export function UserGrowthChart() {
       }),
       { students: 0, professionals: 0, total: 0 }
     );
-  }, [rawData]);
+  }, [chartData]);
 
   return (
     <section className="rounded-2xl border border-[#eef1f6] bg-white p-5 shadow-[0_1px_3px_rgba(16,24,40,0.04)]">
@@ -70,7 +99,6 @@ export function UserGrowthChart() {
             </p>
           </div>
 
-          {/* Interactive Segment Filters */}
           <div className="flex items-center gap-2 rounded-lg bg-[#f8fafc] p-1 border border-[#eef1f6]">
             <button
               type="button"
@@ -113,7 +141,6 @@ export function UserGrowthChart() {
           </div>
         </div>
 
-        {/* Interactive Period Filter Dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
             type="button"
@@ -154,53 +181,60 @@ export function UserGrowthChart() {
         </div>
       </div>
 
-      <div className="h-[280px] w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={rawData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
-            <CartesianGrid stroke="#eef2f7" vertical={false} />
-            <XAxis
-              dataKey="month"
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: "#9ca3af", fontSize: 12 }}
-            />
-            <YAxis
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: "#9ca3af", fontSize: 12 }}
-            />
-            <Tooltip
-              contentStyle={{
-                borderRadius: 12,
-                border: "1px solid #e5e7eb",
-                boxShadow: "0 8px 20px rgba(0,0,0,0.06)",
-              }}
-            />
-            {(segment === "all" || segment === "students") && (
-              <Line
-                name="Students"
-                type="monotone"
-                dataKey="students"
-                stroke="#22c55e"
-                strokeWidth={3}
-                dot={{ r: 3, fill: "#22c55e" }}
-                activeDot={{ r: 6 }}
+      {!hasData || chartData.length === 0 ? (
+        <div className="flex h-[280px] items-center justify-center rounded-xl border border-dashed border-[#e5e7eb] bg-[#fafbfc] text-sm font-medium text-[#6b7280]">
+          No data found
+        </div>
+      ) : (
+        <div className="h-[280px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+              <CartesianGrid stroke="#eef2f7" vertical={false} />
+              <XAxis
+                dataKey="month"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "#9ca3af", fontSize: 12 }}
               />
-            )}
-            {(segment === "all" || segment === "professionals") && (
-              <Line
-                name="Professionals"
-                type="monotone"
-                dataKey="professionals"
-                stroke="#8b5cf6"
-                strokeWidth={3}
-                dot={{ r: 3, fill: "#8b5cf6" }}
-                activeDot={{ r: 6 }}
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "#9ca3af", fontSize: 12 }}
+                domain={[0, "auto"]}
               />
-            )}
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+              <Tooltip
+                contentStyle={{
+                  borderRadius: 12,
+                  border: "1px solid #e5e7eb",
+                  boxShadow: "0 8px 20px rgba(0,0,0,0.06)",
+                }}
+              />
+              {(segment === "all" || segment === "students") && (
+                <Line
+                  name="Students"
+                  type="monotone"
+                  dataKey="students"
+                  stroke="#22c55e"
+                  strokeWidth={3}
+                  dot={{ r: 3, fill: "#22c55e" }}
+                  activeDot={{ r: 6 }}
+                />
+              )}
+              {(segment === "all" || segment === "professionals") && (
+                <Line
+                  name="Professionals"
+                  type="monotone"
+                  dataKey="professionals"
+                  stroke="#8b5cf6"
+                  strokeWidth={3}
+                  dot={{ r: 3, fill: "#8b5cf6" }}
+                  activeDot={{ r: 6 }}
+                />
+              )}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
     </section>
   );
 }

@@ -1,18 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Download, FileSpreadsheet, FileText, Loader2, X } from "lucide-react";
+import { Check, Download, FileSpreadsheet, FileText, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Dialog } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { exportDashboardReport } from "@/lib/dashboard-data";
-import { ReportConfig, ReportFormat, ReportType } from "@/types/dashboard.types";
+import { dashboardService } from "@/services/dashboard.service";
+import { ReportFormat, ReportType } from "@/types/dashboard.types";
 import { cn } from "@/lib/utils";
 
 type GenerateReportModalProps = {
   open: boolean;
   onClose: () => void;
+  dateFrom?: string | null;
+  dateTo?: string | null;
 };
 
 const REPORT_TYPES: { id: ReportType; label: string; desc: string }[] = [
@@ -23,7 +25,12 @@ const REPORT_TYPES: { id: ReportType; label: string; desc: string }[] = [
   { id: "activities", label: "Recent User Activity Log", desc: "Audit trail of student completions, badges, and certificates" },
 ];
 
-export function GenerateReportModal({ open, onClose }: GenerateReportModalProps) {
+export function GenerateReportModal({
+  open,
+  onClose,
+  dateFrom,
+  dateTo,
+}: GenerateReportModalProps) {
   const [reportType, setReportType] = useState<ReportType>("full");
   const [format, setFormat] = useState<ReportFormat>("pdf");
   const [loading, setLoading] = useState(false);
@@ -72,29 +79,20 @@ export function GenerateReportModal({ open, onClose }: GenerateReportModalProps)
   async function handleGenerate() {
     if (loading) return;
 
-    const selectedTypeObj = REPORT_TYPES.find((t) => t.id === reportType);
-    const title = selectedTypeObj ? `Technitest ${selectedTypeObj.label}` : "Dashboard Report";
-
-    const config: ReportConfig = {
-      title,
-      type: reportType,
-      format,
-      includeSummary,
-      includeGrowth,
-      includeQuizzes,
-      includeTopScorers,
-      includeActivities,
-    };
-
     setLoading(true);
     const toastId = toast.loading(`Generating ${format.toUpperCase()} report...`);
 
     try {
-      await exportDashboardReport(config);
+      const result = await dashboardService.generateReport(dateFrom, dateTo);
+      if (!result) {
+        toast.error("No report available for the selected range.", { id: toastId });
+        return;
+      }
+
       toast.success(`${format.toUpperCase()} Report downloaded successfully!`, { id: toastId });
       onClose();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to generate report";
+      const message = err instanceof Error ? err.message : "Failed to generate dashboard report.";
       toast.error(message, { id: toastId });
     } finally {
       setLoading(false);
