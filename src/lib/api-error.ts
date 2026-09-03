@@ -18,12 +18,16 @@ export class ApiError extends Error {
 
     const res = error?.response;
     const data = res?.data;
-    const statusCode = res?.status || 500;
-    const message =
-      data?.message ||
-      data?.error ||
-      error?.message ||
-      "An unexpected error occurred";
+    const timedOut =
+      error?.code === "ECONNABORTED" ||
+      /timeout of \d+ms exceeded/i.test(String(error?.message ?? ""));
+    const statusCode = res?.status || (timedOut ? 408 : 500);
+    const message = timedOut
+      ? "The request took too long. Try a smaller image, or turn off network throttling in DevTools."
+      : data?.message ||
+        data?.error ||
+        error?.message ||
+        "An unexpected error occurred";
 
     const fieldErrors: Record<string, string> = {};
     const rawErrors = data?.errors || data?.response?.errors;

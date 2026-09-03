@@ -24,6 +24,9 @@ apiClient.interceptors.request.use((config) => {
       delete config.headers["Content-Type"];
       delete config.headers["content-type"];
     }
+    if (config.timeout == null || config.timeout <= 30000) {
+      config.timeout = 120000;
+    }
   }
 
   if (!config.skipAuth) {
