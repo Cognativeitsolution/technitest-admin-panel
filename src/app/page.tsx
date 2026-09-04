@@ -6,8 +6,10 @@ import { Award, BookOpenCheck, Users, Wallet, Loader2 } from "lucide-react";
 import { DashboardToolbar } from "@/components/dashboard/dashboard-toolbar";
 import { GenerateReportModal } from "@/components/dashboard/generate-report-modal";
 import { QuizAttemptChart } from "@/components/dashboard/quiz-attempt-chart";
+import { QuizTrendByCountryChart } from "@/components/dashboard/quiz-trend-by-country-chart";
 import { RecentActivity } from "@/components/dashboard/recent-activity";
 import { StatCard } from "@/components/dashboard/stat-card";
+import { TopCategories } from "@/components/dashboard/top-categories";
 import { TopScorers } from "@/components/dashboard/top-scorers";
 import { UserGrowthChart } from "@/components/dashboard/user-growth-chart";
 import { DateRange } from "@/components/ui/date-range-picker";
@@ -148,6 +150,20 @@ export default function DashboardPage() {
           <UserGrowthChart data={stats.user_growth.data} />
         </div>
         <QuizAttemptChart data={stats.quiz_trend.data} />
+      </div>
+
+      {/* Country Trends & Top Categories */}
+      <div className="mt-4 grid gap-4 xl:grid-cols-3 xl:items-stretch">
+        <div className="flex xl:col-span-2">
+          <QuizTrendByCountryChart
+            className="w-full"
+            data={stats.quiz_trend_by_country?.data ?? []}
+          />
+        </div>
+        <TopCategories
+          className="w-full"
+          categories={stats.top_categories ?? []}
+        />
       </div>
 
       {/* Top Scorers & Recent Activity */}
