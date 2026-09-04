@@ -40,6 +40,44 @@ export function formatDiscountValue(type: string, value: number) {
   return `${value} Coins`;
 }
 
+export function calculateDiscountedPrice(
+  discountType: string,
+  discountValue: number,
+  minPurchaseAmount: number | null,
+): number | null {
+  if (minPurchaseAmount == null || minPurchaseAmount < 0) return null;
+
+  if (discountType === "percentage") {
+    return Math.max(0, minPurchaseAmount - (minPurchaseAmount * discountValue) / 100);
+  }
+
+  if (discountType === "fixed" || discountType === "flat") {
+    return Math.max(0, minPurchaseAmount - discountValue);
+  }
+
+  return null;
+}
+
+export function formatDiscountedPrice(
+  discountType: string,
+  discountValue: number,
+  minPurchaseAmount: number | null,
+) {
+  const discounted = calculateDiscountedPrice(
+    discountType,
+    discountValue,
+    minPurchaseAmount,
+  );
+
+  if (discounted == null) return "—";
+
+  const formatted = Number.isInteger(discounted)
+    ? String(discounted)
+    : discounted.toFixed(2);
+
+  return `${formatted} Coins`;
+}
+
 export function formatUsageLimit(limit: number | null) {
   if (limit == null || limit <= 0) return "Unlimited";
   return String(limit);
