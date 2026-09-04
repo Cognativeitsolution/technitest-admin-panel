@@ -84,6 +84,11 @@ export function QuizDetailView({ quizId, isNew = false }: QuizDetailViewProps) {
       return;
     }
 
+    if (!imageFile && !values.imageUrl.trim()) {
+      toast.error("Quiz image is required.");
+      return;
+    }
+
     setSaving(true);
     try {
       if (isNew) {

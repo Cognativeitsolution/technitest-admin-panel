@@ -214,7 +214,7 @@ export function QuizBasicInfo({
               className={cn(readonly ? readOnlyClassName : inputClassName, "resize-none")}
             />
           </Field>
-          <Field label="Quiz Image">
+          <Field label="Quiz Image" required>
             <div
               className={cn(
                 "flex h-11 cursor-pointer items-center gap-3 rounded-xl border border-[#e5e7eb] bg-[#f8fafc] px-3.5",

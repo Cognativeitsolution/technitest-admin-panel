@@ -6,6 +6,7 @@ import { Can } from "@/components/shared/can";
 import {
   formatDiscountType,
   formatDiscountValue,
+  formatDiscountedPrice,
   formatUsageLimit,
   formatValidity,
   getCouponStatus,
@@ -34,12 +35,13 @@ export function CouponsTable({
   return (
     <div className="overflow-hidden rounded-2xl border border-[#e8ecf2] bg-white shadow-[0_1px_3px_rgba(16,24,40,0.04)]">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[960px] border-collapse text-left">
+        <table className="w-full min-w-[1100px] border-collapse text-left">
           <thead>
             <tr className="bg-[#eef5ff] text-[13px] font-semibold text-[#374151]">
               <th className="px-5 py-3.5">Coupon Code</th>
               <th className="px-5 py-3.5">Discount Type</th>
               <th className="px-5 py-3.5">Discount Value</th>
+              <th className="px-5 py-3.5">Discounted Price</th>
               <th className="px-5 py-3.5">Usage Limit</th>
               <th className="px-5 py-3.5">Used</th>
               <th className="px-5 py-3.5">Validity</th>
@@ -51,7 +53,7 @@ export function CouponsTable({
             {loading ? (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={9}
                   className="px-5 py-10 text-center text-sm text-[#6b7280]"
                 >
                   Loading coupons...
@@ -89,6 +91,18 @@ export function CouponsTable({
                           coupon.discount_type,
                           coupon.discount_value,
                         )}
+                      </td>
+                      <td className="px-5 py-4 text-sm font-semibold text-[#111827]">
+                        <div>{formatDiscountedPrice(
+                          coupon.discount_type,
+                          coupon.discount_value,
+                          coupon.min_purchase_amount,
+                        )}</div>
+                        {coupon.min_purchase_amount != null ? (
+                          <p className="mt-0.5 text-xs font-normal text-[#9ca3af]">
+                            Min {coupon.min_purchase_amount} Coins
+                          </p>
+                        ) : null}
                       </td>
                       <td className="px-5 py-4 text-sm text-[#374151]">
                         {formatUsageLimit(coupon.usage_limit)}
@@ -166,7 +180,7 @@ export function CouponsTable({
             {!loading && coupons.length === 0 ? (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={9}
                   className="px-5 py-10 text-center text-sm text-[#6b7280]"
                 >
                   No coupons found.
