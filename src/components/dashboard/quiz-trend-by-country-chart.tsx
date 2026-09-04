@@ -14,6 +14,12 @@ import {
 import { Globe2 } from "lucide-react";
 
 import type { QuizTrendByCountryItem } from "@/services/dashboard.service";
+import { DashboardPanelHeader } from "@/components/dashboard/dashboard-panel-header";
+import {
+  dashboardCardClass,
+  dashboardChartShellClass,
+  dashboardEmptyStateClass,
+} from "@/components/dashboard/dashboard-styles";
 import { cn } from "@/lib/utils";
 
 const COUNTRY_COLORS = [
@@ -86,36 +92,20 @@ export function QuizTrendByCountryChart({
   }, [countries]);
 
   return (
-    <section
-      className={cn(
-        "flex h-full flex-col rounded-2xl border border-[#eef1f6] bg-white p-5 shadow-[0_1px_3px_rgba(16,24,40,0.04)]",
-        className,
-      )}
-    >
-      <div className="mb-5 flex shrink-0 flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Globe2 className="size-5 text-[#2563eb]" />
-          <div>
-            <h2 className="text-lg font-bold text-[#111827]">
-              Quiz Trends by Country
-            </h2>
-            <p className="text-xs text-[#6b7280]">
-              Total:{" "}
-              <span className="font-bold text-[#111827]">
-                {totalAttempts.toLocaleString()}
-              </span>{" "}
-              attempts
-            </p>
-          </div>
-        </div>
-      </div>
+    <section className={cn("flex h-full flex-col", dashboardCardClass, className)}>
+      <DashboardPanelHeader
+        icon={Globe2}
+        iconWrapClassName="bg-[#dbeafe]"
+        iconClassName="text-[#2563eb]"
+        title="Quiz Trends by Country"
+        subtitle="Attempts grouped by region"
+        badge={hasData ? { label: "Total", value: totalAttempts } : undefined}
+      />
 
       {!hasData || rows.length === 0 ? (
-        <div className="flex min-h-[280px] flex-1 items-center justify-center rounded-xl border border-dashed border-[#e5e7eb] bg-[#fafbfc] text-sm font-medium text-[#6b7280]">
-          No data found
-        </div>
+        <div className={cn(dashboardEmptyStateClass, "min-h-[280px] flex-1")}>No data found</div>
       ) : (
-        <div className="min-h-[280px] w-full flex-1">
+        <div className={cn(dashboardChartShellClass, "min-h-[280px] w-full flex-1")}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={rows} margin={{ top: 8, right: 4, left: -18, bottom: 0 }}>
               <CartesianGrid stroke="#eef2f7" vertical={false} />
