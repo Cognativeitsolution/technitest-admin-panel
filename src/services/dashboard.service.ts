@@ -43,6 +43,24 @@ export interface QuizTrend {
   data: QuizTrendItem[];
 }
 
+export interface QuizTrendByCountryItem {
+  date: string;
+  country: string;
+  count: number;
+}
+
+export interface QuizTrendByCountry {
+  data: QuizTrendByCountryItem[];
+}
+
+export interface TopCategoryItem {
+  category_id: number;
+  title: string;
+  image_url: string | null;
+  attempt_count: number;
+  quiz_count: number;
+}
+
 export interface TopScorerItem {
   certificate_id: number;
   user_id: number;
@@ -75,6 +93,8 @@ export interface DashboardStats {
   total_payments: TotalPayments;
   user_growth: UserGrowth;
   quiz_trend: QuizTrend;
+  quiz_trend_by_country: QuizTrendByCountry;
+  top_categories: TopCategoryItem[];
   top_scorers: TopScorerItem[];
   recent_activity: RecentActivityItem[];
   applied_filter: string | null;
