@@ -1,19 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, RefreshCw, ShieldAlert, ShieldCheck } from "lucide-react";
+import { Plus, RefreshCw, ShieldAlert, ShieldCheck, UserPlus } from "lucide-react";
+import { toast } from "sonner";
 
 import { Dialog } from "@/components/ui/dialog";
 import { Can } from "@/components/shared/can";
 import { RolesTable } from "@/components/roles/roles-table";
 import { RoleDialog } from "@/components/roles/role-dialog";
 import { PermissionsDialog } from "@/components/roles/permissions-dialog";
+import { AddUserDialog } from "@/components/roles/add-user-dialog";
 import { RolesPageHeader } from "@/components/roles/page-header";
 import { useRoles } from "@/hooks/roles/use-roles";
+import { userService } from "@/services/user.service";
+import { ApiError } from "@/lib/api-error";
 import type { RoleRecord } from "@/types/role.types";
 
 export function RolesPermissionsView() {
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
+  const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
+  const [addingUser, setAddingUser] = useState(false);
 
   const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
   const [permissionsDialogTarget, setPermissionsDialogTarget] = useState<RoleRecord | null>(null);
@@ -48,22 +54,51 @@ export function RolesPermissionsView() {
     if (ok) setDeleteTarget(null);
   }
 
+  async function handleCreateUser(payload: {
+    username: string;
+    email: string;
+    password: string;
+    role_id: number;
+  }) {
+    setAddingUser(true);
+    try {
+      await userService.createUser(payload);
+      toast.success("User created successfully");
+      return true;
+    } catch (err) {
+      toast.error(ApiError.fromAxiosError(err).message || "Failed to create user");
+      return false;
+    } finally {
+      setAddingUser(false);
+    }
+  }
+
   return (
     <div className="space-y-5">
       <RolesPageHeader
         title="Roles & Permissions"
         description="Create custom roles and control exactly what each admin can access and do across the platform."
         actions={
-          <Can permission="role:create">
+          <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setRoleDialogOpen(true)}
-              className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#f0a500] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d99400]"
+              onClick={() => setAddUserDialogOpen(true)}
+              className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#2563eb] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1d4ed8]"
             >
-              <Plus className="size-4" />
-              Add Role
+              <UserPlus className="size-4" />
+              Add User
             </button>
-          </Can>
+            <Can permission="role:create">
+              <button
+                type="button"
+                onClick={() => setRoleDialogOpen(true)}
+                className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#f0a500] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d99400]"
+              >
+                <Plus className="size-4" />
+                Add Role
+              </button>
+            </Can>
+          </div>
         }
       />
 
@@ -150,6 +185,15 @@ export function RolesPermissionsView() {
         groups={groups}
         submitting={mutating}
         onSubmit={updateRolePermissions}
+      />
+
+      {/* Add User Dialog */}
+      <AddUserDialog
+        open={addUserDialogOpen}
+        onClose={() => setAddUserDialogOpen(false)}
+        roles={roles}
+        submitting={addingUser}
+        onSubmit={handleCreateUser}
       />
     </div>
   );
