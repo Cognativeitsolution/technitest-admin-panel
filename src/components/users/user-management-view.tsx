@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, Download, FileSpreadsheet, FileText, Loader2, Plus } from "lucide-react";
+import { ChevronDown, Download, FileSpreadsheet, FileText, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { DropdownMenu } from "@/components/shared/dropdown-menu";
@@ -10,13 +10,12 @@ import { DateRangePicker, type DateRange } from "@/components/ui/date-range-pick
 import { UsersTable } from "@/components/users/users-table";
 import { useUsers } from "@/hooks/users/use-users";
 import { useCountries } from "@/hooks/locations/use-countries";
-import { UserDialog } from "@/components/users/user-dialog";
-import type { AdminUser } from "@/data/roles";
 import { Dialog } from "@/components/ui/dialog";
 import type { ApiUser } from "@/types/user.types";
 import { userService } from "@/services/user.service";
 import { ApiError } from "@/lib/api-error";
 import { downloadCsv, downloadPdf } from "@/lib/export-file";
+import { formatJoiningDate, formatUserRole } from "@/lib/user-utils";
 import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 10;
@@ -36,10 +35,6 @@ export function UserManagementView() {
   const [exportOpen, setExportOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
-
-  const [userDialogOpen, setUserDialogOpen] = useState(false);
-  const [userDialogMode, setUserDialogMode] = useState<"create" | "edit">("create");
-  const [userDialogTarget, setUserDialogTarget] = useState<AdminUser | null>(null);
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<ApiUser | null>(null);
@@ -66,14 +61,6 @@ export function UserManagementView() {
     start_date: dateRange.start ? formatDate(dateRange.start) : undefined,
     end_date: dateRange.end ? formatDate(dateRange.end) : undefined,
   });
-
-  const roleNames = ["Super Admin", "Content Admin", "CMS Admin", "System Settings Admin"];
-
-  function openCreateUser() {
-    setUserDialogMode("create");
-    setUserDialogTarget(null);
-    setUserDialogOpen(true);
-  }
 
   function handleDeleteUserClick(user: ApiUser) {
     setUserToDelete(user);
@@ -133,11 +120,22 @@ export function UserManagementView() {
       const dateStr = new Date().toISOString().slice(0, 10);
       const filename = `users-report-${dateStr}`;
       const title = "Technitest Users Management Report";
-      const headers = ["Username", "Email", "Phone", "Country", "Quizzes Taken", "Certificates Issued"];
+      const headers = [
+        "Username",
+        "Email",
+        "Phone",
+        "User Role",
+        "Joining Date",
+        "Country",
+        "Quizzes Taken",
+        "Certificates Issued",
+      ];
       const rows = usersToExport.map((u) => [
         u.username || "-",
         u.email || "-",
         u.phone || "-",
+        formatUserRole(u.roles),
+        formatJoiningDate(u.created_at),
         u.country?.name || "-",
         String(u.total_quizzes_attempted || 0),
         String(u.total_certificates_issued || 0),
@@ -199,15 +197,6 @@ export function UserManagementView() {
               </div>
             ) : null}
           </div>
-
-          <button
-            type="button"
-            onClick={openCreateUser}
-            className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#111827] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1f2937]"
-          >
-            <Plus className="size-4" />
-            Add User
-          </button>
         </div>
       </div>
 
@@ -238,14 +227,6 @@ export function UserManagementView() {
         currentPage={pagination.page || 1}
         totalPages={Math.max(1, pagination.totalPages || 1)}
         onPageChange={goToPage}
-      />
-
-      <UserDialog
-        open={userDialogOpen}
-        onClose={() => setUserDialogOpen(false)}
-        mode={userDialogMode}
-        user={userDialogTarget}
-        roleNames={roleNames}
       />
 
       <Dialog

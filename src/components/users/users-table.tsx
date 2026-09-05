@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Eye, Pencil, Trash2 } from "lucide-react";
 
 import type { ApiUser } from "@/types/user.types";
+import { formatJoiningDate, formatUserRole } from "@/lib/user-utils";
 
 type UsersTableProps = {
   users: ApiUser[];
@@ -17,11 +18,13 @@ export function UsersTable({ users, loading, onEdit, onDelete }: UsersTableProps
   return (
     <div className="overflow-hidden rounded-2xl border border-[#e8ecf2] bg-white shadow-[0_1px_3px_rgba(16,24,40,0.04)]">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[900px] border-collapse text-left">
+        <table className="w-full min-w-[1100px] border-collapse text-left">
           <thead>
             <tr className="bg-[#eef5ff] text-[13px] font-semibold text-[#374151]">
               <th className="px-5 py-3.5">Users</th>
               <th className="px-5 py-3.5">Email | Phone</th>
+              <th className="px-5 py-3.5">User Role</th>
+              <th className="px-5 py-3.5">Joining Date</th>
               <th className="px-5 py-3.5">Country</th>
               <th className="px-5 py-3.5">Quizzes Taken</th>
               <th className="px-5 py-3.5">Certificates</th>
@@ -31,7 +34,7 @@ export function UsersTable({ users, loading, onEdit, onDelete }: UsersTableProps
           <tbody>
             {loading ? (
               <tr className="h-[720px]">
-                <td colSpan={6} className="px-5 py-4 text-center text-sm text-gray-600 text-[18px] font-bold align-middle">
+                <td colSpan={8} className="px-5 py-4 text-center text-sm text-gray-600 text-[18px] font-bold align-middle">
                   <div className="flex flex-col items-center justify-center">
                     <span>Getting users...</span>
                   </div>
@@ -39,7 +42,7 @@ export function UsersTable({ users, loading, onEdit, onDelete }: UsersTableProps
               </tr>
             ) : users.length === 0 ? (
               <tr className="h-[720px]">
-                <td colSpan={6} className="px-5 py-4 text-center text-sm text-gray-500 align-middle">
+                <td colSpan={8} className="px-5 py-4 text-center text-sm text-gray-500 align-middle">
                   No users found.
                 </td>
               </tr>
@@ -83,6 +86,14 @@ export function UsersTable({ users, loading, onEdit, onDelete }: UsersTableProps
                   <p className="mt-0.5 text-[13px] text-[#6b7280]">
                     {user.phone || "-"}
                   </p>
+                </td>
+
+                <td className="px-5 py-4 text-sm font-medium text-[#374151]">
+                  {formatUserRole(user.roles)}
+                </td>
+
+                <td className="px-5 py-4 text-sm text-[#374151]">
+                  {formatJoiningDate(user.created_at)}
                 </td>
 
                 <td className="px-5 py-4 text-sm text-[#374151]">
