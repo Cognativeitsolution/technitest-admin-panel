@@ -56,4 +56,11 @@ export const userService = {
     console.log("deleteUser response data:", data);
     return data;
   },
+  restoreUser: async (id: string | number) => {
+    const { data } = await apiClient.post<ApiEnvelope<ApiUser>>(
+      `/api/v1/users/${id}/restore`
+    );
+    console.log("restoreUser response data:", data);
+    return data.response?.data || (data as unknown as ApiUser);
+  },
 }; 
