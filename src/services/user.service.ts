@@ -10,6 +10,13 @@ export type UserListQuery = {
   end_date?: string;
 };
 
+export type CreateUserPayload = {
+  username: string;
+  email: string;
+  password: string;
+  role_id: number;
+};
+
 export const userService = {
   getUsers: async (params?: UserListQuery) => {
     const { data } = await apiClient.get<ApiEnvelope<PaginatedData<ApiUser>>>(
@@ -55,5 +62,20 @@ export const userService = {
     );
     console.log("deleteUser response data:", data);
     return data;
+  },
+  restoreUser: async (id: string | number) => {
+    const { data } = await apiClient.post<ApiEnvelope<ApiUser>>(
+      `/api/v1/users/${id}/restore`
+    );
+    console.log("restoreUser response data:", data);
+    return data.response?.data || (data as unknown as ApiUser);
+  },
+  createUser: async (payload: CreateUserPayload) => {
+    const { data } = await apiClient.post<ApiEnvelope<ApiUser>>(
+      "/api/v1/users",
+      payload
+    );
+    console.log("createUser response data:", data);
+    return data.response?.data || (data as unknown as ApiUser);
   },
 }; 

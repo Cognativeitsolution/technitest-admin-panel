@@ -13,6 +13,7 @@ import {
 import { UserCertificatesTable } from "@/components/users/user-certificates-table";
 import { UserMetricCard } from "@/components/users/user-metric-card";
 import { UserProfileInfo } from "@/components/users/user-profile-info";
+import { useCountryStateCity } from "@/hooks/locations/use-country-state-city";
 import type { CertificateRecord, UserRecord } from "@/data/users";
 
 import { useEffect, useState } from "react";
@@ -28,8 +29,26 @@ export function UserEditView({ userId }: UserEditViewProps) {
   const [user, setUser] = useState<UserRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [initialCountryId, setInitialCountryId] = useState<number | null>(null);
 
   const [certificates, setCertificates] = useState<CertificateRecord[]>([]);
+
+  const {
+    countryId,
+    stateId,
+    cityId,
+    setCountryId,
+    setStateId,
+    setCityId,
+    countryOptions,
+    stateOptions,
+    cityOptions,
+    isCountriesLoading,
+    isStatesLoading,
+    isCitiesLoading,
+  } = useCountryStateCity({
+    initialCountryId,
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -65,8 +84,13 @@ export function UserEditView({ userId }: UserEditViewProps) {
         };
         setUser(mappedUser);
 
+        // Seed location hook with the user's country ID
+        if (apiUser.country_id) {
+          setInitialCountryId(apiUser.country_id);
+        }
+
         const certArray = Array.isArray(certsData?.data) ? certsData.data : (Array.isArray(certsData) ? certsData : []);
-        setCertificates(certArray as any[]);
+        setCertificates(certArray as CertificateRecord[]);
       })
       .catch((error) => {
         if (cancelled) return;
@@ -83,11 +107,25 @@ export function UserEditView({ userId }: UserEditViewProps) {
     };
   }, [userId]);
 
+  const handleCountryChange = (value: string) => {
+    const numericId = Number(value);
+    setCountryId(Number.isFinite(numericId) && numericId > 0 ? numericId : null);
+  };
+
+  const handleStateChange = (value: string) => {
+    const numericId = Number(value);
+    setStateId(Number.isFinite(numericId) && numericId > 0 ? numericId : null);
+  };
+
+  const handleCityChange = (value: string) => {
+    const numericId = Number(value);
+    setCityId(Number.isFinite(numericId) && numericId > 0 ? numericId : null);
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    
-    // Construct the data payload based on API requirement
+
     const dataObj = {
       username: formData.get("username") as string,
       phone: formData.get("phone") as string,
@@ -95,20 +133,19 @@ export function UserEditView({ userId }: UserEditViewProps) {
       educationlevel: formData.get("educationlevel") as string,
       skill_level: formData.get("skill_level") as string,
       dob: formData.get("dob") as string,
-      // Provide mock / default values for fields not present in UI but required by API
       postal_code: 0,
       gender: "male",
-      role_id: 2, 
-      country_id: 1, 
+      role_id: 2,
+      country_id: countryId ?? null,
+      state_id: stateId ?? null,
+      city_id: cityId ?? null,
       summary: "",
-      state_id: 1, 
-      city_id: 1, 
       designation: "",
     };
 
     const apiFormData = new FormData();
     apiFormData.append("data", JSON.stringify(dataObj));
-    
+
     const imageFile = formData.get("image") as File;
     if (imageFile && imageFile.size > 0) {
       apiFormData.append("image", imageFile);
@@ -183,7 +220,25 @@ export function UserEditView({ userId }: UserEditViewProps) {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        <UserProfileInfo user={user} readonly={false} />
+        <UserProfileInfo
+          user={user}
+          readonly={false}
+          location={{
+            countryId,
+            stateId,
+            cityId,
+            countryOptions,
+            stateOptions,
+            cityOptions,
+            isCountriesLoading,
+            isStatesLoading,
+            isCitiesLoading,
+            onCountryChange: handleCountryChange,
+            onStateChange: handleStateChange,
+            onCityChange: handleCityChange,
+            countryFallbackLabel: user.country,
+          }}
+        />
         <UserCertificatesTable certificates={certificates} />
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
