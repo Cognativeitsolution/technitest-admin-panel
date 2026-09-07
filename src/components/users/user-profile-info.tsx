@@ -235,6 +235,149 @@ export function UserProfileInfo({ user, readonly = false, location }: UserProfil
           {readonly ? (
             <div className="relative">
               <input type="text" value={user.highestEducation} readOnly className={cn(readOnlyClassName, "pr-10")} />
+        {/* Left column */}
+        <ProfileField label="Full Name" required>
+          {readonly ? (
+            <input
+              type="text"
+              value={user.name}
+              readOnly
+              className={readOnlyClassName}
+            />
+          ) : (
+            <input
+              type="text"
+              name="username"
+              defaultValue={user.name}
+              className={inputClassName}
+            />
+          )}
+        </ProfileField>
+
+        {/* Right column */}
+        <ProfileField label="Email Address" required>
+          {readonly ? (
+            <input
+              type="email"
+              value={user.email}
+              readOnly
+              className={readOnlyClassName}
+            />
+          ) : (
+            <input
+              type="email"
+              name="email"
+              defaultValue={user.email}
+              className={inputClassName}
+            />
+          )}
+        </ProfileField>
+
+        {/* Left column */}
+        <ProfileField label="Phone">
+          {readonly ? (
+            <input
+              type="text"
+              value={user.phone}
+              readOnly
+              className={readOnlyClassName}
+            />
+          ) : (
+            <input
+              type="text"
+              name="phone"
+              defaultValue={user.phone}
+              className={inputClassName}
+            />
+          )}
+        </ProfileField>
+
+        {/* Right column */}
+        <ProfileField label="Country" required>
+          {readonly ? (
+            <input
+              type="text"
+              value={user.country}
+              readOnly
+              className={readOnlyClassName}
+            />
+          ) : (
+            <input
+              type="text"
+              name="country"
+              defaultValue={user.country}
+              className={inputClassName}
+            />
+          )}
+        </ProfileField>
+
+        {/* Left column */}
+        <ProfileField label="State/Province" required>
+          {readonly ? (
+            <input
+              type="text"
+              value={user.state}
+              readOnly
+              className={readOnlyClassName}
+            />
+          ) : (
+            <input
+              type="text"
+              name="state"
+              defaultValue={user.state}
+              className={inputClassName}
+            />
+          )}
+        </ProfileField>
+
+        {/* Right column */}
+        <ProfileField label="City" required>
+          {readonly ? (
+            <input
+              type="text"
+              value={user.city}
+              readOnly
+              className={readOnlyClassName}
+            />
+          ) : (
+            <input
+              type="text"
+              name="city"
+              defaultValue={user.city}
+              className={inputClassName}
+            />
+          )}
+        </ProfileField>
+
+        {/* Left column */}
+        <ProfileField label="Identification No">
+          {readonly ? (
+            <input
+              type="text"
+              value={user.identificationNo}
+              readOnly
+              className={readOnlyClassName}
+            />
+          ) : (
+            <input
+              type="text"
+              name="ID_number"
+              defaultValue={user.identificationNo}
+              className={inputClassName}
+            />
+          )}
+        </ProfileField>
+
+        {/* Right column */}
+        <ProfileField label="Highest Education">
+          {readonly ? (
+            <div className="relative">
+              <input
+                type="text"
+                value={user.highestEducation}
+                readOnly
+                className={cn(readOnlyClassName, "pr-10")}
+              />
               <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-[#9ca3af]" />
             </div>
           ) : (
@@ -267,6 +410,16 @@ export function UserProfileInfo({ user, readonly = false, location }: UserProfil
           {readonly ? (
             <div className="relative">
               <input type="text" value={user.level} readOnly className={cn(readOnlyClassName, "pr-10")} />
+        {/* Left column */}
+        <ProfileField label="Level">
+          {readonly ? (
+            <div className="relative">
+              <input
+                type="text"
+                value={user.level}
+                readOnly
+                className={cn(readOnlyClassName, "pr-10")}
+              />
               <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-[#9ca3af]" />
             </div>
           ) : (
@@ -289,6 +442,16 @@ export function UserProfileInfo({ user, readonly = false, location }: UserProfil
           {readonly ? (
             <div className="relative">
               <input type="text" value={user.dateOfBirth} readOnly className={cn(readOnlyClassName, "pr-10")} />
+        {/* Right column */}
+        <ProfileField label="Date Of Birth">
+          {readonly ? (
+            <div className="relative">
+              <input
+                type="text"
+                value={user.dateOfBirth}
+                readOnly
+                className={cn(readOnlyClassName, "pr-10")}
+              />
               <CalendarDays className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-[#9ca3af]" />
             </div>
           ) : (
@@ -319,6 +482,20 @@ export function UserProfileInfo({ user, readonly = false, location }: UserProfil
             {user.emailVerified ? "Verified" : "Unverified"}
           </div>
         </div>
+
+        {/* <div>
+          <p className="mb-1.5 text-sm font-medium text-[#374151]">
+            Mobile Verification
+          </p>
+          <div
+            className={cn(
+              "flex h-11 items-center justify-center rounded-xl text-sm font-semibold text-white",
+              user.mobileVerified ? "bg-[#22c55e]" : "bg-[#ef4444]"
+            )}
+          >
+            {user.mobileVerified ? "Verified" : "Unverified"}
+          </div>
+        </div> */}
       </div>
     </section>
   );
