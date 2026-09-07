@@ -12,13 +12,15 @@ type UsersTableProps = {
   loading?: boolean;
   onEdit?: (user: ApiUser) => void;
   onDelete?: (user: ApiUser) => void;
+  onToggleActive?: (user: ApiUser) => void;
+  togglingUserId?: number | null;
 };
 
-export function UsersTable({ users, loading, onEdit, onDelete }: UsersTableProps) {
+export function UsersTable({ users, loading, onEdit, onDelete, onToggleActive, togglingUserId }: UsersTableProps) {
   return (
     <div className="overflow-hidden rounded-2xl border border-[#e8ecf2] bg-white shadow-[0_1px_3px_rgba(16,24,40,0.04)]">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[1100px] border-collapse text-left">
+        <table className="w-full min-w-[1200px] border-collapse text-left">
           <thead>
             <tr className="bg-[#eef5ff] text-[13px] font-semibold text-[#374151]">
               <th className="px-5 py-3.5">Users</th>
@@ -28,13 +30,14 @@ export function UsersTable({ users, loading, onEdit, onDelete }: UsersTableProps
               <th className="px-5 py-3.5">Country</th>
               <th className="px-5 py-3.5">Quizzes Taken</th>
               <th className="px-5 py-3.5">Certificates</th>
+              <th className="px-5 py-3.5">Status</th>
               <th className="px-5 py-3.5">Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr className="h-[720px]">
-                <td colSpan={8} className="px-5 py-4 text-center text-sm text-gray-600 text-[18px] font-bold align-middle">
+                <td colSpan={9} className="px-5 py-4 text-center text-sm text-gray-600 text-[18px] font-bold align-middle">
                   <div className="flex flex-col items-center justify-center">
                     <span>Getting users...</span>
                   </div>
@@ -42,7 +45,7 @@ export function UsersTable({ users, loading, onEdit, onDelete }: UsersTableProps
               </tr>
             ) : users.length === 0 ? (
               <tr className="h-[720px]">
-                <td colSpan={8} className="px-5 py-4 text-center text-sm text-gray-500 align-middle">
+                <td colSpan={9} className="px-5 py-4 text-center text-sm text-gray-500 align-middle">
                   No users found.
                 </td>
               </tr>
@@ -106,6 +109,26 @@ export function UsersTable({ users, loading, onEdit, onDelete }: UsersTableProps
 
                 <td className="px-5 py-4 text-sm font-medium text-[#374151]">
                   {String(user.total_certificates_issued).padStart(2, "0")}
+                </td>
+
+                <td className="px-5 py-4">
+                  <button
+                    type="button"
+                    disabled={togglingUserId === user.id}
+                    onClick={() => onToggleActive?.(user)}
+                    aria-label={user.is_active ? `Deactivate ${user.username}` : `Activate ${user.username}`}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+                      user.is_active
+                        ? "bg-[#22c55e] focus:ring-[#22c55e]"
+                        : "bg-[#d1d5db] focus:ring-[#6b7280]"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block size-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                        user.is_active ? "translate-x-5" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
                 </td>
 
                 <td className="px-5 py-4">

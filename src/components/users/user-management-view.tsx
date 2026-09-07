@@ -40,6 +40,8 @@ export function UserManagementView() {
   const [userToDelete, setUserToDelete] = useState<ApiUser | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  const [togglingUserId, setTogglingUserId] = useState<number | null>(null);
+
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (exportRef.current && !exportRef.current.contains(e.target as Node)) {
@@ -81,6 +83,33 @@ export function UserManagementView() {
       toast.error(ApiError.fromAxiosError(error).message || "Failed to delete user");
     } finally {
       setDeleting(false);
+    }
+  }
+
+  async function handleToggleActive(user: ApiUser) {
+    if (togglingUserId === user.id) return;
+    setTogglingUserId(user.id);
+    try {
+      if (user.is_active) {
+        // Deactivate: soft-delete via DELETE
+        await userService.deleteUser(user.id);
+        mutateItems((prev) =>
+          prev.map((u) => (u.id === user.id ? { ...u, is_active: false } : u))
+        );
+        toast.success(`${user.username} has been deactivated`);
+      } else {
+        // Restore: reactivate via POST restore
+        await userService.restoreUser(user.id);
+        mutateItems((prev) =>
+          prev.map((u) => (u.id === user.id ? { ...u, is_active: true } : u))
+        );
+        toast.success(`${user.username} has been activated`);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error(ApiError.fromAxiosError(error).message || "Failed to update user status");
+    } finally {
+      setTogglingUserId(null);
     }
   }
 
@@ -220,7 +249,9 @@ export function UserManagementView() {
       <UsersTable 
         users={items} 
         loading={loading} 
-        onDelete={handleDeleteUserClick} 
+        onDelete={handleDeleteUserClick}
+        onToggleActive={handleToggleActive}
+        togglingUserId={togglingUserId}
       />
 
       <Pagination
