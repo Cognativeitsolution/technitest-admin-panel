@@ -19,6 +19,10 @@ const nextConfig: NextConfig = {
         hostname: apiUrl.hostname,
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "platform-lookaside.fbsbx.com",
+      },
     ],
   },
   async rewrites() {

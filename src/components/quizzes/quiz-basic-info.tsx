@@ -268,16 +268,16 @@ export function QuizBasicInfo({
             onCheckedChange={(checked) => updateRule("allowNegativeMarking", checked)}
             label="Allow Negative Marking"
           />
-          <Switch
+          {/* <Switch
             checked={value.rules.showAnswersAfterSubmit}
             onCheckedChange={(checked) => updateRule("showAnswersAfterSubmit", checked)}
             label="Show Answers after Submit"
-          />
-          <Switch
+          /> */}
+          {/* <Switch
             checked={value.rules.shuffleAnswers}
             onCheckedChange={(checked) => updateRule("shuffleAnswers", checked)}
             label="Shuffle Answers"
-          />
+          /> */}
         </div>
         {value.rules.allowNegativeMarking ? (
           <div className="mt-4 max-w-xs">
