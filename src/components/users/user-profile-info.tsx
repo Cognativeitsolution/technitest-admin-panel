@@ -3,8 +3,6 @@
 import Image from "next/image";
 import { CalendarDays, Camera, ChevronDown } from "lucide-react";
 
-import { SearchableSelect } from "@/components/common/searchable-select";
-import type { SelectOption } from "@/hooks/locations/use-country-state-city";
 import type { UserRecord } from "@/data/users";
 import { cn } from "@/lib/utils";
 
@@ -26,55 +24,18 @@ function ProfileField({ label, required, children }: ProfileFieldProps) {
   );
 }
 
-// Wrapper so ProfileField's <label> doesn't capture click events for the custom select
-function SelectField({ label, required, children }: ProfileFieldProps) {
-  return (
-    <div className="space-y-1.5">
-      <span className="block text-sm font-medium text-[#374151]">
-        {label}
-        {required ? <span className="ml-0.5 text-[#ef4444]">*</span> : null}
-      </span>
-      {children}
-    </div>
-  );
-}
-
 const inputClassName =
   "h-11 w-full rounded-xl border border-[#e5e7eb] bg-[#f8fafc] px-3.5 text-sm font-medium text-[#111827] outline-none transition focus:border-[#3b82f6] focus:bg-white focus:ring-2 focus:ring-[#3b82f6]/20";
 
 const readOnlyClassName =
   "h-11 w-full rounded-xl border border-[#e5e7eb] bg-[#f8fafc] px-3.5 text-sm font-medium text-[#111827] cursor-default";
 
-// Makes SearchableSelect buttons visually match the rest of the form inputs
-const selectClassName =
-  "[&_button]:h-11 [&_button]:rounded-xl [&_button]:border-[#e5e7eb] [&_button]:bg-[#f8fafc] [&_button]:shadow-none [&_button]:text-sm [&_button]:font-medium [&_button]:text-[#111827]";
-
-type LocationProps = {
-  countryId: number | null;
-  stateId: number | null;
-  cityId: number | null;
-  countryOptions: SelectOption[];
-  stateOptions: SelectOption[];
-  cityOptions: SelectOption[];
-  isCountriesLoading: boolean;
-  isStatesLoading: boolean;
-  isCitiesLoading: boolean;
-  onCountryChange: (value: string) => void;
-  onStateChange: (value: string) => void;
-  onCityChange: (value: string) => void;
-  countryFallbackLabel?: string;
-};
-
 type UserProfileInfoProps = {
   user: UserRecord;
   readonly?: boolean;
-  /** Pass this to enable API-driven country/state/city dropdowns on the edit form */
-  location?: LocationProps;
 };
 
-export function UserProfileInfo({ user, readonly = false, location }: UserProfileInfoProps) {
-  const showDropdowns = !readonly && !!location;
-
+export function UserProfileInfo({ user, readonly = false }: UserProfileInfoProps) {
   return (
     <section className="rounded-2xl border border-[#eef1f6] bg-white p-5 shadow-[0_1px_3px_rgba(16,24,40,0.04)] sm:p-6">
       <h2 className="text-lg font-bold text-[#111827]">Profile Info</h2>
@@ -113,128 +74,6 @@ export function UserProfileInfo({ user, readonly = false, location }: UserProfil
       </div>
 
       <div className="mt-6 grid gap-4 md:grid-cols-2">
-        {/* Full Name */}
-        <ProfileField label="Full Name" required>
-          {readonly ? (
-            <input type="text" value={user.name} readOnly className={readOnlyClassName} />
-          ) : (
-            <input type="text" name="username" defaultValue={user.name} className={inputClassName} />
-          )}
-        </ProfileField>
-
-        {/* Email */}
-        <ProfileField label="Email Address" required>
-          {readonly ? (
-            <input type="email" value={user.email} readOnly className={readOnlyClassName} />
-          ) : (
-            <input type="email" name="email" defaultValue={user.email} className={inputClassName} />
-          )}
-        </ProfileField>
-
-        {/* Phone */}
-        <ProfileField label="Phone">
-          {readonly ? (
-            <input type="text" value={user.phone} readOnly className={readOnlyClassName} />
-          ) : (
-            <input type="text" name="phone" defaultValue={user.phone} className={inputClassName} />
-          )}
-        </ProfileField>
-
-        {/* Country */}
-        {showDropdowns ? (
-          <SelectField label="Country" required>
-            <SearchableSelect
-              value={location.countryId ? String(location.countryId) : ""}
-              options={location.countryOptions}
-              fallbackLabel={location.countryFallbackLabel ?? user.country}
-              placeholder="Select country"
-              loading={location.isCountriesLoading}
-              loadingText="Loading countries..."
-              emptyText="No countries found"
-              onChange={location.onCountryChange}
-              className={selectClassName}
-            />
-          </SelectField>
-        ) : (
-          <ProfileField label="Country" required>
-            <input
-              type="text"
-              value={user.country}
-              readOnly={readonly}
-              {...(!readonly && { name: "country", defaultValue: user.country })}
-              className={readonly ? readOnlyClassName : inputClassName}
-            />
-          </ProfileField>
-        )}
-
-        {/* State */}
-        {showDropdowns ? (
-          <SelectField label="State/Province" required>
-            <SearchableSelect
-              value={location.stateId ? String(location.stateId) : ""}
-              options={location.stateOptions}
-              placeholder={location.countryId ? "Select state" : "Select country first"}
-              loading={location.isStatesLoading}
-              loadingText="Loading states..."
-              emptyText="No states found"
-              disabled={!location.countryId}
-              onChange={location.onStateChange}
-              className={selectClassName}
-            />
-          </SelectField>
-        ) : (
-          <ProfileField label="State/Province" required>
-            <input
-              type="text"
-              value={user.state}
-              readOnly={readonly}
-              {...(!readonly && { name: "state", defaultValue: user.state })}
-              className={readonly ? readOnlyClassName : inputClassName}
-            />
-          </ProfileField>
-        )}
-
-        {/* City */}
-        {showDropdowns ? (
-          <SelectField label="City" required>
-            <SearchableSelect
-              value={location.cityId ? String(location.cityId) : ""}
-              options={location.cityOptions}
-              placeholder={location.stateId ? "Select city" : "Select state first"}
-              loading={location.isCitiesLoading}
-              loadingText="Loading cities..."
-              emptyText="No cities found"
-              disabled={!location.stateId}
-              onChange={location.onCityChange}
-              className={selectClassName}
-            />
-          </SelectField>
-        ) : (
-          <ProfileField label="City" required>
-            <input
-              type="text"
-              value={user.city}
-              readOnly={readonly}
-              {...(!readonly && { name: "city", defaultValue: user.city })}
-              className={readonly ? readOnlyClassName : inputClassName}
-            />
-          </ProfileField>
-        )}
-
-        {/* Identification No */}
-        <ProfileField label="Identification No">
-          {readonly ? (
-            <input type="text" value={user.identificationNo} readOnly className={readOnlyClassName} />
-          ) : (
-            <input type="text" name="ID_number" defaultValue={user.identificationNo} className={inputClassName} />
-          )}
-        </ProfileField>
-
-        {/* Highest Education */}
-        <ProfileField label="Highest Education">
-          {readonly ? (
-            <div className="relative">
-              <input type="text" value={user.highestEducation} readOnly className={cn(readOnlyClassName, "pr-10")} />
         {/* Left column */}
         <ProfileField label="Full Name" required>
           {readonly ? (
@@ -405,11 +244,6 @@ export function UserProfileInfo({ user, readonly = false, location }: UserProfil
           )}
         </ProfileField>
 
-        {/* Level */}
-        <ProfileField label="Level">
-          {readonly ? (
-            <div className="relative">
-              <input type="text" value={user.level} readOnly className={cn(readOnlyClassName, "pr-10")} />
         {/* Left column */}
         <ProfileField label="Level">
           {readonly ? (
@@ -437,11 +271,6 @@ export function UserProfileInfo({ user, readonly = false, location }: UserProfil
           )}
         </ProfileField>
 
-        {/* Date Of Birth */}
-        <ProfileField label="Date Of Birth">
-          {readonly ? (
-            <div className="relative">
-              <input type="text" value={user.dateOfBirth} readOnly className={cn(readOnlyClassName, "pr-10")} />
         {/* Right column */}
         <ProfileField label="Date Of Birth">
           {readonly ? (
