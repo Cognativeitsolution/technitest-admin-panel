@@ -157,13 +157,11 @@ export function UserProfileInfo({ user, readonly = false, location }: UserProfil
           </SelectField>
         ) : (
           <ProfileField label="Country" required>
-            <input
-              type="text"
-              value={user.country}
-              readOnly={readonly}
-              {...(!readonly && { name: "country", defaultValue: user.country })}
-              className={readonly ? readOnlyClassName : inputClassName}
-            />
+            {readonly ? (
+              <input type="text" value={user.country} readOnly className={readOnlyClassName} />
+            ) : (
+              <input type="text" name="country" defaultValue={user.country} className={inputClassName} />
+            )}
           </ProfileField>
         )}
 
@@ -184,13 +182,11 @@ export function UserProfileInfo({ user, readonly = false, location }: UserProfil
           </SelectField>
         ) : (
           <ProfileField label="State/Province" required>
-            <input
-              type="text"
-              value={user.state}
-              readOnly={readonly}
-              {...(!readonly && { name: "state", defaultValue: user.state })}
-              className={readonly ? readOnlyClassName : inputClassName}
-            />
+            {readonly ? (
+              <input type="text" value={user.state} readOnly className={readOnlyClassName} />
+            ) : (
+              <input type="text" name="state" defaultValue={user.state} className={inputClassName} />
+            )}
           </ProfileField>
         )}
 
@@ -211,13 +207,11 @@ export function UserProfileInfo({ user, readonly = false, location }: UserProfil
           </SelectField>
         ) : (
           <ProfileField label="City" required>
-            <input
-              type="text"
-              value={user.city}
-              readOnly={readonly}
-              {...(!readonly && { name: "city", defaultValue: user.city })}
-              className={readonly ? readOnlyClassName : inputClassName}
-            />
+            {readonly ? (
+              <input type="text" value={user.city} readOnly className={readOnlyClassName} />
+            ) : (
+              <input type="text" name="city" defaultValue={user.city} className={inputClassName} />
+            )}
           </ProfileField>
         )}
 
