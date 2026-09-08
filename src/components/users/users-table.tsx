@@ -133,20 +133,38 @@ export function UsersTable({ users, loading, onEdit, onDelete, onToggleActive, t
 
                 <td className="px-5 py-4">
                   <div className="flex items-center gap-1.5">
-                    <Link
-                      href={`/users/${user.id}`}
-                      aria-label={`View ${user.username}`}
-                      className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#3b82f6]"
-                    >
-                      <Eye className="size-4" />
-                    </Link>
-                    <Link
-                      href={`/users/${user.id}/edit`}
-                      aria-label={`Edit ${user.username}`}
-                      className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#f0a500]"
-                    >
-                      <Pencil className="size-4" />
-                    </Link>
+                    {user.is_active ? (
+                      <Link
+                        href={`/users/${user.id}`}
+                        aria-label={`View ${user.username}`}
+                        className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#3b82f6]"
+                      >
+                        <Eye className="size-4" />
+                      </Link>
+                    ) : (
+                      <span
+                        aria-label={`View ${user.username} (inactive)`}
+                        className="rounded-lg p-2 text-[#d1d5db] cursor-not-allowed"
+                      >
+                        <Eye className="size-4" />
+                      </span>
+                    )}
+                    {user.is_active ? (
+                      <Link
+                        href={`/users/${user.id}/edit`}
+                        aria-label={`Edit ${user.username}`}
+                        className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#f0a500]"
+                      >
+                        <Pencil className="size-4" />
+                      </Link>
+                    ) : (
+                      <span
+                        aria-label={`Edit ${user.username} (inactive)`}
+                        className="rounded-lg p-2 text-[#d1d5db] cursor-not-allowed"
+                      >
+                        <Pencil className="size-4" />
+                      </span>
+                    )}
                     <button
                       type="button"
                       aria-label={`Delete ${user.username}`}
