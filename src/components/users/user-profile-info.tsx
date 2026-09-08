@@ -235,6 +235,33 @@ export function UserProfileInfo({ user, readonly = false, location }: UserProfil
           {readonly ? (
             <div className="relative">
               <input type="text" value={user.highestEducation} readOnly className={cn(readOnlyClassName, "pr-10")} />
+              <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-[#9ca3af]" />
+            </div>
+          ) : (
+            <div className="relative">
+              <select
+                name="educationlevel"
+                defaultValue={user.highestEducation}
+                className={cn(inputClassName, "appearance-none pr-10")}
+              >
+                <option value="no_formal_education">No Formal Education</option>
+                <option value="elementary">Elementary</option>
+                <option value="high_school">High School</option>
+                <option value="vocational_trade">Vocational Trade</option>
+                <option value="college_diploma">College Diploma</option>
+                <option value="associate_degree">Associate Degree</option>
+                <option value="bachelors_degree">Bachelor's Degree</option>
+                <option value="graduate_certificate">Graduate Certificate</option>
+                <option value="masters_degree">Master's Degree</option>
+                <option value="professional_degree">Professional Degree</option>
+                <option value="doctoral_degree">Doctoral Degree</option>
+                <option value="other">Other</option>
+              </select>
+              <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-[#9ca3af]" />
+            </div>
+          )}
+        </ProfileField>
+
         {/* Left column */}
         <ProfileField label="Full Name" required>
           {readonly ? (
@@ -405,11 +432,6 @@ export function UserProfileInfo({ user, readonly = false, location }: UserProfil
           )}
         </ProfileField>
 
-        {/* Level */}
-        <ProfileField label="Level">
-          {readonly ? (
-            <div className="relative">
-              <input type="text" value={user.level} readOnly className={cn(readOnlyClassName, "pr-10")} />
         {/* Left column */}
         <ProfileField label="Level">
           {readonly ? (
@@ -437,11 +459,6 @@ export function UserProfileInfo({ user, readonly = false, location }: UserProfil
           )}
         </ProfileField>
 
-        {/* Date Of Birth */}
-        <ProfileField label="Date Of Birth">
-          {readonly ? (
-            <div className="relative">
-              <input type="text" value={user.dateOfBirth} readOnly className={cn(readOnlyClassName, "pr-10")} />
         {/* Right column */}
         <ProfileField label="Date Of Birth">
           {readonly ? (
