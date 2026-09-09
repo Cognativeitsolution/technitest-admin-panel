@@ -11,6 +11,7 @@ export type UseUsersOptions = {
   country_id?: string;
   start_date?: string;
   end_date?: string;
+  role_slug?: string;
 };
 
 export function useUsers({
@@ -18,6 +19,7 @@ export function useUsers({
   country_id,
   start_date,
   end_date,
+  role_slug,
 }: UseUsersOptions = {}) {
   const [page, setPage] = useState(1);
   const [nonce, setNonce] = useState(0);
@@ -31,7 +33,7 @@ export function useUsers({
   const [error, setError] = useState<string | null>(null);
   const [settledKey, setSettledKey] = useState<string | null>(null);
 
-  const queryKey = `${page}|${perPage}|${country_id ?? ""}|${start_date ?? ""}|${end_date ?? ""}|${nonce}`;
+  const queryKey = `${page}|${perPage}|${country_id ?? ""}|${start_date ?? ""}|${end_date ?? ""}|${role_slug ?? ""}|${nonce}`;
 
   useEffect(() => {
     let cancelled = false;
@@ -43,6 +45,7 @@ export function useUsers({
         country_id,
         start_date,
         end_date,
+        role_slug,
       })
       .then((data) => {
         if (cancelled) return;
@@ -78,12 +81,12 @@ export function useUsers({
     return () => {
       cancelled = true;
     };
-  }, [page, perPage, nonce, queryKey, country_id, start_date, end_date]);
+  }, [page, perPage, nonce, queryKey, country_id, start_date, end_date, role_slug]);
 
   // Reset page to 1 when filters change
   useEffect(() => {
     setPage(1);
-  }, [country_id, start_date, end_date]);
+  }, [country_id, start_date, end_date, role_slug]);
 
   return {
     items,
