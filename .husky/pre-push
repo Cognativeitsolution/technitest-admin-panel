@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+sh "$(dirname -- "$0")/guards/protect-config.sh" || exit 1
+sh "$(dirname -- "$0")/guards/scan-head.sh" || exit 1
+npm run lint && npm run build

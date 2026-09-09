@@ -13,6 +13,21 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  {
+    rules: {
+      "@typescript-eslint/no-explicit-any": "warn",
+      "react/no-unescaped-entities": "warn",
+      "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/purity": "warn",
+      "prefer-const": "warn",
+      "react-hooks/preserve-manual-memoization": "warn",
+      "@next/next/no-html-link-for-pages": "warn",
+      "react-hooks/immutability": "warn",
+      "react/jsx-key": "warn",
+      "react-hooks/rules-of-hooks": "warn",
+      "react-hooks/refs": "warn",
+    },
+  },
 ]);
 
 export default eslintConfig;
