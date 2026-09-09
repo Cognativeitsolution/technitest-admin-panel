@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Lock, Pencil, ShieldCheck, Trash2 } from "lucide-react";
 
 import { Can } from "@/components/shared/can";
@@ -80,9 +81,16 @@ export function RolesTable({
                       <div className="flex items-center gap-3">
                         <RoleBadge name={role.name} />
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-sm font-semibold text-[#111827]">
+                          <Link
+                            href={
+                              role.slug === "student" || role.name.toLowerCase() === "student"
+                                ? "/users"
+                                : `/roles/${role.slug}`
+                            }
+                            className="text-sm font-semibold text-[#111827] transition hover:text-[#2563eb] hover:underline"
+                          >
                             {role.name}
-                          </span>
+                          </Link>
                           {role.is_superuser ? (
                             <span className="inline-flex items-center gap-1 rounded-full bg-[#fef3c7] px-2 py-0.5 text-[11px] font-semibold text-[#d97706]">
                               <Lock className="size-3" />
