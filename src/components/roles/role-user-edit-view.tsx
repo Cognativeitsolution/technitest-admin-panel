@@ -1,54 +1,36 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  ArrowLeft,
-  Award,
-  Coins,
-  FileText,
-  Users,
-} from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import { toast } from "sonner";
 
-import { UserCertificatesTable } from "@/components/users/user-certificates-table";
-import { UserMetricCard } from "@/components/users/user-metric-card";
 import { UserProfileInfo } from "@/components/users/user-profile-info";
 import { useCountryStateCity } from "@/hooks/locations/use-country-state-city";
-import type { CertificateRecord, UserRecord } from "@/data/users";
-
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { roleService } from "@/services/role.service";
 import { userService } from "@/services/user.service";
+import type { UserRecord } from "@/data/users";
 
-type UserEditViewProps = {
+type Props = {
+  roleSlug: string;
   userId: string;
 };
 
-export function UserEditView({ userId }: UserEditViewProps) {
+export function RoleUserEditView({ roleSlug, userId }: Props) {
   const router = useRouter();
   const [user, setUser] = useState<UserRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [initialCountryId, setInitialCountryId] = useState<number | null>(null);
-
-  const [certificates, setCertificates] = useState<CertificateRecord[]>([]);
+  const [roleId, setRoleId] = useState<number | null>(null);
 
   const {
-    countryId,
-    stateId,
-    cityId,
-    setCountryId,
-    setStateId,
-    setCityId,
-    countryOptions,
-    stateOptions,
-    cityOptions,
-    isCountriesLoading,
-    isStatesLoading,
-    isCitiesLoading,
-  } = useCountryStateCity({
-    initialCountryId,
-  });
+    countryId, stateId, cityId,
+    setCountryId, setStateId, setCityId,
+    countryOptions, stateOptions, cityOptions,
+    isCountriesLoading, isStatesLoading, isCitiesLoading,
+  } = useCountryStateCity({ initialCountryId });
 
   useEffect(() => {
     let cancelled = false;
@@ -56,12 +38,16 @@ export function UserEditView({ userId }: UserEditViewProps) {
 
     Promise.all([
       userService.getUserById(userId),
-      userService.getUserCertificates(userId)
+      roleService.getRoles(),
     ])
-      .then(([apiUser, certsData]) => {
+      .then(([apiUser, roles]) => {
         if (cancelled) return;
 
-        const mappedUser: UserRecord = {
+        // Resolve the role_id from the slug so the update payload is correct
+        const matchedRole = roles.find((r) => r.slug === roleSlug);
+        if (matchedRole) setRoleId(matchedRole.id);
+
+        setUser({
           id: String(apiUser.id),
           name: apiUser.username,
           username: apiUser.username,
@@ -81,48 +67,21 @@ export function UserEditView({ userId }: UserEditViewProps) {
           total_successful_referral: apiUser.total_successful_referral ?? "-",
           emailVerified: apiUser.is_email_verified,
           mobileVerified: false,
-        };
-        setUser(mappedUser);
+        });
 
-        // Seed location hook with the user's country ID
-        if (apiUser.country_id) {
-          setInitialCountryId(apiUser.country_id);
-        }
-
-        const certArray = Array.isArray(certsData?.data) ? certsData.data : (Array.isArray(certsData) ? certsData : []);
-        setCertificates(certArray as CertificateRecord[]);
+        if (apiUser.country_id) setInitialCountryId(apiUser.country_id);
       })
-      .catch((error) => {
-        if (cancelled) return;
-        console.error(error);
-        toast.error("Failed to fetch user details");
+      .catch(() => {
+        if (!cancelled) toast.error("Failed to fetch user details");
       })
       .finally(() => {
-        if (cancelled) return;
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       });
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [userId]);
 
-  const handleCountryChange = (value: string) => {
-    const numericId = Number(value);
-    setCountryId(Number.isFinite(numericId) && numericId > 0 ? numericId : null);
-  };
-
-  const handleStateChange = (value: string) => {
-    const numericId = Number(value);
-    setStateId(Number.isFinite(numericId) && numericId > 0 ? numericId : null);
-  };
-
-  const handleCityChange = (value: string) => {
-    const numericId = Number(value);
-    setCityId(Number.isFinite(numericId) && numericId > 0 ? numericId : null);
-  };
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
 
@@ -135,7 +94,7 @@ export function UserEditView({ userId }: UserEditViewProps) {
       dob: formData.get("dob") as string,
       postal_code: 0,
       gender: "male",
-      role_id: 2,
+      role_id: roleId ?? 2,
       country_id: countryId ?? null,
       state_id: stateId ?? null,
       city_id: cityId ?? null,
@@ -145,84 +104,54 @@ export function UserEditView({ userId }: UserEditViewProps) {
 
     const apiFormData = new FormData();
     apiFormData.append("data", JSON.stringify(dataObj));
-
     const imageFile = formData.get("image") as File;
-    if (imageFile && imageFile.size > 0) {
-      apiFormData.append("image", imageFile);
-    }
+    if (imageFile && imageFile.size > 0) apiFormData.append("image", imageFile);
 
     try {
       setSubmitting(true);
       await userService.updateUser(userId, apiFormData);
       toast.success("User updated successfully");
-      router.push("/users");
-    } catch (error) {
-      console.error(error);
+      router.push(`/roles/${roleSlug}`);
+    } catch {
       toast.error("Failed to update user");
     } finally {
       setSubmitting(false);
     }
-  };
+  }
 
   if (loading) {
     return <div className="p-8 text-center">Loading user details...</div>;
   }
-
   if (!user) {
     return <div className="p-8 text-center">User not found</div>;
   }
 
   return (
     <div className="space-y-5">
+      {/* Header */}
       <div className="flex flex-wrap items-center gap-3">
         <Link
-          href="/users"
-          className="inline-flex items-center gap-2 text-[22px] font-bold tracking-tight text-[#111827] transition hover:text-[#3b82f6]"
+          href={`/roles/${roleSlug}`}
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-[#6b7280] transition hover:text-[#111827]"
         >
-          <ArrowLeft className="size-5" />
-          Edit User
+          <ArrowLeft className="size-4" />
+          Back
         </Link>
+        <span className="h-5 w-px bg-[#d1d5db]" />
+        <span className="text-[22px] font-bold tracking-tight text-[#111827]">
+          Edit User
+        </span>
         <span className="hidden h-6 w-px bg-[#d1d5db] sm:block" />
         <span className="rounded-full bg-[#111827] px-3.5 py-1.5 text-sm font-semibold text-white">
           {user.name}
         </span>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <UserMetricCard
-          label="Quizzes Attempt"
-          value={String(user.quizzesTaken)}
-          icon={FileText}
-          iconWrapClassName="bg-[#fef3c7]"
-          iconClassName="text-[#d97706]"
-        />
-        <UserMetricCard
-          label="Coins Earned"
-          value={String(user.coinsEarned)}
-          icon={Coins}
-          iconWrapClassName="bg-[#ffedd5]"
-          iconClassName="text-[#ea580c]"
-        />
-        <UserMetricCard
-          label="Certificates Earned"
-          value={String(user.certificates)}
-          icon={Award}
-          iconWrapClassName="bg-[#dcfce7]"
-          iconClassName="text-[#16a34a]"
-        />
-        <UserMetricCard
-          label="Successful Referrals"
-          value={String(user.total_successful_referral)}
-          icon={Users}
-          iconWrapClassName="bg-[#dbeafe]"
-          iconClassName="text-[#2563eb]"
-        />
-      </div>
-
       <form onSubmit={handleSubmit} className="space-y-5">
         <UserProfileInfo
           user={user}
           readonly={false}
+          hideExtraFields
           location={{
             countryId,
             stateId,
@@ -233,13 +162,21 @@ export function UserEditView({ userId }: UserEditViewProps) {
             isCountriesLoading,
             isStatesLoading,
             isCitiesLoading,
-            onCountryChange: handleCountryChange,
-            onStateChange: handleStateChange,
-            onCityChange: handleCityChange,
+            onCountryChange: (v) => {
+              const n = Number(v);
+              setCountryId(Number.isFinite(n) && n > 0 ? n : null);
+            },
+            onStateChange: (v) => {
+              const n = Number(v);
+              setStateId(Number.isFinite(n) && n > 0 ? n : null);
+            },
+            onCityChange: (v) => {
+              const n = Number(v);
+              setCityId(Number.isFinite(n) && n > 0 ? n : null);
+            },
             countryFallbackLabel: user.country,
           }}
         />
-        <UserCertificatesTable certificates={certificates} />
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <button
@@ -250,7 +187,7 @@ export function UserEditView({ userId }: UserEditViewProps) {
             {submitting ? "Saving..." : "Save Changes"}
           </button>
           <Link
-            href={`/users`}
+            href={`/roles/${roleSlug}`}
             className="inline-flex h-12 items-center justify-center rounded-xl bg-[#e5e7eb] px-8 text-sm font-semibold text-[#374151] transition hover:bg-[#d1d5db]"
           >
             Cancel
