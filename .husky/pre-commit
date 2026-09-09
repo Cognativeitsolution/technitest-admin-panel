@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+# reposhield guard first, then lint-staged
+sh "$(dirname -- "$0")/guards/protect-config.sh" || exit 1
+npx lint-staged
