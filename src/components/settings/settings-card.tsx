@@ -44,12 +44,12 @@ export const settingsCards = [
     href: "/settings/logo-favicon",
     icon: <Sparkles className="size-6" />,
   },
-  {
-    title: "Notification Settings",
-    description: "Control and configure overall notification elements of the system.",
-    href: "/settings/notifications",
-    icon: <Bell className="size-6" />,
-  },
+  // {
+  //   title: "Notification Settings",
+  //   description: "Control and configure overall notification elements of the system.",
+  //   href: "/settings/notifications",
+  //   icon: <Bell className="size-6" />,
+  // },
   // {
   //   title: "SEO Configuration",
   //   description: "Configure SEO etc to make the system SEO-friendly.",
