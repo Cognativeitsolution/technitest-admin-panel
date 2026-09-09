@@ -8,6 +8,7 @@ export type UserListQuery = {
   country_id?: string;
   start_date?: string;
   end_date?: string;
+  role_slug?: string;
 };
 
 export type CreateUserPayload = {
