@@ -239,7 +239,6 @@ export function UserEditView({ userId }: UserEditViewProps) {
             countryFallbackLabel: user.country,
           }}
         />
-        <UserProfileInfo user={user} readonly={false} />
         <UserCertificatesTable certificates={certificates} />
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
