@@ -10,13 +10,25 @@ import { formatJoiningDate, formatUserRole } from "@/lib/user-utils";
 type UsersTableProps = {
   users: ApiUser[];
   loading?: boolean;
+  variant?: "default" | "role";
   onEdit?: (user: ApiUser) => void;
   onDelete?: (user: ApiUser) => void;
   onToggleActive?: (user: ApiUser) => void;
   togglingUserId?: number | null;
 };
 
-export function UsersTable({ users, loading, onEdit, onDelete, onToggleActive, togglingUserId }: UsersTableProps) {
+export function UsersTable({
+  users,
+  loading,
+  variant = "default",
+  onEdit,
+  onDelete,
+  onToggleActive,
+  togglingUserId,
+}: UsersTableProps) {
+  const showStatus = variant !== "role";
+  const columnCount = showStatus ? 9 : 8;
+
   return (
     <div className="overflow-hidden rounded-2xl border border-[#e8ecf2] bg-white shadow-[0_1px_3px_rgba(16,24,40,0.04)]">
       <div className="overflow-x-auto">
@@ -30,14 +42,14 @@ export function UsersTable({ users, loading, onEdit, onDelete, onToggleActive, t
               <th className="px-5 py-3.5">Country</th>
               <th className="px-5 py-3.5">Quizzes Taken</th>
               <th className="px-5 py-3.5">Certificates</th>
-              <th className="px-5 py-3.5">Status</th>
+              {showStatus ? <th className="px-5 py-3.5">Status</th> : null}
               <th className="px-5 py-3.5">Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr className="h-[720px]">
-                <td colSpan={9} className="px-5 py-4 text-center text-sm text-gray-600 text-[18px] font-bold align-middle">
+                <td colSpan={columnCount} className="px-5 py-4 text-center text-sm text-gray-600 text-[18px] font-bold align-middle">
                   <div className="flex flex-col items-center justify-center">
                     <span>Getting users...</span>
                   </div>
@@ -45,7 +57,7 @@ export function UsersTable({ users, loading, onEdit, onDelete, onToggleActive, t
               </tr>
             ) : users.length === 0 ? (
               <tr className="h-[720px]">
-                <td colSpan={9} className="px-5 py-4 text-center text-sm text-gray-500 align-middle">
+                <td colSpan={columnCount} className="px-5 py-4 text-center text-sm text-gray-500 align-middle">
                   No users found.
                 </td>
               </tr>
@@ -111,68 +123,65 @@ export function UsersTable({ users, loading, onEdit, onDelete, onToggleActive, t
                   {String(user.total_certificates_issued).padStart(2, "0")}
                 </td>
 
-                <td className="px-5 py-4">
-                  <button
-                    type="button"
-                    disabled={togglingUserId === user.id}
-                    onClick={() => onToggleActive?.(user)}
-                    aria-label={user.is_active ? `Deactivate ${user.username}` : `Activate ${user.username}`}
-                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
-                      user.is_active
-                        ? "bg-[#22c55e] focus:ring-[#22c55e]"
-                        : "bg-[#d1d5db] focus:ring-[#6b7280]"
-                    }`}
-                  >
-                    <span
-                      className={`inline-block size-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                        user.is_active ? "translate-x-5" : "translate-x-0"
+                {showStatus ? (
+                  <td className="px-5 py-4">
+                    <button
+                      type="button"
+                      disabled={togglingUserId === user.id}
+                      onClick={() => onToggleActive?.(user)}
+                      aria-label={user.is_active ? `Deactivate ${user.username}` : `Activate ${user.username}`}
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+                        user.is_active
+                          ? "bg-[#22c55e] focus:ring-[#22c55e]"
+                          : "bg-[#d1d5db] focus:ring-[#6b7280]"
                       }`}
-                    />
-                  </button>
-                </td>
+                    >
+                      <span
+                        className={`inline-block size-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          user.is_active ? "translate-x-5" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                  </td>
+                ) : null}
 
                 <td className="px-5 py-4">
                   <div className="flex items-center gap-1.5">
-                    {user.is_active ? (
-                      <Link
-                        href={`/users/${user.id}`}
-                        aria-label={`View ${user.username}`}
-                        className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#3b82f6]"
+                    {variant === "role" ? (
+                      <button
+                        type="button"
+                        aria-label={`Edit role for ${user.username}`}
+                        onClick={() => onEdit?.(user)}
+                        className="text-sm font-semibold text-[#f0a500] transition hover:text-[#d97706]"
                       >
-                        <Eye className="size-4" />
-                      </Link>
+                        Edit Role
+                      </button>
                     ) : (
-                      <span
-                        aria-label={`View ${user.username} (inactive)`}
-                        className="rounded-lg p-2 text-[#d1d5db] cursor-not-allowed"
-                      >
-                        <Eye className="size-4" />
-                      </span>
+                      <>
+                        <Link
+                          href={`/users/${user.id}`}
+                          aria-label={`View ${user.username}`}
+                          className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#3b82f6]"
+                        >
+                          <Eye className="size-4" />
+                        </Link>
+                        <Link
+                          href={`/users/${user.id}/edit`}
+                          aria-label={`Edit ${user.username}`}
+                          className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#f0a500]"
+                        >
+                          <Pencil className="size-4" />
+                        </Link>
+                        <button
+                          type="button"
+                          aria-label={`Delete ${user.username}`}
+                          onClick={() => onDelete?.(user)}
+                          className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#fef2f2] hover:text-[#ef4444]"
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      </>
                     )}
-                    {user.is_active ? (
-                      <Link
-                        href={`/users/${user.id}/edit`}
-                        aria-label={`Edit ${user.username}`}
-                        className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#f0a500]"
-                      >
-                        <Pencil className="size-4" />
-                      </Link>
-                    ) : (
-                      <span
-                        aria-label={`Edit ${user.username} (inactive)`}
-                        className="rounded-lg p-2 text-[#d1d5db] cursor-not-allowed"
-                      >
-                        <Pencil className="size-4" />
-                      </span>
-                    )}
-                    <button
-                      type="button"
-                      aria-label={`Delete ${user.username}`}
-                      onClick={() => onDelete?.(user)}
-                      className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#fef2f2] hover:text-[#ef4444]"
-                    >
-                      <Trash2 className="size-4" />
-                    </button>
                   </div>
                 </td>
               </tr>
