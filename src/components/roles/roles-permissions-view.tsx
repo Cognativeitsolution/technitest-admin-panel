@@ -66,8 +66,13 @@ export function RolesPermissionsView() {
       toast.success("User created successfully");
       return true;
     } catch (err) {
-      toast.error(ApiError.fromAxiosError(err).message || "Failed to create user");
-      return false;
+      const apiError = ApiError.fromAxiosError(err);
+      toast.error(apiError.message || "Failed to create user");
+      return {
+        ok: false as const,
+        error: apiError.message,
+        fieldErrors: apiError.fieldErrors,
+      };
     } finally {
       setAddingUser(false);
     }
