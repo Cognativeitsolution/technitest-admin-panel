@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Lock, Pencil, ShieldCheck, Trash2 } from "lucide-react";
 
 import { Can } from "@/components/shared/can";
@@ -77,7 +78,10 @@ export function RolesTable({
                     className="border-t border-[#eef1f6] transition hover:bg-[#fafbfc]"
                   >
                     <td className="px-5 py-4">
-                      <div className="flex items-center gap-3">
+                      <Link
+                        href={`/roles/${role.id}`}
+                        className="flex items-center gap-3 rounded-xl transition hover:opacity-90"
+                      >
                         <RoleBadge name={role.name} />
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="text-sm font-semibold text-[#111827]">
@@ -96,12 +100,15 @@ export function RolesTable({
                             </span>
                           ) : null}
                         </div>
-                      </div>
+                      </Link>
                     </td>
                     <td className="px-5 py-4">
-                      <span className="line-clamp-2 max-w-xs text-sm text-[#6b7280]">
+                      <Link
+                        href={`/roles/${role.id}`}
+                        className="line-clamp-2 block max-w-xs text-sm text-[#6b7280] transition hover:text-[#111827]"
+                      >
                         {role.description || "No description provided"}
-                      </span>
+                      </Link>
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap">
                       <span className="inline-flex h-7 shrink-0 whitespace-nowrap items-center rounded-full bg-[#f3f4f6] px-3 text-xs font-semibold text-[#374151]">
@@ -115,7 +122,10 @@ export function RolesTable({
                           <button
                             type="button"
                             aria-label={`Edit permissions for ${role.name}`}
-                            onClick={() => onEdit(role)}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              onEdit(role);
+                            }}
                             className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#f3f4f6] hover:text-[#f0a500]"
                           >
                             <Pencil className="size-4" />
@@ -125,7 +135,10 @@ export function RolesTable({
                           <button
                             type="button"
                             aria-label={`Delete ${role.name}`}
-                            onClick={() => onDelete(role)}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              onDelete(role);
+                            }}
                             className="rounded-lg p-2 text-[#9ca3af] transition hover:bg-[#fef2f2] hover:text-[#ef4444]"
                           >
                             <Trash2 className="size-4" />

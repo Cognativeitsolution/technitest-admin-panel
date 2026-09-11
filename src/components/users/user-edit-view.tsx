@@ -18,7 +18,9 @@ import type { CertificateRecord, UserRecord } from "@/data/users";
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { roleService } from "@/services/role.service";
 import { userService } from "@/services/user.service";
+import { ApiError } from "@/lib/api-error";
 
 type UserEditViewProps = {
   userId: string;
@@ -27,9 +29,12 @@ type UserEditViewProps = {
 export function UserEditView({ userId }: UserEditViewProps) {
   const router = useRouter();
   const [user, setUser] = useState<UserRecord | null>(null);
+  const [roleId, setRoleId] = useState<number>(2);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [initialCountryId, setInitialCountryId] = useState<number | null>(null);
+  const [initialStateId, setInitialStateId] = useState<number | null>(null);
+  const [initialCityId, setInitialCityId] = useState<number | null>(null);
 
   const [certificates, setCertificates] = useState<CertificateRecord[]>([]);
 
@@ -48,6 +53,8 @@ export function UserEditView({ userId }: UserEditViewProps) {
     isCitiesLoading,
   } = useCountryStateCity({
     initialCountryId,
+    initialStateId,
+    initialCityId,
   });
 
   useEffect(() => {
@@ -56,46 +63,80 @@ export function UserEditView({ userId }: UserEditViewProps) {
 
     Promise.all([
       userService.getUserById(userId),
-      userService.getUserCertificates(userId)
+      userService.getUserCertificates(userId),
+      roleService.getRoles(),
     ])
-      .then(([apiUser, certsData]) => {
+      .then(([fetchedUser, certsData, roles]) => {
         if (cancelled) return;
 
+        const matchedRole = roles.find((role) => role.slug === fetchedUser.roles?.[0]);
+        if (matchedRole) {
+          setRoleId(matchedRole.id);
+        }
+
         const mappedUser: UserRecord = {
-          id: String(apiUser.id),
-          name: apiUser.username,
-          username: apiUser.username,
-          email: apiUser.email,
-          phone: apiUser.phone || "",
-          country: apiUser.country?.name || "",
-          quizzesTaken: apiUser.total_quizzes_attempted ?? "-",
-          certificates: apiUser.total_certificates_issued ?? "-",
-          avatar: apiUser.avatar_url || "",
-          state: "",
-          city: "",
-          identificationNo: "",
-          highestEducation: "",
-          level: "",
-          dateOfBirth: "",
-          coinsEarned: apiUser.total_earned_coin ?? "-",
-          total_successful_referral: apiUser.total_successful_referral ?? "-",
-          emailVerified: apiUser.is_email_verified,
+          id: String(fetchedUser.id),
+          name: fetchedUser.username,
+          username: fetchedUser.username,
+          email: fetchedUser.email,
+          phone: fetchedUser.phone || "",
+          country: fetchedUser.country?.name || "",
+          quizzesTaken: fetchedUser.total_quizzes_attempted ?? "-",
+          certificates: fetchedUser.total_certificates_issued ?? "-",
+          avatar: fetchedUser.avatar_url || "",
+          state: fetchedUser.state?.name || "",
+          city: fetchedUser.city?.name || "",
+          identificationNo: fetchedUser.ID_number || "",
+          highestEducation: fetchedUser.educationlevel || "",
+          level: fetchedUser.skill_level || "",
+          dateOfBirth: fetchedUser.dob || "",
+          coinsEarned: fetchedUser.total_earned_coin ?? "-",
+          total_successful_referral: fetchedUser.total_successful_referral ?? "-",
+          emailVerified: fetchedUser.is_email_verified,
           mobileVerified: false,
         };
         setUser(mappedUser);
 
-        // Seed location hook with the user's country ID
-        if (apiUser.country_id) {
-          setInitialCountryId(apiUser.country_id);
+        if (fetchedUser.country_id) {
+          setInitialCountryId(fetchedUser.country_id);
+        }
+        if (fetchedUser.state_id) {
+          setInitialStateId(fetchedUser.state_id);
+        }
+        if (fetchedUser.city_id) {
+          setInitialCityId(fetchedUser.city_id);
         }
 
-        const certArray = Array.isArray(certsData?.data) ? certsData.data : (Array.isArray(certsData) ? certsData : []);
-        setCertificates(certArray as CertificateRecord[]);
+        let certsList = [];
+        if (Array.isArray(certsData?.items)) {
+          certsList = certsData.items;
+        } else if (Array.isArray(certsData?.data)) {
+          certsList = certsData.data;
+        } else if (Array.isArray(certsData)) {
+          certsList = certsData;
+        }
+
+        setCertificates(
+          certsList.map((cert: CertificateRecord & { certificate_number?: string; quiz_title?: string; percentage?: number; issued_at?: string; quiz_attempt_id?: number }) => ({
+            id: String(cert.id),
+            certificate: cert.certificate_number || cert.certificate || "Certificate",
+            issuedFor: cert.quiz_title || cert.issuedFor || "-",
+            score: cert.percentage !== undefined ? `${cert.percentage}%` : cert.score || "-",
+            issuedOn: cert.issued_at
+              ? new Date(cert.issued_at).toLocaleDateString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })
+              : cert.issuedOn || "-",
+            quizAttemptId: cert.quiz_attempt_id ?? cert.quizAttemptId,
+          })),
+        );
       })
       .catch((error) => {
         if (cancelled) return;
         console.error(error);
-        toast.error("Failed to fetch user details");
+        toast.error(ApiError.fromAxiosError(error).message || "Failed to fetch user details");
       })
       .finally(() => {
         if (cancelled) return;
@@ -133,14 +174,14 @@ export function UserEditView({ userId }: UserEditViewProps) {
       educationlevel: formData.get("educationlevel") as string,
       skill_level: formData.get("skill_level") as string,
       dob: formData.get("dob") as string,
-      postal_code: 0,
-      gender: "male",
-      role_id: 2,
+      postal_code: Number(formData.get("postal_code") || 0),
+      gender: (formData.get("gender") as string) || "male",
+      role_id: roleId,
       country_id: countryId ?? null,
       state_id: stateId ?? null,
       city_id: cityId ?? null,
-      summary: "",
-      designation: "",
+      summary: (formData.get("summary") as string) || "",
+      designation: (formData.get("designation") as string) || "",
     };
 
     const apiFormData = new FormData();
@@ -158,7 +199,7 @@ export function UserEditView({ userId }: UserEditViewProps) {
       router.push("/users");
     } catch (error) {
       console.error(error);
-      toast.error("Failed to update user");
+      toast.error(ApiError.fromAxiosError(error).message || "Failed to update user");
     } finally {
       setSubmitting(false);
     }
@@ -239,7 +280,6 @@ export function UserEditView({ userId }: UserEditViewProps) {
             countryFallbackLabel: user.country,
           }}
         />
-        <UserProfileInfo user={user} readonly={false} />
         <UserCertificatesTable certificates={certificates} />
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

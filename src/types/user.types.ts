@@ -10,6 +10,7 @@ export type ApiUser = {
   last_login_at: string | null;
   created_at: string;
   updated_at: string;
+  deleted_at?: string | null;
   phone: string | null;
   avatar_url: string | null;
   country_id: number | null;
@@ -18,6 +19,25 @@ export type ApiUser = {
     name: string;
     iso2: string;
   } | null;
+  state_id?: number | null;
+  state?: {
+    id: number;
+    name: string;
+    state_code?: string;
+  } | null;
+  city_id?: number | null;
+  city?: {
+    id: number;
+    name: string;
+  } | null;
+  skill_level?: string | null;
+  summary?: string | null;
+  designation?: string | null;
+  postal_code?: number | null;
+  gender?: string | null;
+  dob?: string | null;
+  ID_number?: string | null;
+  educationlevel?: string | null;
   total_quizzes_attempted: number | string;
   total_certificates_issued: number | string;
   total_successful_referral?: number | string;
