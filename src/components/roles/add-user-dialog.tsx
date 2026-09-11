@@ -17,12 +17,20 @@ type AddUserPayload = {
   role_id: number;
 };
 
+type AddUserSubmitResult =
+  | boolean
+  | {
+      ok: false;
+      error?: string;
+      fieldErrors?: Record<string, string>;
+    };
+
 type AddUserDialogProps = {
   open: boolean;
   onClose: () => void;
   roles: RoleRecord[];
   submitting?: boolean;
-  onSubmit: (payload: AddUserPayload) => Promise<boolean>;
+  onSubmit: (payload: AddUserPayload) => Promise<AddUserSubmitResult>;
 };
 
 function FieldLabel({
@@ -105,14 +113,25 @@ export function AddUserDialog({
 
     setFormError(null);
 
-    const ok = await onSubmit({
+    const result = await onSubmit({
       username: trimmedUsername,
       email: trimmedEmail,
       password: trimmedPassword,
       role_id: Number(roleId),
     });
 
-    if (ok) onClose();
+    if (result === true) {
+      onClose();
+      return;
+    }
+
+    if (typeof result === "object" && !result.ok) {
+      setFormError(
+        result.fieldErrors?.password ||
+          result.error ||
+          "Failed to create user.",
+      );
+    }
   }
 
   return (

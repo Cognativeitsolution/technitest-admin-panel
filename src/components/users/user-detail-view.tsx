@@ -6,6 +6,7 @@ import {
   Award,
   Coins,
   FileText,
+  Pencil,
   Users,
 } from "lucide-react";
 
@@ -16,6 +17,7 @@ import type { CertificateRecord, UserRecord } from "@/data/users";
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { ApiError } from "@/lib/api-error";
 import { userService } from "@/services/user.service";
 
 type UserDetailViewProps = {
@@ -53,12 +55,12 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
           quizzesTaken: apiUser.total_quizzes_attempted ?? "-",
           certificates: apiUser.total_certificates_issued ?? "-",
           avatar: apiUser.avatar_url || "",
-          state: "",
-          city: "",
-          identificationNo: "",
-          highestEducation: "",
-          level: "",
-          dateOfBirth: "",
+          state: apiUser.state?.name || "",
+          city: apiUser.city?.name || "",
+          identificationNo: apiUser.ID_number || "",
+          highestEducation: apiUser.educationlevel || "",
+          level: apiUser.skill_level || "",
+          dateOfBirth: apiUser.dob || "",
           coinsEarned: apiUser.total_earned_coin ?? "-",
           total_successful_referral: apiUser.total_successful_referral ?? "-",
           emailVerified: apiUser.is_email_verified,
@@ -89,7 +91,7 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
       .catch((error) => {
         if (cancelled) return;
         console.error(error);
-        toast.error("Failed to fetch user details");
+        toast.error(ApiError.fromAxiosError(error).message || "Failed to fetch user details");
       })
       .finally(() => {
         if (cancelled) return;
@@ -123,6 +125,13 @@ export function UserDetailView({ userId }: UserDetailViewProps) {
         <span className="rounded-full bg-[#111827] px-3.5 py-1.5 text-sm font-semibold text-white">
           {user.name}
         </span>
+        <Link
+          href={`/users/${userId}/edit`}
+          className="ml-auto inline-flex h-10 items-center gap-2 rounded-xl bg-[#f0a500] px-4 text-sm font-semibold text-white transition hover:bg-[#d99400] sm:ml-0"
+        >
+          <Pencil className="size-4" />
+          Edit User
+        </Link>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
