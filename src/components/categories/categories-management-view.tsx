@@ -1,7 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
+  ArrowLeft,
   BookOpen,
   Eye,
   EyeOff,
@@ -17,12 +19,15 @@ import { Can } from "@/components/shared/can";
 import { Pagination } from "@/components/shared/pagination";
 import { Dialog } from "@/components/ui/dialog";
 import { useCategories } from "@/hooks/categories/use-categories";
+import { ApiError } from "@/lib/api-error";
 import { cn } from "@/lib/utils";
+import { tradeService } from "@/services/trade.service";
 import type {
   CategoryItem,
-  CategoryPayload,
+  CategoryFormValues,
   CategoryStatusFilter,
 } from "@/types/category.types";
+import type { TradeItem } from "@/types/trade.types";
 
 const PAGE_SIZE = 9;
 const STATUS_OPTIONS: CategoryStatusFilter[] = ["All", "Active", "Inactive"];
@@ -31,7 +36,14 @@ function isInactive(category: CategoryItem) {
   return category.is_active === false;
 }
 
-export function CategoriesManagementView() {
+type CategoriesManagementViewProps = {
+  tradeId?: number;
+};
+
+export function CategoriesManagementView({
+  tradeId,
+}: CategoriesManagementViewProps) {
+  const nested = Boolean(tradeId);
   const {
     items,
     total,
@@ -43,16 +55,60 @@ export function CategoriesManagementView() {
     updateCategory,
     deleteCategory,
     restoreCategory,
-  } = useCategories();
+  } = useCategories(tradeId);
 
+  const [trades, setTrades] = useState<TradeItem[]>([]);
+  const [trade, setTrade] = useState<TradeItem | null>(null);
+  const [tradeError, setTradeError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<CategoryStatusFilter>("All");
+  const [filterTradeId, setFilterTradeId] = useState<number | "all">("all");
   const [page, setPage] = useState(1);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<CategoryItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<CategoryItem | null>(null);
   const [restoreTarget, setRestoreTarget] = useState<CategoryItem | null>(null);
   const [restoringId, setRestoringId] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (tradeId) {
+      tradeService
+        .getById(tradeId)
+        .then((result) => {
+          if (cancelled) return;
+          setTrade(result);
+          setTradeError(null);
+        })
+        .catch((err) => {
+          if (cancelled) return;
+          setTrade(null);
+          setTradeError(ApiError.fromAxiosError(err).message);
+        });
+    } else {
+      setTrade(null);
+      setTradeError(null);
+    }
+
+    tradeService
+      .getAdminListAll()
+      .then((result) => {
+        if (!cancelled) setTrades(result.items ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setTrades([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [tradeId]);
+
+  const tradeNames = useMemo(
+    () => Object.fromEntries(trades.map((item) => [item.id, item.title])),
+    [trades],
+  );
 
   const activeCount = items.filter((item) => !isInactive(item)).length;
   const inactiveCount = items.length - activeCount;
@@ -63,13 +119,18 @@ export function CategoriesManagementView() {
     return items.filter((item) => {
       if (status === "Active" && isInactive(item)) return false;
       if (status === "Inactive" && !isInactive(item)) return false;
+      if (!nested && filterTradeId !== "all" && item.trade_id !== filterTradeId) {
+        return false;
+      }
       if (!q) return true;
+      const tradeTitle = tradeNames[item.trade_id]?.toLowerCase() ?? "";
       return (
         item.title.toLowerCase().includes(q) ||
-        (item.detail ?? "").toLowerCase().includes(q)
+        (item.detail ?? "").toLowerCase().includes(q) ||
+        tradeTitle.includes(q)
       );
     });
-  }, [items, query, status]);
+  }, [filterTradeId, items, nested, query, status, tradeNames]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -103,6 +164,10 @@ export function CategoriesManagementView() {
     if (ok) setRestoreTarget(null);
   }
 
+  const heading = nested
+    ? `${trade?.title ?? "Trade"} subcategories`
+    : "Subcategories";
+
   return (
     <div className="space-y-5">
       <div className="rounded-2xl border border-[#e8ecf2] bg-white px-6 py-5 shadow-[0_1px_3px_rgba(16,24,40,0.04)]">
@@ -112,11 +177,22 @@ export function CategoriesManagementView() {
               <Layers className="size-5" />
             </div>
             <div>
+              {nested ? (
+                <Link
+                  href="/categories"
+                  className="mb-1 inline-flex items-center gap-1 text-xs font-semibold text-[#2563eb] transition hover:underline"
+                >
+                  <ArrowLeft className="size-3.5" />
+                  Back to trades
+                </Link>
+              ) : null}
               <h1 className="text-[24px] font-bold tracking-tight text-[#111827]">
-                Categories Management
+                {heading}
               </h1>
               <p className="mt-1 text-sm text-[#6b7280]">
-                Group quizzes by topic so learners can browse the catalog easily.
+                {nested
+                  ? "Add subcategories under this trade so quizzes can be grouped for learners."
+                  : "Manage subcategories and assign each one to a trade."}
               </p>
             </div>
           </div>
@@ -127,16 +203,22 @@ export function CategoriesManagementView() {
               className="inline-flex h-11 w-fit items-center gap-2 rounded-xl bg-[#f0a500] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d99400]"
             >
               <Plus className="size-4" />
-              Add Category
+              Add Subcategory
             </button>
           </Can>
         </div>
       </div>
 
+      {tradeError ? (
+        <div className="rounded-xl border border-[#fecaca] bg-[#fef2f2] px-4 py-3 text-sm text-[#b91c1c]">
+          {tradeError}
+        </div>
+      ) : null}
+
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard
           icon={<Layers className="size-4" />}
-          label="Total categories"
+          label="Total subcategories"
           value={loading ? "—" : String(total)}
           tone="blue"
         />
@@ -184,31 +266,54 @@ export function CategoriesManagementView() {
               setQuery(e.target.value);
               setPage(1);
             }}
-            placeholder="Search categories"
+            placeholder="Search subcategories"
             className="h-10 w-full rounded-xl border border-[#e5e7eb] bg-white pr-4 pl-10 text-sm text-[#374151] outline-none transition placeholder:text-[#9ca3af] focus:border-[#d1d5db] focus:ring-0"
           />
         </div>
-        <select
-          aria-label="Status"
-          value={status}
-          onChange={(e) => {
-            setStatus(e.target.value as CategoryStatusFilter);
-            setPage(1);
-          }}
-          className="h-10 w-fit rounded-xl border border-[#e5e7eb] bg-white px-3.5 text-sm font-medium text-[#374151] shadow-sm outline-none transition hover:bg-[#f9fafb]"
-        >
-          {STATUS_OPTIONS.map((option) => (
-            <option key={option} value={option}>
-              {option === "All" ? "Status" : option}
-            </option>
-          ))}
-        </select>
+        <div className="flex flex-wrap items-center gap-3">
+          {nested ? null : (
+            <select
+              aria-label="Trade"
+              value={filterTradeId}
+              onChange={(e) => {
+                setFilterTradeId(
+                  e.target.value === "all" ? "all" : Number(e.target.value),
+                );
+                setPage(1);
+              }}
+              className="h-10 w-fit rounded-xl border border-[#e5e7eb] bg-white px-3.5 text-sm font-medium text-[#374151] shadow-sm outline-none transition hover:bg-[#f9fafb]"
+            >
+              <option value="all">All trades</option>
+              {trades.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.title}
+                </option>
+              ))}
+            </select>
+          )}
+          <select
+            aria-label="Status"
+            value={status}
+            onChange={(e) => {
+              setStatus(e.target.value as CategoryStatusFilter);
+              setPage(1);
+            }}
+            className="h-10 w-fit rounded-xl border border-[#e5e7eb] bg-white px-3.5 text-sm font-medium text-[#374151] shadow-sm outline-none transition hover:bg-[#f9fafb]"
+          >
+            {STATUS_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option === "All" ? "Status" : option}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <CategoriesGrid
         categories={paged}
         loading={loading}
         restoringId={restoringId}
+        tradeNames={nested ? undefined : tradeNames}
         onEdit={openEdit}
         onDelete={setDeleteTarget}
         onRestore={setRestoreTarget}
@@ -235,7 +340,9 @@ export function CategoriesManagementView() {
         }}
         category={editing}
         submitting={mutating}
-        onCreate={async (payload, image) => {
+        trades={trades}
+        lockedTradeId={editing ? undefined : tradeId}
+        onCreate={async (payload: CategoryFormValues, image) => {
           const ok = await createCategory(payload, image);
           if (ok) setPage(1);
           return ok;
@@ -246,7 +353,7 @@ export function CategoriesManagementView() {
       <Dialog
         open={Boolean(deleteTarget)}
         onClose={() => setDeleteTarget(null)}
-        title="Delete Category"
+        title="Delete Subcategory"
         maxWidth="max-w-sm"
       >
         <p className="text-sm text-[#4b5563]">
@@ -254,7 +361,7 @@ export function CategoriesManagementView() {
           <span className="font-semibold text-[#111827]">
             {deleteTarget?.title}
           </span>
-          ? You can restore it later from inactive categories.
+          ? You can restore it later from inactive subcategories.
         </p>
         <div className="mt-6 flex justify-end gap-3">
           <button
@@ -279,7 +386,7 @@ export function CategoriesManagementView() {
       <Dialog
         open={Boolean(restoreTarget)}
         onClose={() => setRestoreTarget(null)}
-        title="Restore Category"
+        title="Restore Subcategory"
         maxWidth="max-w-sm"
       >
         <p className="text-sm text-[#4b5563]">

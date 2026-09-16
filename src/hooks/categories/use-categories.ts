@@ -5,7 +5,10 @@ import { toast } from "sonner";
 
 import { ApiError } from "@/lib/api-error";
 import { categoryService } from "@/services/category.service";
-import type { CategoryItem, CategoryPayload } from "@/types/category.types";
+import type {
+  CategoryFormValues,
+  CategoryItem,
+} from "@/types/category.types";
 
 function sortNewestFirst(items: CategoryItem[]) {
   return [...items].sort((a, b) => {
@@ -18,7 +21,7 @@ function sortNewestFirst(items: CategoryItem[]) {
   });
 }
 
-export function useCategories() {
+export function useCategories(tradeId?: number) {
   const [nonce, setNonce] = useState(0);
   const [items, setItems] = useState<CategoryItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -31,7 +34,7 @@ export function useCategories() {
     setSettled(false);
 
     categoryService
-      .getAdminListAll()
+      .getAdminListAll(tradeId ? { trade_id: tradeId } : undefined)
       .then((result) => {
         if (cancelled) return;
         setItems(sortNewestFirst(result.items ?? []));
@@ -50,18 +53,31 @@ export function useCategories() {
     return () => {
       cancelled = true;
     };
-  }, [nonce]);
+  }, [nonce, tradeId]);
 
   const refresh = useCallback(() => {
     setNonce((prev) => prev + 1);
   }, []);
 
   const createCategory = useCallback(
-    async (payload: CategoryPayload, image?: File | null) => {
+    async (values: CategoryFormValues, image?: File | null) => {
+      const resolvedTradeId = values.trade_id ?? tradeId;
+      if (!resolvedTradeId) {
+        toast.error("Select a trade for this subcategory.");
+        return false;
+      }
+
       setMutating(true);
       try {
-        await categoryService.create(payload, image);
-        toast.success("Category created");
+        await categoryService.create(
+          {
+            trade_id: resolvedTradeId,
+            title: values.title,
+            detail: values.detail,
+          },
+          image,
+        );
+        toast.success("Subcategory created");
         refresh();
         return true;
       } catch (err) {
@@ -71,19 +87,33 @@ export function useCategories() {
         setMutating(false);
       }
     },
-    [refresh],
+    [refresh, tradeId],
   );
 
   const updateCategory = useCallback(
     async (
       categoryId: number,
-      payload: CategoryPayload,
+      values: CategoryFormValues,
       image?: File | null,
     ) => {
+      const resolvedTradeId = values.trade_id ?? tradeId;
+      if (!resolvedTradeId) {
+        toast.error("Select a trade for this subcategory.");
+        return false;
+      }
+
       setMutating(true);
       try {
-        await categoryService.update(categoryId, payload, image);
-        toast.success("Category updated");
+        await categoryService.update(
+          categoryId,
+          {
+            trade_id: resolvedTradeId,
+            title: values.title,
+            detail: values.detail,
+          },
+          image,
+        );
+        toast.success("Subcategory updated");
         refresh();
         return true;
       } catch (err) {
@@ -93,7 +123,7 @@ export function useCategories() {
         setMutating(false);
       }
     },
-    [refresh],
+    [refresh, tradeId],
   );
 
   const deleteCategory = useCallback(
@@ -101,7 +131,7 @@ export function useCategories() {
       setMutating(true);
       try {
         await categoryService.remove(categoryId);
-        toast.success("Category deleted");
+        toast.success("Subcategory deleted");
         refresh();
         return true;
       } catch (err) {
@@ -119,7 +149,7 @@ export function useCategories() {
       setMutating(true);
       try {
         await categoryService.restore(categoryId);
-        toast.success("Category restored");
+        toast.success("Subcategory restored");
         refresh();
         return true;
       } catch (err) {
