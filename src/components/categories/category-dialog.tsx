@@ -6,12 +6,15 @@ import { Dialog } from "@/components/ui/dialog";
 import { FileUpload } from "@/components/ui/file-upload";
 import { TextField } from "@/components/ui/text-field";
 import type { CategoryFormValues, CategoryItem } from "@/types/category.types";
+import type { TradeItem } from "@/types/trade.types";
 
 type CategoryDialogProps = {
   open: boolean;
   onClose: () => void;
   category: CategoryItem | null;
   submitting?: boolean;
+  trades?: TradeItem[];
+  lockedTradeId?: number;
   onCreate: (payload: CategoryFormValues, image: File | null) => Promise<boolean>;
   onUpdate: (
     categoryId: number,
@@ -29,17 +32,23 @@ function isAllowedImage(file: File) {
 const textareaClassName =
   "w-full rounded-[10px] border border-[#ebebeb] bg-white px-5 py-3 text-[15px] text-[#4b5563] shadow-[0_2px_10px_rgba(16,24,40,0.06)] outline-none transition placeholder:text-[#b0b0b0] focus:border-[#dcdcdc] focus:shadow-[0_2px_12px_rgba(16,24,40,0.08)] focus:ring-0";
 
+const selectClassName =
+  "h-[48px] w-full rounded-[10px] border border-[#ebebeb] bg-white px-5 text-[15px] text-[#4b5563] shadow-[0_2px_10px_rgba(16,24,40,0.06)] outline-none transition focus:border-[#dcdcdc] focus:shadow-[0_2px_12px_rgba(16,24,40,0.08)]";
+
 export function CategoryDialog({
   open,
   onClose,
   category,
   submitting = false,
+  trades = [],
+  lockedTradeId,
   onCreate,
   onUpdate,
 }: CategoryDialogProps) {
   const isEdit = Boolean(category);
   const [title, setTitle] = useState("");
   const [detail, setDetail] = useState("");
+  const [tradeId, setTradeId] = useState<number | "">("");
   const [image, setImage] = useState<File | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [uploadKey, setUploadKey] = useState(0);
@@ -48,16 +57,18 @@ export function CategoryDialog({
     if (!open) return;
     setTitle(category?.title ?? "");
     setDetail(category?.detail === "string" ? "" : (category?.detail ?? ""));
+    setTradeId(lockedTradeId ?? category?.trade_id ?? "");
     setImage(null);
     setFormError(null);
     setUploadKey((key) => key + 1);
-  }, [open, category]);
+  }, [open, category, lockedTradeId]);
 
   async function handleSave() {
     if (submitting) return;
 
     const trimmedTitle = title.trim();
     const trimmedDetail = detail.trim();
+    const resolvedTradeId = lockedTradeId ?? (tradeId === "" ? undefined : Number(tradeId));
 
     if (!trimmedTitle) {
       setFormError("Title is required.");
@@ -65,6 +76,10 @@ export function CategoryDialog({
     }
     if (!trimmedDetail) {
       setFormError("Description is required.");
+      return;
+    }
+    if (!resolvedTradeId) {
+      setFormError("Category is required.");
       return;
     }
     if (image) {
@@ -81,6 +96,7 @@ export function CategoryDialog({
     const payload: CategoryFormValues = {
       title: trimmedTitle,
       detail: trimmedDetail,
+      trade_id: resolvedTradeId,
     };
 
     const ok = isEdit && category
@@ -98,6 +114,27 @@ export function CategoryDialog({
       maxWidth="max-w-lg"
     >
       <div className="space-y-4">
+        {lockedTradeId ? null : (
+          <div className="flex flex-col gap-2.5">
+            <label htmlFor="category-trade" className="text-[14px] font-medium text-[#111111]">
+              Category<span className="ml-0.5 text-[#ff0000]">*</span>
+            </label>
+            <select
+              id="category-trade"
+              value={tradeId}
+              onChange={(e) => setTradeId(e.target.value ? Number(e.target.value) : "")}
+              className={selectClassName}
+            >
+              <option value="">Select category</option>
+              {trades.map((trade) => (
+                <option key={trade.id} value={trade.id}>
+                  {trade.title}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <TextField
           label="Title"
           required

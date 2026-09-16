@@ -37,12 +37,13 @@ function isInactive(category: CategoryItem) {
 }
 
 type CategoriesManagementViewProps = {
-  tradeId: number;
+  tradeId?: number;
 };
 
 export function CategoriesManagementView({
   tradeId,
 }: CategoriesManagementViewProps) {
+  const nested = Boolean(tradeId);
   const {
     items,
     total,
@@ -56,11 +57,12 @@ export function CategoriesManagementView({
     restoreCategory,
   } = useCategories(tradeId);
 
+  const [trades, setTrades] = useState<TradeItem[]>([]);
   const [trade, setTrade] = useState<TradeItem | null>(null);
   const [tradeError, setTradeError] = useState<string | null>(null);
-  const [tradeSettled, setTradeSettled] = useState(false);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<CategoryStatusFilter>("All");
+  const [filterTradeId, setFilterTradeId] = useState<number | "all">("all");
   const [page, setPage] = useState(1);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<CategoryItem | null>(null);
@@ -70,27 +72,43 @@ export function CategoriesManagementView({
 
   useEffect(() => {
     let cancelled = false;
-    setTradeSettled(false);
+
+    if (tradeId) {
+      tradeService
+        .getById(tradeId)
+        .then((result) => {
+          if (cancelled) return;
+          setTrade(result);
+          setTradeError(null);
+        })
+        .catch((err) => {
+          if (cancelled) return;
+          setTrade(null);
+          setTradeError(ApiError.fromAxiosError(err).message);
+        });
+    } else {
+      setTrade(null);
+      setTradeError(null);
+    }
 
     tradeService
-      .getById(tradeId)
+      .getAdminListAll()
       .then((result) => {
-        if (cancelled) return;
-        setTrade(result);
-        setTradeError(null);
-        setTradeSettled(true);
+        if (!cancelled) setTrades(result.items ?? []);
       })
-      .catch((err) => {
-        if (cancelled) return;
-        setTrade(null);
-        setTradeError(ApiError.fromAxiosError(err).message);
-        setTradeSettled(true);
+      .catch(() => {
+        if (!cancelled) setTrades([]);
       });
 
     return () => {
       cancelled = true;
     };
   }, [tradeId]);
+
+  const tradeNames = useMemo(
+    () => Object.fromEntries(trades.map((item) => [item.id, item.title])),
+    [trades],
+  );
 
   const activeCount = items.filter((item) => !isInactive(item)).length;
   const inactiveCount = items.length - activeCount;
@@ -101,13 +119,18 @@ export function CategoriesManagementView({
     return items.filter((item) => {
       if (status === "Active" && isInactive(item)) return false;
       if (status === "Inactive" && !isInactive(item)) return false;
+      if (!nested && filterTradeId !== "all" && item.trade_id !== filterTradeId) {
+        return false;
+      }
       if (!q) return true;
+      const tradeTitle = tradeNames[item.trade_id]?.toLowerCase() ?? "";
       return (
         item.title.toLowerCase().includes(q) ||
-        (item.detail ?? "").toLowerCase().includes(q)
+        (item.detail ?? "").toLowerCase().includes(q) ||
+        tradeTitle.includes(q)
       );
     });
-  }, [items, query, status]);
+  }, [filterTradeId, items, nested, query, status, tradeNames]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -141,7 +164,9 @@ export function CategoriesManagementView({
     if (ok) setRestoreTarget(null);
   }
 
-  const tradeTitle = trade?.title ?? (tradeSettled ? "Trade" : "Loading…");
+  const heading = nested
+    ? `${trade?.title ?? "Category"} subcategories`
+    : "Subcategories";
 
   return (
     <div className="space-y-5">
@@ -152,18 +177,22 @@ export function CategoriesManagementView({
               <Layers className="size-5" />
             </div>
             <div>
-              <Link
-                href="/trades"
-                className="mb-1 inline-flex items-center gap-1 text-xs font-semibold text-[#2563eb] transition hover:underline"
-              >
-                <ArrowLeft className="size-3.5" />
-                Back to trades
-              </Link>
+              {nested ? (
+                <Link
+                  href="/categories"
+                  className="mb-1 inline-flex items-center gap-1 text-xs font-semibold text-[#2563eb] transition hover:underline"
+                >
+                  <ArrowLeft className="size-3.5" />
+                  Back to categories
+                </Link>
+              ) : null}
               <h1 className="text-[24px] font-bold tracking-tight text-[#111827]">
-                {tradeTitle} subcategories
+                {heading}
               </h1>
               <p className="mt-1 text-sm text-[#6b7280]">
-                Add topics under this trade so quizzes can be grouped for learners.
+                {nested
+                  ? "Add subcategories under this category so quizzes can be grouped for learners."
+                  : "Manage subcategories and assign each one to a category."}
               </p>
             </div>
           </div>
@@ -241,27 +270,50 @@ export function CategoriesManagementView({
             className="h-10 w-full rounded-xl border border-[#e5e7eb] bg-white pr-4 pl-10 text-sm text-[#374151] outline-none transition placeholder:text-[#9ca3af] focus:border-[#d1d5db] focus:ring-0"
           />
         </div>
-        <select
-          aria-label="Status"
-          value={status}
-          onChange={(e) => {
-            setStatus(e.target.value as CategoryStatusFilter);
-            setPage(1);
-          }}
-          className="h-10 w-fit rounded-xl border border-[#e5e7eb] bg-white px-3.5 text-sm font-medium text-[#374151] shadow-sm outline-none transition hover:bg-[#f9fafb]"
-        >
-          {STATUS_OPTIONS.map((option) => (
-            <option key={option} value={option}>
-              {option === "All" ? "Status" : option}
-            </option>
-          ))}
-        </select>
+        <div className="flex flex-wrap items-center gap-3">
+          {nested ? null : (
+            <select
+              aria-label="Category"
+              value={filterTradeId}
+              onChange={(e) => {
+                setFilterTradeId(
+                  e.target.value === "all" ? "all" : Number(e.target.value),
+                );
+                setPage(1);
+              }}
+              className="h-10 w-fit rounded-xl border border-[#e5e7eb] bg-white px-3.5 text-sm font-medium text-[#374151] shadow-sm outline-none transition hover:bg-[#f9fafb]"
+            >
+              <option value="all">All categories</option>
+              {trades.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.title}
+                </option>
+              ))}
+            </select>
+          )}
+          <select
+            aria-label="Status"
+            value={status}
+            onChange={(e) => {
+              setStatus(e.target.value as CategoryStatusFilter);
+              setPage(1);
+            }}
+            className="h-10 w-fit rounded-xl border border-[#e5e7eb] bg-white px-3.5 text-sm font-medium text-[#374151] shadow-sm outline-none transition hover:bg-[#f9fafb]"
+          >
+            {STATUS_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option === "All" ? "Status" : option}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <CategoriesGrid
         categories={paged}
         loading={loading}
         restoringId={restoringId}
+        tradeNames={nested ? undefined : tradeNames}
         onEdit={openEdit}
         onDelete={setDeleteTarget}
         onRestore={setRestoreTarget}
@@ -288,6 +340,8 @@ export function CategoriesManagementView({
         }}
         category={editing}
         submitting={mutating}
+        trades={trades}
+        lockedTradeId={tradeId}
         onCreate={async (payload: CategoryFormValues, image) => {
           const ok = await createCategory(payload, image);
           if (ok) setPage(1);

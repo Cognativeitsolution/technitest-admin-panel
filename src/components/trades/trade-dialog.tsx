@@ -98,7 +98,7 @@ export function TradeDialog({
     <Dialog
       open={open}
       onClose={onClose}
-      title={isEdit ? "Edit Trade" : "Add Trade"}
+      title={isEdit ? "Edit Category" : "Add Category"}
       maxWidth="max-w-lg"
     >
       <div className="space-y-4">
@@ -120,7 +120,7 @@ export function TradeDialog({
             value={detail}
             onChange={(e) => setDetail(e.target.value)}
             rows={4}
-            placeholder="What kinds of subcategories belong in this trade?"
+            placeholder="What kinds of subcategories belong in this category?"
             className={textareaClassName}
           />
         </div>
@@ -172,7 +172,7 @@ export function TradeDialog({
           disabled={submitting}
           className="inline-flex h-11 min-w-[150px] items-center justify-center rounded-xl bg-[#f0a500] px-6 text-sm font-semibold text-white transition hover:bg-[#d99400] disabled:opacity-50"
         >
-          {submitting ? "Saving..." : isEdit ? "Update Trade" : "Add Trade"}
+          {submitting ? "Saving..." : isEdit ? "Update Category" : "Add Category"}
         </button>
       </div>
     </Dialog>

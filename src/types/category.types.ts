@@ -23,6 +23,7 @@ export type CategoryItem = {
 export type CategoryFormValues = {
   title: string;
   detail: string;
+  trade_id?: number;
 };
 
 export type CategoryPayload = CategoryFormValues & {

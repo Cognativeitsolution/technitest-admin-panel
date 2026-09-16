@@ -1,16 +1,18 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import {
   Eye,
   EyeOff,
   FolderTree,
-  Hammer,
+  Layers,
   Plus,
   RefreshCw,
   Search,
 } from "lucide-react";
 
+import { CategoryDialog } from "@/components/categories/category-dialog";
 import { Can } from "@/components/shared/can";
 import { Pagination } from "@/components/shared/pagination";
 import { TradeDialog } from "@/components/trades/trade-dialog";
@@ -20,7 +22,10 @@ import {
 } from "@/components/trades/trades-grid";
 import { Dialog } from "@/components/ui/dialog";
 import { useTrades } from "@/hooks/trades/use-trades";
+import { ApiError } from "@/lib/api-error";
 import { cn } from "@/lib/utils";
+import { categoryService } from "@/services/category.service";
+import type { CategoryFormValues } from "@/types/category.types";
 import type { TradeItem, TradePayload, TradeStatusFilter } from "@/types/trade.types";
 
 const PAGE_SIZE = 9;
@@ -52,6 +57,10 @@ export function TradesManagementView() {
   const [deleteTarget, setDeleteTarget] = useState<TradeItem | null>(null);
   const [restoreTarget, setRestoreTarget] = useState<TradeItem | null>(null);
   const [restoringId, setRestoringId] = useState<number | null>(null);
+  const [subcategoryParent, setSubcategoryParent] = useState<TradeItem | null>(
+    null,
+  );
+  const [submittingSubcategory, setSubmittingSubcategory] = useState(false);
 
   const activeCount = items.filter((item) => !isInactive(item)).length;
   const inactiveCount = items.length - activeCount;
@@ -105,20 +114,47 @@ export function TradesManagementView() {
     if (ok) setRestoreTarget(null);
   }
 
+  async function createSubcategory(
+    payload: CategoryFormValues,
+    image: File | null,
+  ) {
+    const tradeId = payload.trade_id ?? subcategoryParent?.id;
+    if (!tradeId) {
+      toast.error("Select a category for this subcategory.");
+      return false;
+    }
+
+    setSubmittingSubcategory(true);
+    try {
+      await categoryService.create(
+        { title: payload.title, detail: payload.detail, trade_id: tradeId },
+        image,
+      );
+      toast.success("Subcategory created");
+      refresh();
+      return true;
+    } catch (err) {
+      toast.error(ApiError.fromAxiosError(err).message);
+      return false;
+    } finally {
+      setSubmittingSubcategory(false);
+    }
+  }
+
   return (
     <div className="space-y-5">
       <div className="rounded-2xl border border-[#e8ecf2] bg-white px-6 py-5 shadow-[0_1px_3px_rgba(16,24,40,0.04)]">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-start gap-3">
             <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#eff6ff] text-[#2563eb]">
-              <Hammer className="size-5" />
+              <Layers className="size-5" />
             </div>
             <div>
               <h1 className="text-[24px] font-bold tracking-tight text-[#111827]">
-                Trades Management
+                Categories Management
               </h1>
               <p className="mt-1 text-sm text-[#6b7280]">
-                Organize the catalog by trade, then add subcategories inside each one.
+                Organize the catalog by category, then add subcategories inside each one.
               </p>
             </div>
           </div>
@@ -129,7 +165,7 @@ export function TradesManagementView() {
               className="inline-flex h-11 w-fit items-center gap-2 rounded-xl bg-[#f0a500] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d99400]"
             >
               <Plus className="size-4" />
-              Add Trade
+              Add Category
             </button>
           </Can>
         </div>
@@ -137,8 +173,8 @@ export function TradesManagementView() {
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard
-          icon={<Hammer className="size-4" />}
-          label="Total trades"
+          icon={<Layers className="size-4" />}
+          label="Total categories"
           value={loading ? "—" : String(total)}
           tone="blue"
         />
@@ -186,7 +222,7 @@ export function TradesManagementView() {
               setQuery(e.target.value);
               setPage(1);
             }}
-            placeholder="Search trades"
+            placeholder="Search categories"
             className="h-10 w-full rounded-xl border border-[#e5e7eb] bg-white pr-4 pl-10 text-sm text-[#374151] outline-none transition placeholder:text-[#9ca3af] focus:border-[#d1d5db] focus:ring-0"
           />
         </div>
@@ -214,6 +250,7 @@ export function TradesManagementView() {
         onEdit={openEdit}
         onDelete={setDeleteTarget}
         onRestore={setRestoreTarget}
+        onAddSubcategory={setSubcategoryParent}
       />
 
       {!loading && filtered.length > 0 ? (
@@ -245,10 +282,20 @@ export function TradesManagementView() {
         onUpdate={updateTrade}
       />
 
+      <CategoryDialog
+        open={Boolean(subcategoryParent)}
+        onClose={() => setSubcategoryParent(null)}
+        category={null}
+        submitting={submittingSubcategory}
+        lockedTradeId={subcategoryParent?.id}
+        onCreate={createSubcategory}
+        onUpdate={async () => false}
+      />
+
       <Dialog
         open={Boolean(deleteTarget)}
         onClose={() => setDeleteTarget(null)}
-        title="Delete Trade"
+        title="Delete Category"
         maxWidth="max-w-sm"
       >
         <p className="text-sm text-[#4b5563]">
@@ -256,7 +303,7 @@ export function TradesManagementView() {
           <span className="font-semibold text-[#111827]">
             {deleteTarget?.title}
           </span>
-          ? You can restore it later from inactive trades.
+          ? You can restore it later from inactive categories.
         </p>
         <div className="mt-6 flex justify-end gap-3">
           <button
@@ -281,7 +328,7 @@ export function TradesManagementView() {
       <Dialog
         open={Boolean(restoreTarget)}
         onClose={() => setRestoreTarget(null)}
-        title="Restore Trade"
+        title="Restore Category"
         maxWidth="max-w-sm"
       >
         <p className="text-sm text-[#4b5563]">

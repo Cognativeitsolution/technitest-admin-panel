@@ -179,7 +179,7 @@ export function QuizBasicInfo({
               className={readonly ? readOnlyClassName : inputClassName}
             />
           </Field>
-          <Field label="Trade" required>
+          <Field label="Category" required>
             <div className="relative">
               <select
                 value={selectedTradeId ?? ""}
@@ -191,7 +191,7 @@ export function QuizBasicInfo({
                 disabled={readonly}
                 className={cn(readonly ? readOnlyClassName : inputClassName, "appearance-none pr-10")}
               >
-                <option value="">Select trade</option>
+                <option value="">Select category</option>
                 {trades.map((trade) => (
                   <option key={trade.id} value={trade.id}>
                     {trade.title}
@@ -210,7 +210,7 @@ export function QuizBasicInfo({
                 className={cn(readonly ? readOnlyClassName : inputClassName, "appearance-none pr-10")}
               >
                 <option value="">
-                  {selectedTradeId ? "Select subcategory" : "Select a trade first"}
+                  {selectedTradeId ? "Select subcategory" : "Select a category first"}
                 </option>
                 {categories.map((cat) => (
                   <option key={cat.id} value={cat.id}>

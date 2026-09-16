@@ -1,5 +1,5 @@
-import { TradesManagementView } from "@/components/trades/trades-management-view";
+import { redirect } from "next/navigation";
 
-export default function TradesPage() {
-  return <TradesManagementView />;
+export default function TradesRedirectPage() {
+  redirect("/categories");
 }

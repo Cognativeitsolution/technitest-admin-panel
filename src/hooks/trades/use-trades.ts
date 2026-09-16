@@ -61,7 +61,7 @@ export function useTrades() {
       setMutating(true);
       try {
         await tradeService.create(payload, image);
-        toast.success("Trade created");
+        toast.success("Category created");
         refresh();
         return true;
       } catch (err) {
@@ -79,7 +79,7 @@ export function useTrades() {
       setMutating(true);
       try {
         await tradeService.update(tradeId, payload, image);
-        toast.success("Trade updated");
+        toast.success("Category updated");
         refresh();
         return true;
       } catch (err) {
@@ -97,7 +97,7 @@ export function useTrades() {
       setMutating(true);
       try {
         await tradeService.remove(tradeId);
-        toast.success("Trade deleted");
+        toast.success("Category deleted");
         refresh();
         return true;
       } catch (err) {
@@ -115,7 +115,7 @@ export function useTrades() {
       setMutating(true);
       try {
         await tradeService.restore(tradeId);
-        toast.success("Trade restored");
+        toast.success("Category restored");
         refresh();
         return true;
       } catch (err) {

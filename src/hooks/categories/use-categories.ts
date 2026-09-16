@@ -21,7 +21,7 @@ function sortNewestFirst(items: CategoryItem[]) {
   });
 }
 
-export function useCategories(tradeId: number) {
+export function useCategories(tradeId?: number) {
   const [nonce, setNonce] = useState(0);
   const [items, setItems] = useState<CategoryItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -34,7 +34,7 @@ export function useCategories(tradeId: number) {
     setSettled(false);
 
     categoryService
-      .getAdminListAll({ trade_id: tradeId })
+      .getAdminListAll(tradeId ? { trade_id: tradeId } : undefined)
       .then((result) => {
         if (cancelled) return;
         setItems(sortNewestFirst(result.items ?? []));
@@ -61,9 +61,18 @@ export function useCategories(tradeId: number) {
 
   const createCategory = useCallback(
     async (values: CategoryFormValues, image?: File | null) => {
+      const resolvedTradeId = values.trade_id ?? tradeId;
+      if (!resolvedTradeId) {
+        toast.error("Select a category for this subcategory.");
+        return false;
+      }
+
       setMutating(true);
       try {
-        await categoryService.create({ ...values, trade_id: tradeId }, image);
+        await categoryService.create(
+          { title: values.title, detail: values.detail, trade_id: resolvedTradeId },
+          image,
+        );
         toast.success("Subcategory created");
         refresh();
         return true;
@@ -83,11 +92,17 @@ export function useCategories(tradeId: number) {
       values: CategoryFormValues,
       image?: File | null,
     ) => {
+      const resolvedTradeId = values.trade_id ?? tradeId;
+      if (!resolvedTradeId) {
+        toast.error("Select a category for this subcategory.");
+        return false;
+      }
+
       setMutating(true);
       try {
         await categoryService.update(
           categoryId,
-          { ...values, trade_id: tradeId },
+          { title: values.title, detail: values.detail, trade_id: resolvedTradeId },
           image,
         );
         toast.success("Subcategory updated");
