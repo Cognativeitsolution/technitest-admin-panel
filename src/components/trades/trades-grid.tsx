@@ -27,6 +27,48 @@ function isInactive(trade: TradeItem) {
   return trade.is_active === false;
 }
 
+function TradeCardMedia({
+  trade,
+  inactive,
+}: {
+  trade: TradeItem;
+  inactive: boolean;
+}) {
+  const media = (
+    <>
+      <div className={cn("h-full w-full", inactive && "opacity-40")}>
+        {trade.image_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={trade.image_url}
+            alt={trade.title}
+            className="absolute inset-0 h-full w-full object-cover object-center"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-[#f3f6fb]">
+            <span className="flex size-14 items-center justify-center rounded-2xl bg-white text-xl font-bold text-[#2563eb] shadow-sm">
+              {trade.title.charAt(0).toUpperCase()}
+            </span>
+          </div>
+        )}
+      </div>
+      <CardStatusBadge inactive={inactive} />
+    </>
+  );
+  const className =
+    "relative h-40 w-full shrink-0 overflow-hidden bg-[#eef2f7]";
+
+  if (inactive) {
+    return <div className={className}>{media}</div>;
+  }
+
+  return (
+    <Link href={`/categories/${trade.id}`} className={cn("block", className)}>
+      {media}
+    </Link>
+  );
+}
+
 export function TradesGrid({
   trades,
   loading = false,
@@ -80,34 +122,8 @@ export function TradesGrid({
             key={trade.id}
             className="flex h-full flex-col overflow-hidden rounded-2xl border border-[#e8ecf2] bg-white shadow-[0_1px_3px_rgba(16,24,40,0.04)] transition hover:shadow-[0_8px_24px_rgba(16,24,40,0.06)]"
           >
-            <div
-              className={cn(
-                "flex min-h-0 flex-1 flex-col",
-                inactive && "pointer-events-none",
-              )}
-            >
-              <Link
-                href={`/categories/${trade.id}`}
-                className="relative block h-40 w-full shrink-0 overflow-hidden bg-[#eef2f7]"
-              >
-                <div className={cn("h-full w-full", inactive && "opacity-40")}>
-                  {trade.image_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={trade.image_url}
-                      alt={trade.title}
-                      className="absolute inset-0 h-full w-full object-cover object-center"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-[#f3f6fb]">
-                      <span className="flex size-14 items-center justify-center rounded-2xl bg-white text-xl font-bold text-[#2563eb] shadow-sm">
-                        {trade.title.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <CardStatusBadge inactive={inactive} />
-              </Link>
+            <div className="flex min-h-0 flex-1 flex-col">
+              <TradeCardMedia trade={trade} inactive={inactive} />
 
               <div
                 className={cn(
@@ -116,12 +132,18 @@ export function TradesGrid({
                 )}
               >
                 <div className="flex items-start justify-between gap-2">
-                  <Link
-                    href={`/categories/${trade.id}`}
-                    className="min-w-0 line-clamp-1 text-base font-semibold text-[#111827] hover:text-[#2563eb]"
-                  >
-                    {trade.title}
-                  </Link>
+                  {inactive ? (
+                    <span className="min-w-0 line-clamp-1 text-base font-semibold text-[#111827]">
+                      {trade.title}
+                    </span>
+                  ) : (
+                    <Link
+                      href={`/categories/${trade.id}`}
+                      className="min-w-0 line-clamp-1 text-base font-semibold text-[#111827] hover:text-[#2563eb]"
+                    >
+                      {trade.title}
+                    </Link>
+                  )}
                   {inactive ? null : (
                     <div className="flex shrink-0 items-center gap-0.5">
                       <Can anyPermission={TRADE_UPDATE_PERMISSIONS}>
@@ -158,13 +180,20 @@ export function TradesGrid({
             </div>
 
             <div className="mt-auto flex items-center justify-between gap-2 px-5 pt-3 pb-4">
-              <Link
-                href={`/categories/${trade.id}`}
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-[#2563eb] transition hover:underline"
-              >
-                <FolderTree className="size-3.5" />
-                {categoryLabel}
-              </Link>
+              {inactive ? (
+                <span className="inline-flex cursor-not-allowed items-center gap-1.5 text-xs font-medium text-[#9ca3af]">
+                  <FolderTree className="size-3.5" />
+                  {categoryLabel}
+                </span>
+              ) : (
+                <Link
+                  href={`/categories/${trade.id}`}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-[#2563eb] transition hover:underline"
+                >
+                  <FolderTree className="size-3.5" />
+                  {categoryLabel}
+                </Link>
+              )}
 
               {inactive ? (
                 <Can anyPermission={TRADE_RESTORE_PERMISSIONS}>
