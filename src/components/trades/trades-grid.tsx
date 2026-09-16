@@ -106,23 +106,51 @@ export function TradesGrid({
               </Link>
 
               <div className="flex flex-1 flex-col px-5 pt-4">
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start justify-between gap-2">
                   <Link
                     href={`/categories/${trade.id}`}
-                    className="line-clamp-1 text-base font-semibold text-[#111827] hover:text-[#2563eb]"
+                    className="min-w-0 line-clamp-1 text-base font-semibold text-[#111827] hover:text-[#2563eb]"
                   >
                     {trade.title}
                   </Link>
-                  <span
-                    className={cn(
-                      "inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-[11px] font-semibold",
-                      inactive
-                        ? "bg-[#fee2e2] text-[#dc2626]"
-                        : "bg-[#dcfce7] text-[#16a34a]",
+                  <div className="flex shrink-0 items-center gap-0.5">
+                    <span
+                      className={cn(
+                        "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold",
+                        inactive
+                          ? "bg-[#fee2e2] text-[#dc2626]"
+                          : "bg-[#dcfce7] text-[#16a34a]",
+                      )}
+                    >
+                      {inactive ? "Inactive" : "Active"}
+                    </span>
+                    {inactive ? null : (
+                      <>
+                        <Can anyPermission={TRADE_UPDATE_PERMISSIONS}>
+                          <button
+                            type="button"
+                            title="Edit trade"
+                            aria-label={`Edit trade ${trade.title}`}
+                            onClick={() => onEdit(trade)}
+                            className="rounded-lg p-1.5 text-[#16a34a] transition hover:bg-[#ecfdf5] hover:text-[#15803d]"
+                          >
+                            <Pencil className="size-4" />
+                          </button>
+                        </Can>
+                        <Can anyPermission={TRADE_DELETE_PERMISSIONS}>
+                          <button
+                            type="button"
+                            title="Delete trade"
+                            aria-label={`Delete trade ${trade.title}`}
+                            onClick={() => onDelete(trade)}
+                            className="rounded-lg p-1.5 text-[#ef4444] transition hover:bg-[#fef2f2] hover:text-[#dc2626]"
+                          >
+                            <Trash2 className="size-4" />
+                          </button>
+                        </Can>
+                      </>
                     )}
-                  >
-                    {inactive ? "Inactive" : "Active"}
-                  </span>
+                  </div>
                 </div>
                 <p className="mt-1 line-clamp-2 min-h-10 text-sm leading-5 text-[#6b7280]">
                   {trade.detail && trade.detail !== "string"
@@ -132,69 +160,44 @@ export function TradesGrid({
               </div>
             </div>
 
-            <div className="mt-auto px-5 pt-3 pb-4">
-              {inactive ? null : (
+            <div className="mt-auto flex items-center justify-between gap-2 px-5 pt-3 pb-4">
+              <Link
+                href={`/categories/${trade.id}`}
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-[#2563eb] transition hover:underline"
+              >
+                <FolderTree className="size-3.5" />
+                {categoryLabel}
+              </Link>
+
+              {inactive ? (
+                <Can anyPermission={TRADE_RESTORE_PERMISSIONS}>
+                  <button
+                    type="button"
+                    aria-label={`Restore trade ${trade.title}`}
+                    disabled={restoring}
+                    onClick={() => onRestore(trade)}
+                    className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-[#2563eb] transition hover:bg-[#eff6ff] disabled:opacity-50"
+                  >
+                    <RotateCcw
+                      className={cn("size-3.5", restoring && "animate-spin")}
+                    />
+                    {restoring ? "Restoring..." : "Restore"}
+                  </button>
+                </Can>
+              ) : (
                 <Can permission="category:create">
                   <button
                     type="button"
+                    title="Add subcategory"
+                    aria-label={`Add subcategory to ${trade.title}`}
                     onClick={() => onAddSubcategory(trade)}
-                    className="mb-3 inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border border-[#fde68a] bg-[#fffbeb] text-xs font-semibold text-[#d97706] transition hover:bg-[#fef3c7]"
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-[#d97706] transition hover:text-[#b45309]"
                   >
                     <Plus className="size-3.5" />
                     Add subcategory
                   </button>
                 </Can>
               )}
-
-              <div className="flex items-center justify-between">
-                <Link
-                  href={`/categories/${trade.id}`}
-                  className="inline-flex items-center gap-1.5 text-xs font-medium text-[#2563eb] transition hover:underline"
-                >
-                  <FolderTree className="size-3.5" />
-                  {categoryLabel}
-                </Link>
-
-                {inactive ? (
-                  <Can anyPermission={TRADE_RESTORE_PERMISSIONS}>
-                    <button
-                      type="button"
-                      aria-label={`Restore ${trade.title}`}
-                      disabled={restoring}
-                      onClick={() => onRestore(trade)}
-                      className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-semibold text-[#2563eb] transition hover:bg-[#eff6ff] disabled:opacity-50"
-                    >
-                      <RotateCcw
-                        className={cn("size-3.5", restoring && "animate-spin")}
-                      />
-                      {restoring ? "Restoring..." : "Restore"}
-                    </button>
-                  </Can>
-                ) : (
-                  <div className="flex items-center gap-1">
-                    <Can anyPermission={TRADE_UPDATE_PERMISSIONS}>
-                      <button
-                        type="button"
-                        aria-label={`Edit ${trade.title}`}
-                        onClick={() => onEdit(trade)}
-                        className="rounded-lg p-2 text-[#16a34a] transition hover:bg-[#ecfdf5] hover:text-[#15803d]"
-                      >
-                        <Pencil className="size-4" />
-                      </button>
-                    </Can>
-                    <Can anyPermission={TRADE_DELETE_PERMISSIONS}>
-                      <button
-                        type="button"
-                        aria-label={`Delete ${trade.title}`}
-                        onClick={() => onDelete(trade)}
-                        className="rounded-lg p-2 text-[#ef4444] transition hover:bg-[#fef2f2] hover:text-[#dc2626]"
-                      >
-                        <Trash2 className="size-4" />
-                      </button>
-                    </Can>
-                  </div>
-                )}
-              </div>
             </div>
           </article>
         );

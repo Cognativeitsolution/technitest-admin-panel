@@ -12,7 +12,7 @@ type HeaderProps = {
 };
 
 export function Header({ className }: HeaderProps) {
-  const { setMobileOpen } = useSidebarStore();
+  const { collapsed, setMobileOpen } = useSidebarStore();
 
   return (
     <header
@@ -35,7 +35,10 @@ export function Header({ className }: HeaderProps) {
           alt="Technitest"
           width={160}
           height={120}
-          className="w-auto object-contain"
+          className={cn(
+            "w-auto object-contain",
+            !collapsed && "lg:hidden",
+          )}
           priority
         />
       </div>
