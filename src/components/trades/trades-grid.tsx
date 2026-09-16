@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FolderTree, Layers, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
 
 import { Can } from "@/components/shared/can";
+import { CardStatusBadge } from "@/components/shared/card-status-badge";
 import { cn } from "@/lib/utils";
 import type { TradeItem } from "@/types/trade.types";
 
@@ -82,30 +83,38 @@ export function TradesGrid({
             <div
               className={cn(
                 "flex min-h-0 flex-1 flex-col",
-                inactive && "pointer-events-none opacity-40",
+                inactive && "pointer-events-none",
               )}
             >
               <Link
                 href={`/categories/${trade.id}`}
                 className="relative block h-40 w-full shrink-0 overflow-hidden bg-[#eef2f7]"
               >
-                {trade.image_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={trade.image_url}
-                    alt={trade.title}
-                    className="absolute inset-0 h-full w-full object-cover object-center"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-[#f3f6fb]">
-                    <span className="flex size-14 items-center justify-center rounded-2xl bg-white text-xl font-bold text-[#2563eb] shadow-sm">
-                      {trade.title.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                )}
+                <div className={cn("h-full w-full", inactive && "opacity-40")}>
+                  {trade.image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={trade.image_url}
+                      alt={trade.title}
+                      className="absolute inset-0 h-full w-full object-cover object-center"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-[#f3f6fb]">
+                      <span className="flex size-14 items-center justify-center rounded-2xl bg-white text-xl font-bold text-[#2563eb] shadow-sm">
+                        {trade.title.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <CardStatusBadge inactive={inactive} />
               </Link>
 
-              <div className="flex flex-1 flex-col px-5 pt-4">
+              <div
+                className={cn(
+                  "flex flex-1 flex-col px-5 pt-4",
+                  inactive && "opacity-40",
+                )}
+              >
                 <div className="flex items-start justify-between gap-2">
                   <Link
                     href={`/categories/${trade.id}`}
@@ -113,44 +122,32 @@ export function TradesGrid({
                   >
                     {trade.title}
                   </Link>
-                  <div className="flex shrink-0 items-center gap-0.5">
-                    <span
-                      className={cn(
-                        "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold",
-                        inactive
-                          ? "bg-[#fee2e2] text-[#dc2626]"
-                          : "bg-[#dcfce7] text-[#16a34a]",
-                      )}
-                    >
-                      {inactive ? "Inactive" : "Active"}
-                    </span>
-                    {inactive ? null : (
-                      <>
-                        <Can anyPermission={TRADE_UPDATE_PERMISSIONS}>
-                          <button
-                            type="button"
-                            title="Edit trade"
-                            aria-label={`Edit trade ${trade.title}`}
-                            onClick={() => onEdit(trade)}
-                            className="rounded-lg p-1.5 text-[#16a34a] transition hover:bg-[#ecfdf5] hover:text-[#15803d]"
-                          >
-                            <Pencil className="size-4" />
-                          </button>
-                        </Can>
-                        <Can anyPermission={TRADE_DELETE_PERMISSIONS}>
-                          <button
-                            type="button"
-                            title="Delete trade"
-                            aria-label={`Delete trade ${trade.title}`}
-                            onClick={() => onDelete(trade)}
-                            className="rounded-lg p-1.5 text-[#ef4444] transition hover:bg-[#fef2f2] hover:text-[#dc2626]"
-                          >
-                            <Trash2 className="size-4" />
-                          </button>
-                        </Can>
-                      </>
-                    )}
-                  </div>
+                  {inactive ? null : (
+                    <div className="flex shrink-0 items-center gap-0.5">
+                      <Can anyPermission={TRADE_UPDATE_PERMISSIONS}>
+                        <button
+                          type="button"
+                          title="Edit trade"
+                          aria-label={`Edit trade ${trade.title}`}
+                          onClick={() => onEdit(trade)}
+                          className="rounded-lg p-1.5 text-[#16a34a] transition hover:bg-[#ecfdf5] hover:text-[#15803d]"
+                        >
+                          <Pencil className="size-4" />
+                        </button>
+                      </Can>
+                      <Can anyPermission={TRADE_DELETE_PERMISSIONS}>
+                        <button
+                          type="button"
+                          title="Delete trade"
+                          aria-label={`Delete trade ${trade.title}`}
+                          onClick={() => onDelete(trade)}
+                          className="rounded-lg p-1.5 text-[#ef4444] transition hover:bg-[#fef2f2] hover:text-[#dc2626]"
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      </Can>
+                    </div>
+                  )}
                 </div>
                 <p className="mt-1 line-clamp-2 min-h-10 text-sm leading-5 text-[#6b7280]">
                   {trade.detail && trade.detail !== "string"
