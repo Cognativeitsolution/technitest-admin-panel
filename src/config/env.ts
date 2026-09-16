@@ -1,4 +1,4 @@
-const DEFAULT_API_BASE_URL = "https://tech-ni-test.efinder24.com";
+const DEFAULT_API_BASE_URL = "https://tech-ni-test-staging.efinder24.com";
 
 function readApiBaseUrl(): string {
   // Access the env var as a static member so Next.js can inline it in the browser bundle.

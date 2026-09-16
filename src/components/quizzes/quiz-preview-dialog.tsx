@@ -84,7 +84,7 @@ export function QuizPreviewDialog({ open, quizId, onClose }: QuizPreviewDialogPr
           </div>
 
           <div className="overflow-hidden">
-            <InfoRow label="Category" value={quiz.category?.title ?? "—"} />
+            <InfoRow label="Subcategory" value={quiz.category?.title ?? "—"} />
             <InfoRow label="Difficulty Level" value={capitalize(quiz.difficulty_level)} />
             <InfoRow label="Skill Level" value={capitalize(quiz.skill_level)} />
             <InfoRow label="Passing Score" value={`${quiz.passing_score ?? 0}%`} />

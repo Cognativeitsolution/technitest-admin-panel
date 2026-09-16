@@ -10,6 +10,7 @@ type CategoriesGridProps = {
   categories: CategoryItem[];
   loading?: boolean;
   restoringId?: number | null;
+  tradeNames?: Record<number, string>;
   onEdit: (category: CategoryItem) => void;
   onDelete: (category: CategoryItem) => void;
   onRestore: (category: CategoryItem) => void;
@@ -23,6 +24,7 @@ export function CategoriesGrid({
   categories,
   loading = false,
   restoringId = null,
+  tradeNames,
   onEdit,
   onDelete,
   onRestore,
@@ -47,10 +49,10 @@ export function CategoriesGrid({
           <Layers className="size-7" />
         </div>
         <h3 className="mt-4 text-base font-semibold text-[#111827]">
-          No categories found
+          No subcategories found
         </h3>
         <p className="mt-1 max-w-sm text-sm text-[#6b7280]">
-          Try a different search, or add a category for quizzes to live under.
+          Try a different search, or add a subcategory under this trade.
         </p>
       </div>
     );
@@ -96,9 +98,16 @@ export function CategoriesGrid({
 
               <div className="flex flex-1 flex-col px-5 pt-4">
                 <div className="flex items-start justify-between gap-3">
-                  <h3 className="line-clamp-1 text-base font-semibold text-[#111827]">
-                    {category.title}
-                  </h3>
+                  <div className="min-w-0">
+                    <h3 className="line-clamp-1 text-base font-semibold text-[#111827]">
+                      {category.title}
+                    </h3>
+                    {tradeNames?.[category.trade_id] ? (
+                      <p className="mt-0.5 truncate text-xs font-medium text-[#2563eb]">
+                        {tradeNames[category.trade_id]}
+                      </p>
+                    ) : null}
+                  </div>
                   <span
                     className={cn(
                       "inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-[11px] font-semibold",

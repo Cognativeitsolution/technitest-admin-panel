@@ -80,7 +80,7 @@ export function QuizDetailView({ quizId, isNew = false }: QuizDetailViewProps) {
 
   async function handleSave() {
     if (!values.quizName.trim() || values.categoryId === null) {
-      toast.error("Quiz name and category are required.");
+      toast.error("Quiz name and subcategory are required.");
       return;
     }
 
