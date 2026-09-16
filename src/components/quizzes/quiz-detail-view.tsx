@@ -45,13 +45,22 @@ function mapFromApi(quiz: QuizInfoListItem): QuizBasicInfoValues {
 type QuizDetailViewProps = {
   quizId?: number;
   isNew?: boolean;
+  initialCategoryId?: number;
 };
 
-export function QuizDetailView({ quizId, isNew = false }: QuizDetailViewProps) {
+export function QuizDetailView({
+  quizId,
+  isNew = false,
+  initialCategoryId,
+}: QuizDetailViewProps) {
   const router = useRouter();
   const { quiz, loading, error, reload } = useQuizInfo(isNew ? null : (quizId ?? null));
 
-  const [values, setValues] = useState<QuizBasicInfoValues>(emptyQuizBasicInfoValues);
+  const [values, setValues] = useState<QuizBasicInfoValues>(() =>
+    isNew && initialCategoryId
+      ? { ...emptyQuizBasicInfoValues, categoryId: initialCategoryId }
+      : emptyQuizBasicInfoValues,
+  );
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [syncedQuizId, setSyncedQuizId] = useState<number | null | undefined>(undefined);
