@@ -140,7 +140,7 @@ export function QuizListView() {
 
       <div className="flex flex-wrap items-center gap-3">
         <MultiSelectFilter
-          label="Category"
+          label="Subcategory"
           options={categoryOptions}
           selected={categories}
           onChange={(v) => {

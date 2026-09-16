@@ -6,7 +6,9 @@ import { ChevronDown, Upload } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { categoryService } from "@/services/category.service";
+import { tradeService } from "@/services/trade.service";
 import type { CategoryItem } from "@/types/category.types";
+import type { TradeItem } from "@/types/trade.types";
 
 const inputClassName =
   "h-11 w-full rounded-xl border border-[#e5e7eb] bg-[#f8fafc] px-3.5 text-sm font-medium text-[#111827] outline-none transition focus:border-[#3b82f6] focus:bg-white focus:ring-2 focus:ring-[#3b82f6]/20";
@@ -87,23 +89,67 @@ export function QuizBasicInfo({
   onImageFileChange,
   readonly = false,
 }: QuizBasicInfoProps) {
+  const [trades, setTrades] = useState<TradeItem[]>([]);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [selectedTradeId, setSelectedTradeId] = useState<number | null>(null);
+  const hydratedCategoryRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let cancelled = false;
+    tradeService
+      .getAdminListAll()
+      .then((result) => {
+        if (!cancelled) setTrades(result.items ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setTrades([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!value.categoryId || hydratedCategoryRef.current === value.categoryId) {
+      return;
+    }
+
+    let cancelled = false;
     categoryService
-      .getAdminList({ page: 1, per_page: 100 })
+      .getById(value.categoryId)
+      .then((category) => {
+        if (cancelled || !category.trade_id) return;
+        hydratedCategoryRef.current = value.categoryId;
+        setSelectedTradeId(category.trade_id);
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [value.categoryId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!selectedTradeId) {
+      setCategories([]);
+      return;
+    }
+
+    categoryService
+      .getAdminList({ trade_id: selectedTradeId, page: 1, per_page: 100 })
       .then((result) => {
         if (!cancelled) setCategories(result.items ?? []);
       })
       .catch(() => {
         if (!cancelled) setCategories([]);
       });
+
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [selectedTradeId]);
 
   function patch(next: Partial<QuizBasicInfoValues>) {
     onChange({ ...value, ...next });
@@ -133,15 +179,39 @@ export function QuizBasicInfo({
               className={readonly ? readOnlyClassName : inputClassName}
             />
           </Field>
-          <Field label="Category" required>
+          <Field label="Trade" required>
+            <div className="relative">
+              <select
+                value={selectedTradeId ?? ""}
+                onChange={(e) => {
+                  const nextTradeId = e.target.value ? Number(e.target.value) : null;
+                  setSelectedTradeId(nextTradeId);
+                  patch({ categoryId: null });
+                }}
+                disabled={readonly}
+                className={cn(readonly ? readOnlyClassName : inputClassName, "appearance-none pr-10")}
+              >
+                <option value="">Select trade</option>
+                {trades.map((trade) => (
+                  <option key={trade.id} value={trade.id}>
+                    {trade.title}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-[#9ca3af]" />
+            </div>
+          </Field>
+          <Field label="Subcategory" required>
             <div className="relative">
               <select
                 value={value.categoryId ?? ""}
                 onChange={(e) => patch({ categoryId: e.target.value ? Number(e.target.value) : null })}
-                disabled={readonly}
+                disabled={readonly || !selectedTradeId}
                 className={cn(readonly ? readOnlyClassName : inputClassName, "appearance-none pr-10")}
               >
-                <option value="">Select category</option>
+                <option value="">
+                  {selectedTradeId ? "Select subcategory" : "Select a trade first"}
+                </option>
                 {categories.map((cat) => (
                   <option key={cat.id} value={cat.id}>
                     {cat.title}

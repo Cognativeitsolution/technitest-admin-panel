@@ -1,5 +1,5 @@
-import { CategoriesManagementView } from "@/components/categories/categories-management-view";
+import { TradesManagementView } from "@/components/trades/trades-management-view";
 
 export default function CategoriesPage() {
-  return <CategoriesManagementView />;
+  return <TradesManagementView />;
 }
