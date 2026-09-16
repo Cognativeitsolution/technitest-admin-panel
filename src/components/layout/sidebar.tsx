@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
@@ -44,35 +45,47 @@ export function Sidebar() {
       >
         <div
           className={cn(
-            "flex h-14 shrink-0 items-center border-b border-[#e8ecf2] px-3",
-            collapsed ? "justify-center" : "justify-between gap-2",
+            "relative flex h-23 shrink-0 items-center border-b border-[#e8ecf2] px-2",
+            collapsed ? "justify-center" : "justify-start",
           )}
         >
           {!collapsed ? (
-            <button
-              type="button"
-              onClick={toggleCollapsed}
-              aria-label="Collapse sidebar"
-              className="hidden lg:inline-flex items-center gap-2 rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-xs font-medium text-[#6b7280] shadow-sm transition hover:border-[#d1d5db] hover:bg-[#fafbfc] hover:text-[#111827]"
+            <Link
+              href="/"
+              className="flex h-full min-w-0 flex-1 items-center pr-10"
+              onClick={() => setMobileOpen(false)}
             >
-              <PanelLeftClose className="size-4" />
-              <span>Collapse sidebar</span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              aria-label="Expand sidebar"
-              onClick={toggleCollapsed}
-              className="hidden lg:inline-flex size-9 items-center justify-center rounded-lg border border-[#e5e7eb] bg-white text-[#6b7280] shadow-sm transition hover:border-[#d1d5db] hover:bg-[#fafbfc] hover:text-[#111827]"
-            >
+              <Image
+                src="/TechLogo2.png"
+                alt="Technitest"
+                width={240}
+                height={80}
+                className="h-[4.75rem] w-auto max-w-full object-contain object-left"
+                priority
+              />
+            </Link>
+          ) : null}
+
+          <button
+            type="button"
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            onClick={toggleCollapsed}
+            className={cn(
+              "hidden size-9 shrink-0 items-center justify-center rounded-lg text-[#6b7280] transition hover:bg-white hover:text-[#111827] lg:inline-flex",
+              !collapsed && "absolute top-1/2 right-2 -translate-y-1/2",
+            )}
+          >
+            {collapsed ? (
               <PanelLeftOpen className="size-4" />
-            </button>
-          )}
+            ) : (
+              <PanelLeftClose className="size-4" />
+            )}
+          </button>
 
           <button
             type="button"
             aria-label="Close sidebar"
-            className="ml-auto inline-flex size-9 items-center justify-center rounded-lg border border-[#e5e7eb] bg-white text-[#6b7280] shadow-sm transition hover:border-[#d1d5db] hover:bg-[#fafbfc] hover:text-[#111827] lg:hidden"
+            className="absolute top-1/2 right-2 inline-flex size-9 -translate-y-1/2 items-center justify-center rounded-lg text-[#6b7280] transition hover:bg-white hover:text-[#111827] lg:hidden"
             onClick={() => setMobileOpen(false)}
           >
             <X className="size-4" />
