@@ -32,10 +32,11 @@ export const categoryService = {
     return data.response.data;
   },
 
-  getAdminListAll: async () => {
+  getAdminListAll: async (params?: CategoryListQuery) => {
     const first = await categoryService.getAdminList({
       page: 1,
       per_page: PAGE_SIZE,
+      ...params,
     });
     const items = [...(first.items ?? [])];
     const totalPages = Math.max(1, first.total_pages ?? 1);
@@ -44,6 +45,7 @@ export const categoryService = {
       const next = await categoryService.getAdminList({
         page,
         per_page: PAGE_SIZE,
+        ...params,
       });
       items.push(...(next.items ?? []));
     }

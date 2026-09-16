@@ -1,7 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
+  ArrowLeft,
   BookOpen,
   Eye,
   EyeOff,
@@ -17,12 +19,15 @@ import { Can } from "@/components/shared/can";
 import { Pagination } from "@/components/shared/pagination";
 import { Dialog } from "@/components/ui/dialog";
 import { useCategories } from "@/hooks/categories/use-categories";
+import { ApiError } from "@/lib/api-error";
 import { cn } from "@/lib/utils";
+import { tradeService } from "@/services/trade.service";
 import type {
   CategoryItem,
-  CategoryPayload,
+  CategoryFormValues,
   CategoryStatusFilter,
 } from "@/types/category.types";
+import type { TradeItem } from "@/types/trade.types";
 
 const PAGE_SIZE = 9;
 const STATUS_OPTIONS: CategoryStatusFilter[] = ["All", "Active", "Inactive"];
@@ -31,7 +36,13 @@ function isInactive(category: CategoryItem) {
   return category.is_active === false;
 }
 
-export function CategoriesManagementView() {
+type CategoriesManagementViewProps = {
+  tradeId: number;
+};
+
+export function CategoriesManagementView({
+  tradeId,
+}: CategoriesManagementViewProps) {
   const {
     items,
     total,
@@ -43,8 +54,11 @@ export function CategoriesManagementView() {
     updateCategory,
     deleteCategory,
     restoreCategory,
-  } = useCategories();
+  } = useCategories(tradeId);
 
+  const [trade, setTrade] = useState<TradeItem | null>(null);
+  const [tradeError, setTradeError] = useState<string | null>(null);
+  const [tradeSettled, setTradeSettled] = useState(false);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<CategoryStatusFilter>("All");
   const [page, setPage] = useState(1);
@@ -53,6 +67,30 @@ export function CategoriesManagementView() {
   const [deleteTarget, setDeleteTarget] = useState<CategoryItem | null>(null);
   const [restoreTarget, setRestoreTarget] = useState<CategoryItem | null>(null);
   const [restoringId, setRestoringId] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setTradeSettled(false);
+
+    tradeService
+      .getById(tradeId)
+      .then((result) => {
+        if (cancelled) return;
+        setTrade(result);
+        setTradeError(null);
+        setTradeSettled(true);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setTrade(null);
+        setTradeError(ApiError.fromAxiosError(err).message);
+        setTradeSettled(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [tradeId]);
 
   const activeCount = items.filter((item) => !isInactive(item)).length;
   const inactiveCount = items.length - activeCount;
@@ -103,6 +141,8 @@ export function CategoriesManagementView() {
     if (ok) setRestoreTarget(null);
   }
 
+  const tradeTitle = trade?.title ?? (tradeSettled ? "Trade" : "Loading…");
+
   return (
     <div className="space-y-5">
       <div className="rounded-2xl border border-[#e8ecf2] bg-white px-6 py-5 shadow-[0_1px_3px_rgba(16,24,40,0.04)]">
@@ -112,11 +152,18 @@ export function CategoriesManagementView() {
               <Layers className="size-5" />
             </div>
             <div>
+              <Link
+                href="/trades"
+                className="mb-1 inline-flex items-center gap-1 text-xs font-semibold text-[#2563eb] transition hover:underline"
+              >
+                <ArrowLeft className="size-3.5" />
+                Back to trades
+              </Link>
               <h1 className="text-[24px] font-bold tracking-tight text-[#111827]">
-                Categories Management
+                {tradeTitle} subcategories
               </h1>
               <p className="mt-1 text-sm text-[#6b7280]">
-                Group quizzes by topic so learners can browse the catalog easily.
+                Add topics under this trade so quizzes can be grouped for learners.
               </p>
             </div>
           </div>
@@ -127,16 +174,22 @@ export function CategoriesManagementView() {
               className="inline-flex h-11 w-fit items-center gap-2 rounded-xl bg-[#f0a500] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d99400]"
             >
               <Plus className="size-4" />
-              Add Category
+              Add Subcategory
             </button>
           </Can>
         </div>
       </div>
 
+      {tradeError ? (
+        <div className="rounded-xl border border-[#fecaca] bg-[#fef2f2] px-4 py-3 text-sm text-[#b91c1c]">
+          {tradeError}
+        </div>
+      ) : null}
+
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard
           icon={<Layers className="size-4" />}
-          label="Total categories"
+          label="Total subcategories"
           value={loading ? "—" : String(total)}
           tone="blue"
         />
@@ -184,7 +237,7 @@ export function CategoriesManagementView() {
               setQuery(e.target.value);
               setPage(1);
             }}
-            placeholder="Search categories"
+            placeholder="Search subcategories"
             className="h-10 w-full rounded-xl border border-[#e5e7eb] bg-white pr-4 pl-10 text-sm text-[#374151] outline-none transition placeholder:text-[#9ca3af] focus:border-[#d1d5db] focus:ring-0"
           />
         </div>
@@ -235,7 +288,7 @@ export function CategoriesManagementView() {
         }}
         category={editing}
         submitting={mutating}
-        onCreate={async (payload, image) => {
+        onCreate={async (payload: CategoryFormValues, image) => {
           const ok = await createCategory(payload, image);
           if (ok) setPage(1);
           return ok;
@@ -246,7 +299,7 @@ export function CategoriesManagementView() {
       <Dialog
         open={Boolean(deleteTarget)}
         onClose={() => setDeleteTarget(null)}
-        title="Delete Category"
+        title="Delete Subcategory"
         maxWidth="max-w-sm"
       >
         <p className="text-sm text-[#4b5563]">
@@ -254,7 +307,7 @@ export function CategoriesManagementView() {
           <span className="font-semibold text-[#111827]">
             {deleteTarget?.title}
           </span>
-          ? You can restore it later from inactive categories.
+          ? You can restore it later from inactive subcategories.
         </p>
         <div className="mt-6 flex justify-end gap-3">
           <button
@@ -279,7 +332,7 @@ export function CategoriesManagementView() {
       <Dialog
         open={Boolean(restoreTarget)}
         onClose={() => setRestoreTarget(null)}
-        title="Restore Category"
+        title="Restore Subcategory"
         maxWidth="max-w-sm"
       >
         <p className="text-sm text-[#4b5563]">

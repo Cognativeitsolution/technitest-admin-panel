@@ -5,17 +5,17 @@ import { useEffect, useState } from "react";
 import { Dialog } from "@/components/ui/dialog";
 import { FileUpload } from "@/components/ui/file-upload";
 import { TextField } from "@/components/ui/text-field";
-import type { CategoryItem, CategoryPayload } from "@/types/category.types";
+import type { CategoryFormValues, CategoryItem } from "@/types/category.types";
 
 type CategoryDialogProps = {
   open: boolean;
   onClose: () => void;
   category: CategoryItem | null;
   submitting?: boolean;
-  onCreate: (payload: CategoryPayload, image: File | null) => Promise<boolean>;
+  onCreate: (payload: CategoryFormValues, image: File | null) => Promise<boolean>;
   onUpdate: (
     categoryId: number,
-    payload: CategoryPayload,
+    payload: CategoryFormValues,
     image: File | null,
   ) => Promise<boolean>;
 };
@@ -78,7 +78,7 @@ export function CategoryDialog({
       }
     }
 
-    const payload: CategoryPayload = {
+    const payload: CategoryFormValues = {
       title: trimmedTitle,
       detail: trimmedDetail,
     };
@@ -94,7 +94,7 @@ export function CategoryDialog({
     <Dialog
       open={open}
       onClose={onClose}
-      title={isEdit ? "Edit Category" : "Add Category"}
+      title={isEdit ? "Edit Subcategory" : "Add Subcategory"}
       maxWidth="max-w-lg"
     >
       <div className="space-y-4">
@@ -116,7 +116,7 @@ export function CategoryDialog({
             value={detail}
             onChange={(e) => setDetail(e.target.value)}
             rows={4}
-            placeholder="What kinds of quizzes belong here?"
+            placeholder="What kinds of quizzes belong in this subcategory?"
             className={textareaClassName}
           />
         </div>
@@ -171,8 +171,8 @@ export function CategoryDialog({
           {submitting
             ? "Saving..."
             : isEdit
-              ? "Update Category"
-              : "Add Category"}
+              ? "Update Subcategory"
+              : "Add Subcategory"}
         </button>
       </div>
     </Dialog>

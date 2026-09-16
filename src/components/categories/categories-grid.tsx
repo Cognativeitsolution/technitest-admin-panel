@@ -47,10 +47,10 @@ export function CategoriesGrid({
           <Layers className="size-7" />
         </div>
         <h3 className="mt-4 text-base font-semibold text-[#111827]">
-          No categories found
+          No subcategories found
         </h3>
         <p className="mt-1 max-w-sm text-sm text-[#6b7280]">
-          Try a different search, or add a category for quizzes to live under.
+          Try a different search, or add a subcategory for quizzes to live under.
         </p>
       </div>
     );
