@@ -40,7 +40,7 @@ export const navItems: NavItem[] = [
   { label: "Feedback & Reviews", href: "/feedback", icon: MessageSquare },
   { label: "Content Management CMS", href: "/cms", icon: FileText, modules: ["blog", "media"] },
   { label: "FAQ Management", href: "/faqs", icon: CircleHelp },
-  { label: "Categories Management", href: "/categories", icon: Layers, modules: ["trade", "category"] },
+  { label: "Trades Management", href: "/categories", icon: Layers, modules: ["trade", "category"] },
   { label: "Payment & Transactions", href: "/payments", icon: CreditCard, modules: ["payment"] },
   { label: "Notifications", href: "/notifications", icon: Bell, modules: ["notification"] },
   { label: "System Settings", href: "/settings", icon: Settings },

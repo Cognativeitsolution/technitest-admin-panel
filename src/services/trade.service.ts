@@ -8,7 +8,13 @@ const PAGE_SIZE = 100;
 function buildTradeFormData(payload?: TradePayload | null, image?: File | null) {
   const formData = new FormData();
   if (payload) {
-    formData.append("data", JSON.stringify(payload));
+    formData.append(
+      "data",
+      JSON.stringify({
+        title: payload.title,
+        detail: payload.detail,
+      }),
+    );
   }
   if (image) {
     formData.append("image", image);

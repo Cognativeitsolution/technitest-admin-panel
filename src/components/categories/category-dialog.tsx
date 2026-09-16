@@ -46,6 +46,7 @@ export function CategoryDialog({
   onUpdate,
 }: CategoryDialogProps) {
   const isEdit = Boolean(category);
+  const showTradeSelect = isEdit || !lockedTradeId;
   const [title, setTitle] = useState("");
   const [detail, setDetail] = useState("");
   const [tradeId, setTradeId] = useState<number | "">("");
@@ -57,7 +58,7 @@ export function CategoryDialog({
     if (!open) return;
     setTitle(category?.title ?? "");
     setDetail(category?.detail === "string" ? "" : (category?.detail ?? ""));
-    setTradeId(lockedTradeId ?? category?.trade_id ?? "");
+    setTradeId(category?.trade_id ?? lockedTradeId ?? "");
     setImage(null);
     setFormError(null);
     setUploadKey((key) => key + 1);
@@ -68,7 +69,10 @@ export function CategoryDialog({
 
     const trimmedTitle = title.trim();
     const trimmedDetail = detail.trim();
-    const resolvedTradeId = lockedTradeId ?? (tradeId === "" ? undefined : Number(tradeId));
+    const resolvedTradeId =
+      tradeId === ""
+        ? lockedTradeId
+        : Number(tradeId);
 
     if (!trimmedTitle) {
       setFormError("Title is required.");
@@ -79,7 +83,7 @@ export function CategoryDialog({
       return;
     }
     if (!resolvedTradeId) {
-      setFormError("Category is required.");
+      setFormError("Trade is required.");
       return;
     }
     if (image) {
@@ -114,10 +118,10 @@ export function CategoryDialog({
       maxWidth="max-w-lg"
     >
       <div className="space-y-4">
-        {lockedTradeId ? null : (
+        {showTradeSelect ? (
           <div className="flex flex-col gap-2.5">
             <label htmlFor="category-trade" className="text-[14px] font-medium text-[#111111]">
-              Category<span className="ml-0.5 text-[#ff0000]">*</span>
+              Trade<span className="ml-0.5 text-[#ff0000]">*</span>
             </label>
             <select
               id="category-trade"
@@ -125,7 +129,7 @@ export function CategoryDialog({
               onChange={(e) => setTradeId(e.target.value ? Number(e.target.value) : "")}
               className={selectClassName}
             >
-              <option value="">Select category</option>
+              <option value="">Select trade</option>
               {trades.map((trade) => (
                 <option key={trade.id} value={trade.id}>
                   {trade.title}
@@ -133,7 +137,7 @@ export function CategoryDialog({
               ))}
             </select>
           </div>
-        )}
+        ) : null}
 
         <TextField
           label="Title"

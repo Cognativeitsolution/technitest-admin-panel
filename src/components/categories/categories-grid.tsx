@@ -52,7 +52,7 @@ export function CategoriesGrid({
           No subcategories found
         </h3>
         <p className="mt-1 max-w-sm text-sm text-[#6b7280]">
-          Try a different search, or add a subcategory under this category.
+          Try a different search, or add a subcategory under this trade.
         </p>
       </div>
     );

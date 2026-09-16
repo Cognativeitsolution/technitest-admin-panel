@@ -165,7 +165,7 @@ export function CategoriesManagementView({
   }
 
   const heading = nested
-    ? `${trade?.title ?? "Category"} subcategories`
+    ? `${trade?.title ?? "Trade"} subcategories`
     : "Subcategories";
 
   return (
@@ -183,7 +183,7 @@ export function CategoriesManagementView({
                   className="mb-1 inline-flex items-center gap-1 text-xs font-semibold text-[#2563eb] transition hover:underline"
                 >
                   <ArrowLeft className="size-3.5" />
-                  Back to categories
+                  Back to trades
                 </Link>
               ) : null}
               <h1 className="text-[24px] font-bold tracking-tight text-[#111827]">
@@ -191,8 +191,8 @@ export function CategoriesManagementView({
               </h1>
               <p className="mt-1 text-sm text-[#6b7280]">
                 {nested
-                  ? "Add subcategories under this category so quizzes can be grouped for learners."
-                  : "Manage subcategories and assign each one to a category."}
+                  ? "Add subcategories under this trade so quizzes can be grouped for learners."
+                  : "Manage subcategories and assign each one to a trade."}
               </p>
             </div>
           </div>
@@ -273,7 +273,7 @@ export function CategoriesManagementView({
         <div className="flex flex-wrap items-center gap-3">
           {nested ? null : (
             <select
-              aria-label="Category"
+              aria-label="Trade"
               value={filterTradeId}
               onChange={(e) => {
                 setFilterTradeId(
@@ -283,7 +283,7 @@ export function CategoriesManagementView({
               }}
               className="h-10 w-fit rounded-xl border border-[#e5e7eb] bg-white px-3.5 text-sm font-medium text-[#374151] shadow-sm outline-none transition hover:bg-[#f9fafb]"
             >
-              <option value="all">All categories</option>
+              <option value="all">All trades</option>
               {trades.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.title}
@@ -341,7 +341,7 @@ export function CategoriesManagementView({
         category={editing}
         submitting={mutating}
         trades={trades}
-        lockedTradeId={tradeId}
+        lockedTradeId={editing ? undefined : tradeId}
         onCreate={async (payload: CategoryFormValues, image) => {
           const ok = await createCategory(payload, image);
           if (ok) setPage(1);

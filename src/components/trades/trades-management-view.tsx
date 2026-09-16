@@ -120,7 +120,7 @@ export function TradesManagementView() {
   ) {
     const tradeId = payload.trade_id ?? subcategoryParent?.id;
     if (!tradeId) {
-      toast.error("Select a category for this subcategory.");
+      toast.error("Select a trade for this subcategory.");
       return false;
     }
 
@@ -151,10 +151,10 @@ export function TradesManagementView() {
             </div>
             <div>
               <h1 className="text-[24px] font-bold tracking-tight text-[#111827]">
-                Categories Management
+                Trades Management
               </h1>
               <p className="mt-1 text-sm text-[#6b7280]">
-                Organize the catalog by category, then add subcategories inside each one.
+                Organize the catalog by trade, then add subcategories inside each one.
               </p>
             </div>
           </div>
@@ -165,7 +165,7 @@ export function TradesManagementView() {
               className="inline-flex h-11 w-fit items-center gap-2 rounded-xl bg-[#f0a500] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d99400]"
             >
               <Plus className="size-4" />
-              Add Category
+              Add Trade
             </button>
           </Can>
         </div>
@@ -174,7 +174,7 @@ export function TradesManagementView() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard
           icon={<Layers className="size-4" />}
-          label="Total categories"
+          label="Total trades"
           value={loading ? "—" : String(total)}
           tone="blue"
         />
@@ -222,7 +222,7 @@ export function TradesManagementView() {
               setQuery(e.target.value);
               setPage(1);
             }}
-            placeholder="Search categories"
+            placeholder="Search trades"
             className="h-10 w-full rounded-xl border border-[#e5e7eb] bg-white pr-4 pl-10 text-sm text-[#374151] outline-none transition placeholder:text-[#9ca3af] focus:border-[#d1d5db] focus:ring-0"
           />
         </div>
@@ -287,6 +287,7 @@ export function TradesManagementView() {
         onClose={() => setSubcategoryParent(null)}
         category={null}
         submitting={submittingSubcategory}
+        trades={items}
         lockedTradeId={subcategoryParent?.id}
         onCreate={createSubcategory}
         onUpdate={async () => false}
@@ -295,7 +296,7 @@ export function TradesManagementView() {
       <Dialog
         open={Boolean(deleteTarget)}
         onClose={() => setDeleteTarget(null)}
-        title="Delete Category"
+        title="Delete Trade"
         maxWidth="max-w-sm"
       >
         <p className="text-sm text-[#4b5563]">
@@ -303,7 +304,7 @@ export function TradesManagementView() {
           <span className="font-semibold text-[#111827]">
             {deleteTarget?.title}
           </span>
-          ? You can restore it later from inactive categories.
+          ? You can restore it later from inactive trades.
         </p>
         <div className="mt-6 flex justify-end gap-3">
           <button
@@ -328,7 +329,7 @@ export function TradesManagementView() {
       <Dialog
         open={Boolean(restoreTarget)}
         onClose={() => setRestoreTarget(null)}
-        title="Restore Category"
+        title="Restore Trade"
         maxWidth="max-w-sm"
       >
         <p className="text-sm text-[#4b5563]">

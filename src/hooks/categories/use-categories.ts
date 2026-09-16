@@ -63,14 +63,18 @@ export function useCategories(tradeId?: number) {
     async (values: CategoryFormValues, image?: File | null) => {
       const resolvedTradeId = values.trade_id ?? tradeId;
       if (!resolvedTradeId) {
-        toast.error("Select a category for this subcategory.");
+        toast.error("Select a trade for this subcategory.");
         return false;
       }
 
       setMutating(true);
       try {
         await categoryService.create(
-          { title: values.title, detail: values.detail, trade_id: resolvedTradeId },
+          {
+            trade_id: resolvedTradeId,
+            title: values.title,
+            detail: values.detail,
+          },
           image,
         );
         toast.success("Subcategory created");
@@ -94,7 +98,7 @@ export function useCategories(tradeId?: number) {
     ) => {
       const resolvedTradeId = values.trade_id ?? tradeId;
       if (!resolvedTradeId) {
-        toast.error("Select a category for this subcategory.");
+        toast.error("Select a trade for this subcategory.");
         return false;
       }
 
@@ -102,7 +106,11 @@ export function useCategories(tradeId?: number) {
       try {
         await categoryService.update(
           categoryId,
-          { title: values.title, detail: values.detail, trade_id: resolvedTradeId },
+          {
+            trade_id: resolvedTradeId,
+            title: values.title,
+            detail: values.detail,
+          },
           image,
         );
         toast.success("Subcategory updated");

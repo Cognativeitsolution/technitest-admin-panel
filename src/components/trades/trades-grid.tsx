@@ -55,10 +55,10 @@ export function TradesGrid({
           <Layers className="size-7" />
         </div>
         <h3 className="mt-4 text-base font-semibold text-[#111827]">
-          No categories found
+          No trades found
         </h3>
         <p className="mt-1 max-w-sm text-sm text-[#6b7280]">
-          Try a different search, or add a category so subcategories can live under it.
+          Try a different search, or add a trade so subcategories can live under it.
         </p>
       </div>
     );
