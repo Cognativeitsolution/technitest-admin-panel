@@ -10,6 +10,45 @@ import type {
 
 const BASE_PATH = "/api/v1/quiz-create";
 
+function buildQuestionsFormData(
+  payload: QuizQuestionsBulkCreatePayload,
+  files?: File[] | null,
+) {
+  const formData = new FormData();
+  formData.append(
+    "data",
+    JSON.stringify({
+      source_type:
+        payload.source_type ?? payload.question[0]?.source_type ?? "manual",
+      question: payload.question,
+    }),
+  );
+
+  if (files?.length) {
+    for (const file of files) {
+      formData.append("files", file);
+    }
+  }
+
+  return formData;
+}
+
+function buildQuestionUpdateFormData(
+  payload: QuizQuestionUpdatePayload,
+  files?: File[] | null,
+) {
+  const formData = new FormData();
+  formData.append("data", JSON.stringify(payload));
+
+  if (files?.length) {
+    for (const file of files) {
+      formData.append("files", file);
+    }
+  }
+
+  return formData;
+}
+
 export const quizCreateService = {
   adminList: async (quizId: number, params?: QuizQuestionsListQuery) => {
     const { data } = await apiClient.get<ApiEnvelope<QuizQuestionsListResult>>(
@@ -22,10 +61,16 @@ export const quizCreateService = {
   bulkCreate: async (
     quizId: number,
     payload: QuizQuestionsBulkCreatePayload,
+    files?: File[] | null,
   ) => {
     const { data } = await apiClient.post<ApiEnvelope<unknown>>(
       `${BASE_PATH}/${quizId}/questions`,
-      payload,
+      buildQuestionsFormData(payload, files),
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      },
     );
     return data.response.data;
   },
@@ -34,10 +79,16 @@ export const quizCreateService = {
     quizId: number,
     questionId: number,
     payload: QuizQuestionUpdatePayload,
+    files?: File[] | null,
   ) => {
     const { data } = await apiClient.put<ApiEnvelope<QuizQuestionAdmin>>(
       `${BASE_PATH}/${quizId}/questions/${questionId}`,
-      payload,
+      buildQuestionUpdateFormData(payload, files),
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      },
     );
     return data.response.data;
   },

@@ -38,13 +38,17 @@ export function QuestionFormDialog({
   const [text, setText] = useState("");
   const [options, setOptions] = useState(["", "", "", ""]);
   const [correctAnswer, setCorrectAnswer] = useState(0);
+  const [formError, setFormError] = useState<string | null>(null);
   const [prevOpen, setPrevOpen] = useState(open);
+
+  const MIN_TIME_SECONDS = 5;
 
   if (open !== prevOpen) {
     setPrevOpen(open);
     if (open) {
+      setFormError(null);
       setType(question?.type ?? "mcq");
-      setTime(String(question?.time_limit ?? 40));
+      setTime(String(Math.max(question?.time_limit ?? 30, MIN_TIME_SECONDS)));
       setText(question?.question ?? "");
       const baseOptions = question?.option?.map((opt) => opt.option_text) ?? [];
       setOptions(
@@ -59,14 +63,43 @@ export function QuestionFormDialog({
   }
 
   function handleSave() {
+    const trimmedText = text.trim();
+    const timeLimit = Number(time);
+
+    if (!trimmedText) {
+      setFormError("Question text is required.");
+      return;
+    }
+
+    if (!Number.isFinite(timeLimit) || timeLimit < MIN_TIME_SECONDS) {
+      setFormError(`Time per question must be at least ${MIN_TIME_SECONDS} seconds.`);
+      return;
+    }
+
+    const optionPayload = options
+      .map((opt, index) => ({
+        option_text: opt.trim(),
+        is_correct: index === correctAnswer,
+      }))
+      .filter((opt) => opt.option_text !== "");
+
+    if (optionPayload.length < 2) {
+      setFormError("Add at least two answer options.");
+      return;
+    }
+
+    if (!optionPayload.some((opt) => opt.is_correct)) {
+      setFormError("Select the correct answer option.");
+      return;
+    }
+
+    setFormError(null);
     onSave({
-      question: text,
+      question: trimmedText,
       type,
-      time_limit: Number(time) || 30,
+      time_limit: timeLimit,
       source_type: "manual",
-      option: options
-        .filter((opt) => opt.trim() !== "")
-        .map((opt, index) => ({ option_text: opt, is_correct: index === correctAnswer })),
+      option: optionPayload,
     });
   }
 
@@ -97,11 +130,20 @@ export function QuestionFormDialog({
               type="number"
               value={time}
               onChange={(e) => setTime(e.target.value)}
-              min={5}
+              min={MIN_TIME_SECONDS}
               className={inputClassName}
             />
+            <span className="text-xs text-[#6b7280]">
+              Minimum {MIN_TIME_SECONDS} seconds
+            </span>
           </label>
         </div>
+
+        {formError ? (
+          <p className="rounded-lg bg-[#fef2f2] px-3 py-2 text-sm text-[#b91c1c]">
+            {formError}
+          </p>
+        ) : null}
 
         <label className="block space-y-1.5">
           <span className="text-sm font-medium text-[#374151]">Question Text</span>

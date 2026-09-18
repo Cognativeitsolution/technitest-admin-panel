@@ -46,16 +46,19 @@ export function useQuizQuestions(quizId: number | null) {
 
   const addMany = useCallback(
     async (payload: QuizQuestionsBulkCreatePayload) => {
-      if (quizId === null) return false;
+      if (quizId === null) {
+        return { ok: false as const, message: "Quiz not found." };
+      }
       setMutating(true);
       try {
         await quizCreateService.bulkCreate(quizId, payload);
         setError(null);
         setNonce((prev) => prev + 1);
-        return true;
+        return { ok: true as const };
       } catch (err) {
-        setError(ApiError.fromAxiosError(err).message);
-        return false;
+        const message = ApiError.fromAxiosError(err).message;
+        setError(message);
+        return { ok: false as const, message };
       } finally {
         setMutating(false);
       }
@@ -65,16 +68,19 @@ export function useQuizQuestions(quizId: number | null) {
 
   const updateOne = useCallback(
     async (questionId: number, payload: QuizQuestionUpdatePayload) => {
-      if (quizId === null) return false;
+      if (quizId === null) {
+        return { ok: false as const, message: "Quiz not found." };
+      }
       setMutating(true);
       try {
         await quizCreateService.updateQuestion(quizId, questionId, payload);
         setError(null);
         setNonce((prev) => prev + 1);
-        return true;
+        return { ok: true as const };
       } catch (err) {
-        setError(ApiError.fromAxiosError(err).message);
-        return false;
+        const message = ApiError.fromAxiosError(err).message;
+        setError(message);
+        return { ok: false as const, message };
       } finally {
         setMutating(false);
       }

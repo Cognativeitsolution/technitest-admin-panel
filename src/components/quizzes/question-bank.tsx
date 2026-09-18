@@ -65,17 +65,21 @@ export function QuestionBank({ quizId, totalDuration, readonly = false }: Questi
 
   async function handleSaveQuestion(payload: QuizQuestionCreatePayload) {
     if (editQuestion) {
-      const ok = await updateOne(editQuestion.id, payload);
-      if (ok) {
+      const result = await updateOne(editQuestion.id, payload);
+      if (result.ok) {
         toast.success("Question updated successfully");
         setEditQuestion(null);
         setQuestionFormOpen(false);
+      } else {
+        toast.error(result.message || "Failed to update question");
       }
     } else {
-      const ok = await addMany({ question: [payload] });
-      if (ok) {
+      const result = await addMany({ source_type: "manual", question: [payload] });
+      if (result.ok) {
         toast.success("Question added successfully");
         setQuestionFormOpen(false);
+      } else {
+        toast.error(result.message || "Failed to add question");
       }
     }
   }
@@ -91,8 +95,15 @@ export function QuestionBank({ quizId, totalDuration, readonly = false }: Questi
 
   async function handleAddFromAi(newQuestions: QuizQuestion[]) {
     if (newQuestions.length === 0) return;
-    const ok = await addMany({ question: newQuestions.map(mockToPayload) });
-    if (ok) toast.success(`${newQuestions.length} question(s) added`);
+    const result = await addMany({
+      source_type: "manual",
+      question: newQuestions.map(mockToPayload),
+    });
+    if (result.ok) {
+      toast.success(`${newQuestions.length} question(s) added`);
+    } else {
+      toast.error(result.message || "Failed to add questions");
+    }
   }
 
   const displayTime =
