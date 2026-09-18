@@ -4,6 +4,11 @@ export type QuizInfoCategory = {
   id: number;
   title: string;
   detail?: string;
+  trade_id?: number;
+  trade?: {
+    id: number;
+    title: string;
+  } | null;
 };
 
 export type QuizInfoListItem = {

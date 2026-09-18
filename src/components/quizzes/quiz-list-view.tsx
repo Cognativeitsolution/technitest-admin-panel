@@ -14,17 +14,15 @@ import { QuizPreviewDialog } from "@/components/quizzes/quiz-preview-dialog";
 import { useQuizAdminList } from "@/hooks/quizzes/use-quiz-admin-list";
 import { quizInfoService } from "@/services/quiz-info.service";
 import { categoryService } from "@/services/category.service";
+import { tradeService } from "@/services/trade.service";
 import { ApiError } from "@/lib/api-error";
+import type { CategoryItem } from "@/types/category.types";
 import type { QuizInfoListItem } from "@/types/quiz-info.types";
+import type { TradeItem } from "@/types/trade.types";
 
 const levelOptions = ["Beginner", "Intermediate", "Advance"];
 const skillOptions = ["Student", "Professional"];
 const statusOptions = ["Active", "Inactive"];
-
-function capitalize(value: string) {
-  if (!value) return "";
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
 
 function normalizeLevel(level?: string | null): string {
   const l = (level || "").toLowerCase().trim();
@@ -39,6 +37,10 @@ function normalizeSkill(skill?: string | null): string {
   return s;
 }
 
+function getQuizCategoryId(quiz: QuizInfoListItem) {
+  return quiz.category_id ?? quiz.category?.id ?? null;
+}
+
 export function QuizListView() {
   const {
     items,
@@ -49,7 +51,9 @@ export function QuizListView() {
     refresh,
   } = useQuizAdminList({ perPage: 15 });
 
-  const [dbCategories, setDbCategories] = useState<string[]>([]);
+  const [dbTrades, setDbTrades] = useState<TradeItem[]>([]);
+  const [dbCategories, setDbCategories] = useState<CategoryItem[]>([]);
+  const [trades, setTrades] = useState<string[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [levels, setLevels] = useState<string[]>([]);
   const [skills, setSkills] = useState<string[]>([]);
@@ -59,25 +63,85 @@ export function QuizListView() {
   const [previewTarget, setPreviewTarget] = useState<QuizInfoListItem | null>(null);
 
   useEffect(() => {
-    categoryService
-      .getAdminList({ per_page: 100 })
-      .then((res) => {
-        const catTitles = (res.items ?? []).map((c) => c.title).filter(Boolean);
-        setDbCategories(catTitles);
+    Promise.all([tradeService.getAdminListAll(), categoryService.getAdminListAll()])
+      .then(([tradeResult, categoryResult]) => {
+        setDbTrades(
+          (tradeResult.items ?? []).filter((trade) => trade.is_active !== false),
+        );
+        setDbCategories(categoryResult.items ?? []);
       })
       .catch(() => {});
   }, []);
 
-  const categoryOptions = useMemo(() => {
-    const titles = new Set<string>(dbCategories);
+  const tradeTitleToId = useMemo(
+    () => Object.fromEntries(dbTrades.map((trade) => [trade.title, trade.id])),
+    [dbTrades],
+  );
+
+  const tradeIdToTitle = useMemo(
+    () => Object.fromEntries(dbTrades.map((trade) => [trade.id, trade.title])),
+    [dbTrades],
+  );
+
+  const tradeNamesByCategoryId = useMemo(
+    () =>
+      Object.fromEntries(
+        dbCategories.map((category) => [
+          category.id,
+          tradeIdToTitle[category.trade_id] ?? "—",
+        ]),
+      ),
+    [dbCategories, tradeIdToTitle],
+  );
+
+  const tradeOptions = useMemo(() => {
+    const titles = dbTrades.map((trade) => trade.title);
+    return [...new Set(titles)].sort((a, b) => a.localeCompare(b));
+  }, [dbTrades]);
+
+  const subcategoryOptions = useMemo(() => {
+    let availableCategories = dbCategories;
+
+    if (trades.length > 0) {
+      const selectedTradeIds = new Set(
+        trades
+          .map((title) => tradeTitleToId[title])
+          .filter((id): id is number => typeof id === "number"),
+      );
+      availableCategories = availableCategories.filter((category) =>
+        selectedTradeIds.has(category.trade_id),
+      );
+    }
+
+    const titles = new Set(availableCategories.map((category) => category.title));
     for (const quiz of items) {
       if (quiz.category?.title) titles.add(quiz.category.title);
     }
+
     return Array.from(titles).sort((a, b) => a.localeCompare(b));
-  }, [items, dbCategories]);
+  }, [dbCategories, items, tradeTitleToId, trades]);
+
+  useEffect(() => {
+    if (trades.length === 0) return;
+
+    const allowed = new Set(subcategoryOptions.map((title) => title.toLowerCase().trim()));
+    setCategories((prev) =>
+      prev.filter((title) => allowed.has(title.toLowerCase().trim())),
+    );
+  }, [subcategoryOptions, trades.length]);
 
   const filtered = useMemo(() => {
     return items.filter((quiz) => {
+      const categoryId = getQuizCategoryId(quiz);
+      const tradeTitle = categoryId ? tradeNamesByCategoryId[categoryId] : null;
+
+      if (trades.length > 0) {
+        const matchedTrade = tradeTitle
+          ? trades.some((title) => title.toLowerCase().trim() === tradeTitle.toLowerCase().trim())
+          : false;
+        if (!matchedTrade) return false;
+      }
+
       if (categories.length > 0) {
         const quizCat = quiz.category?.title?.toLowerCase().trim() ?? "";
         const matched = categories.some((c) => c.toLowerCase().trim() === quizCat);
@@ -103,7 +167,7 @@ export function QuizListView() {
 
       return true;
     });
-  }, [items, categories, levels, skills, statuses]);
+  }, [items, trades, categories, levels, skills, statuses, tradeNamesByCategoryId]);
 
   async function handleDelete() {
     if (!deleteTarget) return;
@@ -140,11 +204,20 @@ export function QuizListView() {
 
       <div className="flex flex-wrap items-center gap-3">
         <MultiSelectFilter
+          label="Trade"
+          options={tradeOptions}
+          selected={trades}
+          onChange={(value) => {
+            setTrades(value);
+            goToPage(1);
+          }}
+        />
+        <MultiSelectFilter
           label="Subcategory"
-          options={categoryOptions}
+          options={subcategoryOptions}
           selected={categories}
-          onChange={(v) => {
-            setCategories(v);
+          onChange={(value) => {
+            setCategories(value);
             goToPage(1);
           }}
         />
@@ -152,8 +225,8 @@ export function QuizListView() {
           label="Level"
           options={levelOptions}
           selected={levels}
-          onChange={(v) => {
-            setLevels(v);
+          onChange={(value) => {
+            setLevels(value);
             goToPage(1);
           }}
         />
@@ -161,8 +234,8 @@ export function QuizListView() {
           label="Skill"
           options={skillOptions}
           selected={skills}
-          onChange={(v) => {
-            setSkills(v);
+          onChange={(value) => {
+            setSkills(value);
             goToPage(1);
           }}
         />
@@ -170,8 +243,8 @@ export function QuizListView() {
           label="Status"
           options={statusOptions}
           selected={statuses}
-          onChange={(v) => {
-            setStatuses(v);
+          onChange={(value) => {
+            setStatuses(value);
             goToPage(1);
           }}
         />
@@ -186,6 +259,7 @@ export function QuizListView() {
       <QuizTable
         quizzes={filtered}
         loading={loading}
+        tradeNamesByCategoryId={tradeNamesByCategoryId}
         onDelete={setDeleteTarget}
         onPreview={setPreviewTarget}
       />
