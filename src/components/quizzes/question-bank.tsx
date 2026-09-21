@@ -9,7 +9,6 @@ import { Can } from "@/components/shared/can";
 import { QuestionFormDialog } from "@/components/quizzes/question-form-dialog";
 import { AiGenerateDialog } from "@/components/quizzes/ai-generate-dialog";
 import { useQuizQuestions } from "@/hooks/quizzes/use-quiz-questions";
-import type { QuizQuestion } from "@/data/quizzes";
 import type {
   QuizQuestionAdmin,
   QuizQuestionCreatePayload,
@@ -22,39 +21,25 @@ const typeLabels: Record<QuizQuestionType, string> = {
   blanks: "Fill in the blanks",
 };
 
-function mapMockType(type: string): QuizQuestionType {
-  if (type === "True/False") return "tf";
-  if (type === "Fill in the blanks") return "blanks";
-  return "mcq";
-}
-
-function parseTimeToSeconds(timePerQuestion: string): number {
-  const parts = timePerQuestion.split(":").map((part) => Number(part) || 0);
-  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
-  if (parts.length === 2) return parts[0] * 60 + parts[1];
-  return parts[0] || 30;
-}
-
-function mockToPayload(q: QuizQuestion): QuizQuestionCreatePayload {
-  return {
-    question: q.question,
-    type: mapMockType(q.type),
-    time_limit: parseTimeToSeconds(q.timePerQuestion),
-    source_type: "manual",
-    option: q.options.map((opt, index) => ({
-      option_text: opt,
-      is_correct: index === q.correctAnswer,
-    })),
-  };
-}
-
 type QuestionBankProps = {
   quizId: number;
   totalDuration?: number;
   readonly?: boolean;
+  categoryId?: number | null;
+  categoryName?: string;
+  quizTitle?: string;
+  description?: string;
 };
 
-export function QuestionBank({ quizId, totalDuration, readonly = false }: QuestionBankProps) {
+export function QuestionBank({
+  quizId,
+  totalDuration,
+  readonly = false,
+  categoryId = null,
+  categoryName = "",
+  quizTitle = "",
+  description = "",
+}: QuestionBankProps) {
   const { items, loading, mutating, error, addMany, updateOne, removeOne } =
     useQuizQuestions(quizId);
 
@@ -93,16 +78,20 @@ export function QuestionBank({ quizId, totalDuration, readonly = false }: Questi
     }
   }
 
-  async function handleAddFromAi(newQuestions: QuizQuestion[]) {
+  async function handleAddFromAi(newQuestions: QuizQuestionCreatePayload[]) {
     if (newQuestions.length === 0) return;
     const result = await addMany({
-      source_type: "manual",
-      question: newQuestions.map(mockToPayload),
+      source_type: "ai",
+      question: newQuestions.map((question) => ({
+        ...question,
+        source_type: "ai",
+      })),
     });
     if (result.ok) {
       toast.success(`${newQuestions.length} question(s) added`);
     } else {
       toast.error(result.message || "Failed to add questions");
+      throw new Error(result.message || "Failed to add questions");
     }
   }
 
@@ -243,6 +232,10 @@ export function QuestionBank({ quizId, totalDuration, readonly = false }: Questi
         open={aiOpen}
         onClose={() => setAiOpen(false)}
         onAdd={handleAddFromAi}
+        categoryId={categoryId}
+        categoryName={categoryName}
+        quizTitle={quizTitle}
+        description={description}
       />
 
       <Dialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Delete Question">

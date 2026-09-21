@@ -51,6 +51,7 @@ export class ApiError extends Error {
         data?: {
           message?: string;
           error?: string;
+          detail?: string | RawValidationError[];
           errors?: RawValidationError[];
           response?: {
             errors?: RawValidationError[];
@@ -67,7 +68,11 @@ export class ApiError extends Error {
     const statusCode = res?.status || (timedOut ? 408 : 500);
 
     const fieldErrors: Record<string, string> = {};
-    const rawErrors = data?.errors || data?.response?.errors;
+    const fastapiDetail = data?.detail;
+    const rawErrors =
+      data?.errors ||
+      data?.response?.errors ||
+      (Array.isArray(fastapiDetail) ? fastapiDetail : undefined);
     const detailedMessages: string[] = [];
 
     if (Array.isArray(rawErrors)) {
@@ -93,7 +98,11 @@ export class ApiError extends Error {
 
     let message = timedOut
       ? "The request took too long. Try a smaller image, or turn off network throttling in DevTools."
-      : data?.message || data?.error || axiosError?.message || "An unexpected error occurred";
+      : data?.message ||
+        data?.error ||
+        (typeof data?.detail === "string" ? data.detail : "") ||
+        axiosError?.message ||
+        "An unexpected error occurred";
 
     if (detailedMessages.length > 0) {
       message = [...new Set(detailedMessages)].join(" ");
