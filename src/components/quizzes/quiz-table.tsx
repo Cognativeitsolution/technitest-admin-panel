@@ -15,19 +15,27 @@ function capitalize(value: string | null | undefined) {
 type QuizTableProps = {
   quizzes: QuizInfoListItem[];
   loading?: boolean;
+  tradeNamesByCategoryId?: Record<number, string>;
   onDelete?: (quiz: QuizInfoListItem) => void;
   onPreview?: (quiz: QuizInfoListItem) => void;
 };
 
-export function QuizTable({ quizzes, loading = false, onDelete, onPreview }: QuizTableProps) {
+export function QuizTable({
+  quizzes,
+  loading = false,
+  tradeNamesByCategoryId = {},
+  onDelete,
+  onPreview,
+}: QuizTableProps) {
   return (
     <div className="overflow-hidden rounded-2xl border border-[#e8ecf2] bg-white shadow-[0_1px_3px_rgba(16,24,40,0.04)]">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[900px] border-collapse text-left">
+        <table className="w-full min-w-[1000px] border-collapse text-left">
           <thead>
             <tr className="bg-[#eef5ff] text-[13px] font-semibold text-[#374151]">
               <th className="px-5 py-3.5">ID</th>
               <th className="px-5 py-3.5">Quiz Title</th>
+              <th className="px-5 py-3.5">Trade</th>
               <th className="px-5 py-3.5">Subcategory</th>
               <th className="px-5 py-3.5">Level</th>
               <th className="px-5 py-3.5">Skill</th>
@@ -39,7 +47,7 @@ export function QuizTable({ quizzes, loading = false, onDelete, onPreview }: Qui
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={8} className="px-5 py-10 text-center text-sm text-[#6b7280]">
+                <td colSpan={9} className="px-5 py-10 text-center text-sm text-[#6b7280]">
                   Loading quizzes...
                 </td>
               </tr>
@@ -58,6 +66,11 @@ export function QuizTable({ quizzes, loading = false, onDelete, onPreview }: Qui
                       </td>
                       <td className="px-5 py-4 text-sm font-semibold text-[#111827]">
                         {quiz.name}
+                      </td>
+                      <td className="px-5 py-4 text-sm text-[#374151]">
+                        {tradeNamesByCategoryId[
+                          quiz.category_id ?? quiz.category?.id ?? 0
+                        ] ?? "—"}
                       </td>
                       <td className="px-5 py-4 text-sm text-[#374151]">
                         {quiz.category?.title ?? "—"}
@@ -121,7 +134,7 @@ export function QuizTable({ quizzes, loading = false, onDelete, onPreview }: Qui
 
             {!loading && quizzes.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-5 py-10 text-center text-sm text-[#6b7280]">
+                <td colSpan={9} className="px-5 py-10 text-center text-sm text-[#6b7280]">
                   No quizzes found matching your filters.
                 </td>
               </tr>

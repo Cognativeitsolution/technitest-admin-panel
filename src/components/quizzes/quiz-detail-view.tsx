@@ -164,7 +164,16 @@ export function QuizDetailView({
               </p>
             </div>
           ) : quizId ? (
-            <QuestionBank quizId={quizId} totalDuration={quiz?.total_duration} />
+            <QuestionBank
+              quizId={quizId}
+              totalDuration={quiz?.total_duration}
+              categoryId={values.categoryId}
+              categoryName={
+                quiz?.category?.trade?.title || quiz?.category?.title || ""
+              }
+              quizTitle={values.quizName}
+              description={values.description}
+            />
           ) : null}
         </>
       ) : null}

@@ -10,6 +10,27 @@ import type {
   QuizQuestionUpdatePayload,
 } from "@/types/quiz-create.types";
 
+function firstString(...values: unknown[]): string | null {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return null;
+}
+
+function normalizeQuestion(question: QuizQuestionAdmin): QuizQuestionAdmin {
+  const extra = question as QuizQuestionAdmin & {
+    image?: unknown;
+    imageUrl?: unknown;
+    image_path?: unknown;
+  };
+  return {
+    ...question,
+    image_url:
+      firstString(question.image_url, extra.image, extra.imageUrl, extra.image_path) ??
+      question.image_url,
+  };
+}
+
 export function useQuizQuestions(quizId: number | null) {
   const [items, setItems] = useState<QuizQuestionAdmin[]>([]);
   const [mutating, setMutating] = useState(false);
@@ -28,7 +49,11 @@ export function useQuizQuestions(quizId: number | null) {
       .adminList(quizId, { page: 1, per_page: 100 })
       .then((result) => {
         if (cancelled) return;
-        setItems((result.items ?? []).filter((q) => q.is_active !== false));
+        setItems(
+          (result.items ?? [])
+            .filter((q) => q.is_active !== false)
+            .map(normalizeQuestion),
+        );
         setError(null);
         setSettledKey(queryKey);
       })
@@ -45,17 +70,20 @@ export function useQuizQuestions(quizId: number | null) {
   }, [quizId, queryKey, nonce]);
 
   const addMany = useCallback(
-    async (payload: QuizQuestionsBulkCreatePayload) => {
-      if (quizId === null) return false;
+    async (payload: QuizQuestionsBulkCreatePayload, files?: File[] | null) => {
+      if (quizId === null) {
+        return { ok: false as const, message: "Quiz not found." };
+      }
       setMutating(true);
       try {
-        await quizCreateService.bulkCreate(quizId, payload);
+        await quizCreateService.bulkCreate(quizId, payload, files);
         setError(null);
         setNonce((prev) => prev + 1);
-        return true;
+        return { ok: true as const };
       } catch (err) {
-        setError(ApiError.fromAxiosError(err).message);
-        return false;
+        const message = ApiError.fromAxiosError(err).message;
+        setError(message);
+        return { ok: false as const, message };
       } finally {
         setMutating(false);
       }
@@ -64,17 +92,24 @@ export function useQuizQuestions(quizId: number | null) {
   );
 
   const updateOne = useCallback(
-    async (questionId: number, payload: QuizQuestionUpdatePayload) => {
-      if (quizId === null) return false;
+    async (
+      questionId: number,
+      payload: QuizQuestionUpdatePayload,
+      files?: File[] | null,
+    ) => {
+      if (quizId === null) {
+        return { ok: false as const, message: "Quiz not found." };
+      }
       setMutating(true);
       try {
-        await quizCreateService.updateQuestion(quizId, questionId, payload);
+        await quizCreateService.updateQuestion(quizId, questionId, payload, files);
         setError(null);
         setNonce((prev) => prev + 1);
-        return true;
+        return { ok: true as const };
       } catch (err) {
-        setError(ApiError.fromAxiosError(err).message);
-        return false;
+        const message = ApiError.fromAxiosError(err).message;
+        setError(message);
+        return { ok: false as const, message };
       } finally {
         setMutating(false);
       }

@@ -9,7 +9,7 @@ import { Can } from "@/components/shared/can";
 import { QuestionFormDialog } from "@/components/quizzes/question-form-dialog";
 import { AiGenerateDialog } from "@/components/quizzes/ai-generate-dialog";
 import { useQuizQuestions } from "@/hooks/quizzes/use-quiz-questions";
-import type { QuizQuestion } from "@/data/quizzes";
+import { getQuestionImageUrl } from "@/lib/map-ai-quiz-question";
 import type {
   QuizQuestionAdmin,
   QuizQuestionCreatePayload,
@@ -20,41 +20,28 @@ const typeLabels: Record<QuizQuestionType, string> = {
   mcq: "MCQs",
   tf: "True/False",
   blanks: "Fill in the blanks",
+  image_mcq: "Image",
 };
-
-function mapMockType(type: string): QuizQuestionType {
-  if (type === "True/False") return "tf";
-  if (type === "Fill in the blanks") return "blanks";
-  return "mcq";
-}
-
-function parseTimeToSeconds(timePerQuestion: string): number {
-  const parts = timePerQuestion.split(":").map((part) => Number(part) || 0);
-  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
-  if (parts.length === 2) return parts[0] * 60 + parts[1];
-  return parts[0] || 30;
-}
-
-function mockToPayload(q: QuizQuestion): QuizQuestionCreatePayload {
-  return {
-    question: q.question,
-    type: mapMockType(q.type),
-    time_limit: parseTimeToSeconds(q.timePerQuestion),
-    source_type: "manual",
-    option: q.options.map((opt, index) => ({
-      option_text: opt,
-      is_correct: index === q.correctAnswer,
-    })),
-  };
-}
 
 type QuestionBankProps = {
   quizId: number;
   totalDuration?: number;
   readonly?: boolean;
+  categoryId?: number | null;
+  categoryName?: string;
+  quizTitle?: string;
+  description?: string;
 };
 
-export function QuestionBank({ quizId, totalDuration, readonly = false }: QuestionBankProps) {
+export function QuestionBank({
+  quizId,
+  totalDuration,
+  readonly = false,
+  categoryId = null,
+  categoryName = "",
+  quizTitle = "",
+  description = "",
+}: QuestionBankProps) {
   const { items, loading, mutating, error, addMany, updateOne, removeOne } =
     useQuizQuestions(quizId);
 
@@ -63,19 +50,30 @@ export function QuestionBank({ quizId, totalDuration, readonly = false }: Questi
   const [editQuestion, setEditQuestion] = useState<QuizQuestionAdmin | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<QuizQuestionAdmin | null>(null);
 
-  async function handleSaveQuestion(payload: QuizQuestionCreatePayload) {
+  async function handleSaveQuestion(
+    payload: QuizQuestionCreatePayload,
+    file?: File | null,
+  ) {
+    const files = file ? [file] : undefined;
     if (editQuestion) {
-      const ok = await updateOne(editQuestion.id, payload);
-      if (ok) {
+      const result = await updateOne(editQuestion.id, payload, files);
+      if (result.ok) {
         toast.success("Question updated successfully");
         setEditQuestion(null);
         setQuestionFormOpen(false);
+      } else {
+        toast.error(result.message || "Failed to update question");
       }
     } else {
-      const ok = await addMany({ question: [payload] });
-      if (ok) {
+      const result = await addMany(
+        { source_type: payload.source_type ?? "manual", question: [payload] },
+        files,
+      );
+      if (result.ok) {
         toast.success("Question added successfully");
         setQuestionFormOpen(false);
+      } else {
+        toast.error(result.message || "Failed to add question");
       }
     }
   }
@@ -89,10 +87,21 @@ export function QuestionBank({ quizId, totalDuration, readonly = false }: Questi
     }
   }
 
-  async function handleAddFromAi(newQuestions: QuizQuestion[]) {
+  async function handleAddFromAi(newQuestions: QuizQuestionCreatePayload[]) {
     if (newQuestions.length === 0) return;
-    const ok = await addMany({ question: newQuestions.map(mockToPayload) });
-    if (ok) toast.success(`${newQuestions.length} question(s) added`);
+    const result = await addMany({
+      source_type: "ai",
+      question: newQuestions.map((question) => ({
+        ...question,
+        source_type: "ai",
+      })),
+    });
+    if (result.ok) {
+      toast.success(`${newQuestions.length} question(s) added`);
+    } else {
+      toast.error(result.message || "Failed to add questions");
+      throw new Error(result.message || "Failed to add questions");
+    }
   }
 
   const displayTime =
@@ -154,7 +163,19 @@ export function QuestionBank({ quizId, totalDuration, readonly = false }: Questi
                       <td className="px-4 py-3.5 font-medium">
                         {String(i + 1).padStart(2, "0")}
                       </td>
-                      <td className="max-w-xs truncate px-4 py-3.5">{q.question}</td>
+                      <td className="max-w-xs px-4 py-3.5">
+                        <div className="flex items-center gap-3">
+                          {q.type === "image_mcq" && getQuestionImageUrl(q) ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={getQuestionImageUrl(q) ?? ""}
+                              alt=""
+                              className="size-10 shrink-0 rounded-lg border border-[#eef1f6] object-cover"
+                            />
+                          ) : null}
+                          <span className="truncate">{q.question}</span>
+                        </div>
+                      </td>
                       <td className="px-4 py-3.5">{typeLabels[q.type] ?? q.type}</td>
                       <td className="px-4 py-3.5 font-mono text-xs">
                         {q.time_limit ? `${q.time_limit}s` : "—"}
@@ -232,6 +253,10 @@ export function QuestionBank({ quizId, totalDuration, readonly = false }: Questi
         open={aiOpen}
         onClose={() => setAiOpen(false)}
         onAdd={handleAddFromAi}
+        categoryId={categoryId}
+        categoryName={categoryName}
+        quizTitle={quizTitle}
+        description={description}
       />
 
       <Dialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Delete Question">

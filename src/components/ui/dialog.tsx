@@ -12,15 +12,24 @@ type DialogProps = {
   children: React.ReactNode;
   className?: string;
   maxWidth?: string;
+  preventClose?: boolean;
 };
 
-export function Dialog({ open, onClose, title, children, className, maxWidth = "max-w-lg" }: DialogProps) {
+export function Dialog({
+  open,
+  onClose,
+  title,
+  children,
+  className,
+  maxWidth = "max-w-lg",
+  preventClose = false,
+}: DialogProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
     function handleEscape(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape" && !preventClose) onClose();
     }
     document.addEventListener("keydown", handleEscape);
     document.body.style.overflow = "hidden";
@@ -28,7 +37,7 @@ export function Dialog({ open, onClose, title, children, className, maxWidth = "
       document.removeEventListener("keydown", handleEscape);
       document.body.style.overflow = "";
     };
-  }, [open, onClose]);
+  }, [open, onClose, preventClose]);
 
   if (!open) return null;
 
@@ -37,6 +46,7 @@ export function Dialog({ open, onClose, title, children, className, maxWidth = "
       ref={overlayRef}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
       onClick={(e) => {
+        if (preventClose) return;
         if (e.target === overlayRef.current) onClose();
       }}
     >
@@ -53,7 +63,8 @@ export function Dialog({ open, onClose, title, children, className, maxWidth = "
             type="button"
             aria-label="Close"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-[#6b7280] transition hover:bg-[#f3f4f6] hover:text-[#111827]"
+            disabled={preventClose}
+            className="rounded-lg p-1.5 text-[#6b7280] transition hover:bg-[#f3f4f6] hover:text-[#111827] disabled:cursor-not-allowed disabled:opacity-40"
           >
             <X className="size-5" />
           </button>

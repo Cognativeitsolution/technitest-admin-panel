@@ -4,6 +4,8 @@ import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 
 import { Dialog } from "@/components/ui/dialog";
+import { FileUpload } from "@/components/ui/file-upload";
+import { getQuestionImageUrl } from "@/lib/map-ai-quiz-question";
 import { cn } from "@/lib/utils";
 import type {
   QuizQuestionAdmin,
@@ -18,13 +20,16 @@ const typeOptions: { value: QuizQuestionType; label: string }[] = [
   { value: "mcq", label: "MCQs" },
   { value: "tf", label: "True/False" },
   { value: "blanks", label: "Fill in the blanks" },
+  { value: "image_mcq", label: "Image" },
 ];
+
+const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
 
 type QuestionFormDialogProps = {
   open: boolean;
   onClose: () => void;
   question: QuizQuestionAdmin | null;
-  onSave: (payload: QuizQuestionCreatePayload) => void;
+  onSave: (payload: QuizQuestionCreatePayload, file?: File | null) => void;
 };
 
 export function QuestionFormDialog({
@@ -38,13 +43,20 @@ export function QuestionFormDialog({
   const [text, setText] = useState("");
   const [options, setOptions] = useState(["", "", "", ""]);
   const [correctAnswer, setCorrectAnswer] = useState(0);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploadKey, setUploadKey] = useState(0);
+  const [formError, setFormError] = useState<string | null>(null);
   const [prevOpen, setPrevOpen] = useState(open);
+
+  const MIN_TIME_SECONDS = 5;
 
   if (open !== prevOpen) {
     setPrevOpen(open);
     if (open) {
+      setFormError(null);
       setType(question?.type ?? "mcq");
-      setTime(String(question?.time_limit ?? 40));
+      setTime(String(Math.max(question?.time_limit ?? 30, MIN_TIME_SECONDS)));
       setText(question?.question ?? "");
       const baseOptions = question?.option?.map((opt) => opt.option_text) ?? [];
       setOptions(
@@ -55,19 +67,78 @@ export function QuestionFormDialog({
           ? Math.max(0, (question.option ?? []).findIndex((opt) => opt.is_correct))
           : 0,
       );
+      setImageFile(null);
+      setImagePreview(getQuestionImageUrl(question));
+      setUploadKey((key) => key + 1);
     }
   }
 
+  function handleImageChange(file: File | null) {
+    if (file && file.size > MAX_IMAGE_BYTES) {
+      setImageFile(null);
+      setFormError("Question image must be 2 MB or smaller.");
+      setUploadKey((key) => key + 1);
+      setImagePreview(getQuestionImageUrl(question));
+      return;
+    }
+
+    setFormError(null);
+    setImageFile(file);
+    setImagePreview(file ? URL.createObjectURL(file) : getQuestionImageUrl(question));
+  }
+
   function handleSave() {
-    onSave({
-      question: text,
-      type,
-      time_limit: Number(time) || 30,
-      source_type: "manual",
-      option: options
-        .filter((opt) => opt.trim() !== "")
-        .map((opt, index) => ({ option_text: opt, is_correct: index === correctAnswer })),
-    });
+    const trimmedText = text.trim();
+    const timeLimit = Number(time);
+
+    if (!trimmedText) {
+      setFormError("Question text is required.");
+      return;
+    }
+
+    if (!Number.isFinite(timeLimit) || timeLimit < MIN_TIME_SECONDS) {
+      setFormError(`Time per question must be at least ${MIN_TIME_SECONDS} seconds.`);
+      return;
+    }
+
+    const optionPayload = options
+      .map((opt, index) => ({
+        option_text: opt.trim(),
+        is_correct: index === correctAnswer,
+      }))
+      .filter((opt) => opt.option_text !== "");
+
+    if (optionPayload.length < 2) {
+      setFormError("Add at least two answer options.");
+      return;
+    }
+
+    if (!optionPayload.some((opt) => opt.is_correct)) {
+      setFormError("Select the correct answer option.");
+      return;
+    }
+
+    if (type === "image_mcq" && !imageFile && !getQuestionImageUrl(question)) {
+      setFormError("Please upload an image for this question.");
+      return;
+    }
+
+    setFormError(null);
+    onSave(
+      {
+        question: trimmedText,
+        type,
+        time_limit: timeLimit,
+        source_type: question?.source_type ?? "manual",
+        option: optionPayload,
+        ...(type === "image_mcq"
+          ? imageFile
+            ? {}
+            : { image_url: question?.image_url ?? null }
+          : { image_url: null }),
+      },
+      imageFile,
+    );
   }
 
   return (
@@ -97,11 +168,20 @@ export function QuestionFormDialog({
               type="number"
               value={time}
               onChange={(e) => setTime(e.target.value)}
-              min={5}
+              min={MIN_TIME_SECONDS}
               className={inputClassName}
             />
+            <span className="text-xs text-[#6b7280]">
+              Minimum {MIN_TIME_SECONDS} seconds
+            </span>
           </label>
         </div>
+
+        {formError ? (
+          <p className="rounded-lg bg-[#fef2f2] px-3 py-2 text-sm text-[#b91c1c]">
+            {formError}
+          </p>
+        ) : null}
 
         <label className="block space-y-1.5">
           <span className="text-sm font-medium text-[#374151]">Question Text</span>
@@ -109,9 +189,36 @@ export function QuestionFormDialog({
             value={text}
             onChange={(e) => setText(e.target.value)}
             rows={2}
-            className={cn(inputClassName, "resize-none")}
+            className={cn(inputClassName, "h-auto resize-none py-2.5")}
           />
         </label>
+
+        {type === "image_mcq" ? (
+          <div className="space-y-3">
+            <FileUpload
+              key={`${open}-${question?.id ?? "new"}-${uploadKey}`}
+              label="Question image"
+              accept=".png,.jpg,.jpeg,.webp"
+              helperText="PNG, JPG, or WEBP up to 2 MB."
+              onChange={handleImageChange}
+            />
+            {imagePreview ? (
+              <div className="overflow-hidden rounded-xl border border-[#eef1f6] bg-[#f8fafc] p-3">
+                <p className="mb-2 text-xs font-medium text-[#6b7280]">
+                  {imageFile ? "New image" : "Current image"}
+                </p>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={imagePreview}
+                  alt="Question"
+                  className="max-h-56 w-full rounded-lg object-contain"
+                />
+              </div>
+            ) : (
+              <p className="text-xs text-[#6b7280]">No image saved for this question yet.</p>
+            )}
+          </div>
+        ) : null}
 
         <div className="space-y-3">
           <span className="text-sm font-medium text-[#374151]">Answer Options</span>

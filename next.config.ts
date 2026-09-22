@@ -3,8 +3,12 @@ import type { NextConfig } from "next";
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL?.trim().replace(/\/$/, "") ||
   "https://tech-ni-test-staging.efinder24.com";
+const AI_API_BASE_URL =
+  process.env.NEXT_PUBLIC_AI_API_BASE_URL?.trim().replace(/\/$/, "") ||
+  "https://tech-ni-test-ai.naveedkhangroup.com";
 
 const apiUrl = new URL(API_BASE_URL);
+const aiApiUrl = new URL(AI_API_BASE_URL);
 
 const nextConfig: NextConfig = {
   skipTrailingSlashRedirect: true,
@@ -23,6 +27,11 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "platform-lookaside.fbsbx.com",
       },
+      {
+        protocol: aiApiUrl.protocol.replace(":", "") as "http" | "https",
+        hostname: aiApiUrl.hostname,
+        pathname: "/**",
+      },
     ],
   },
   async rewrites() {
@@ -38,6 +47,14 @@ const nextConfig: NextConfig = {
       {
         source: "/media/:path*",
         destination: `${API_BASE_URL}/media/:path*`,
+      },
+      {
+        source: "/ai-api/:path*",
+        destination: `${AI_API_BASE_URL}/api/:path*`,
+      },
+      {
+        source: "/ai-uploads/:path*",
+        destination: `${AI_API_BASE_URL}/uploads/:path*`,
       },
     ];
   },
