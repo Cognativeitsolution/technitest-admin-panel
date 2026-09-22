@@ -9,6 +9,7 @@ import { Can } from "@/components/shared/can";
 import { QuestionFormDialog } from "@/components/quizzes/question-form-dialog";
 import { AiGenerateDialog } from "@/components/quizzes/ai-generate-dialog";
 import { useQuizQuestions } from "@/hooks/quizzes/use-quiz-questions";
+import { getQuestionImageUrl } from "@/lib/map-ai-quiz-question";
 import type {
   QuizQuestionAdmin,
   QuizQuestionCreatePayload,
@@ -19,6 +20,7 @@ const typeLabels: Record<QuizQuestionType, string> = {
   mcq: "MCQs",
   tf: "True/False",
   blanks: "Fill in the blanks",
+  image_mcq: "Image",
 };
 
 type QuestionBankProps = {
@@ -48,9 +50,13 @@ export function QuestionBank({
   const [editQuestion, setEditQuestion] = useState<QuizQuestionAdmin | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<QuizQuestionAdmin | null>(null);
 
-  async function handleSaveQuestion(payload: QuizQuestionCreatePayload) {
+  async function handleSaveQuestion(
+    payload: QuizQuestionCreatePayload,
+    file?: File | null,
+  ) {
+    const files = file ? [file] : undefined;
     if (editQuestion) {
-      const result = await updateOne(editQuestion.id, payload);
+      const result = await updateOne(editQuestion.id, payload, files);
       if (result.ok) {
         toast.success("Question updated successfully");
         setEditQuestion(null);
@@ -59,7 +65,10 @@ export function QuestionBank({
         toast.error(result.message || "Failed to update question");
       }
     } else {
-      const result = await addMany({ source_type: "manual", question: [payload] });
+      const result = await addMany(
+        { source_type: payload.source_type ?? "manual", question: [payload] },
+        files,
+      );
       if (result.ok) {
         toast.success("Question added successfully");
         setQuestionFormOpen(false);
@@ -154,7 +163,19 @@ export function QuestionBank({
                       <td className="px-4 py-3.5 font-medium">
                         {String(i + 1).padStart(2, "0")}
                       </td>
-                      <td className="max-w-xs truncate px-4 py-3.5">{q.question}</td>
+                      <td className="max-w-xs px-4 py-3.5">
+                        <div className="flex items-center gap-3">
+                          {q.type === "image_mcq" && getQuestionImageUrl(q) ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={getQuestionImageUrl(q) ?? ""}
+                              alt=""
+                              className="size-10 shrink-0 rounded-lg border border-[#eef1f6] object-cover"
+                            />
+                          ) : null}
+                          <span className="truncate">{q.question}</span>
+                        </div>
+                      </td>
                       <td className="px-4 py-3.5">{typeLabels[q.type] ?? q.type}</td>
                       <td className="px-4 py-3.5 font-mono text-xs">
                         {q.time_limit ? `${q.time_limit}s` : "—"}

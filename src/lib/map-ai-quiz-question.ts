@@ -48,27 +48,14 @@ function toProxiedUploadUrl(uploadPath: string): string {
   return `/ai-uploads/${relative}`;
 }
 
-function resolveImageUrl(question: AiGeneratedQuestion): string | null {
+function resolveRawImageUrl(question: AiGeneratedQuestion): string | null {
   const candidates = [question.image_url, question.image_path];
   for (const candidate of candidates) {
     const value = candidate?.trim();
     if (!value) continue;
-
-    if (isHttpUrl(value)) {
-      try {
-        const uploadPath = extractUploadPath(new URL(value).pathname);
-        if (uploadPath) return toProxiedUploadUrl(uploadPath);
-      } catch {
-        // fall through to raw URL
-      }
-      return value;
-    }
-
+    if (isHttpUrl(value)) return value;
     const uploadPath = extractUploadPath(value);
-    if (uploadPath) {
-      return toProxiedUploadUrl(uploadPath);
-    }
-
+    if (uploadPath) return `${env.AI_API_BASE_URL}${uploadPath}`;
     if (
       value.startsWith("/") &&
       !value.startsWith("/tmp") &&
@@ -76,6 +63,50 @@ function resolveImageUrl(question: AiGeneratedQuestion): string | null {
     ) {
       return `${env.AI_API_BASE_URL}${value}`;
     }
+  }
+  return null;
+}
+
+export function toQuestionImageSrc(value?: string | null): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  if (trimmed.startsWith("/ai-uploads/") || trimmed.startsWith("/media/")) {
+    return trimmed;
+  }
+  if (trimmed.startsWith("media/")) {
+    return `/${trimmed}`;
+  }
+  if (isHttpUrl(trimmed)) {
+    try {
+      const url = new URL(trimmed);
+      const uploadPath = extractUploadPath(url.pathname);
+      if (uploadPath) return toProxiedUploadUrl(uploadPath);
+      if (url.pathname.startsWith("/media/")) {
+        return `${url.pathname}${url.search}`;
+      }
+    } catch {
+      // keep the original URL
+    }
+    return trimmed;
+  }
+  const uploadPath = extractUploadPath(trimmed);
+  if (uploadPath) return toProxiedUploadUrl(uploadPath);
+  return trimmed;
+}
+
+function resolveImageUrl(question: AiGeneratedQuestion): string | null {
+  return toQuestionImageSrc(resolveRawImageUrl(question));
+}
+
+export function getQuestionImageUrl(question?: {
+  image_url?: string | null;
+  option?: { image_url?: string | null }[] | null;
+} | null): string | null {
+  const direct = toQuestionImageSrc(question?.image_url);
+  if (direct) return direct;
+  for (const option of question?.option ?? []) {
+    const src = toQuestionImageSrc(option.image_url);
+    if (src) return src;
   }
   return null;
 }
@@ -133,20 +164,22 @@ export function mapAiQuestionToView(
     text: option.text,
     isCorrect: String(question.correct_answer ?? "").trim().toUpperCase() === option.letter,
   }));
+  const type: QuizQuestionType = format === "image" ? "image_mcq" : "mcq";
 
   return {
     key,
     question: question.question,
-    type: "mcq",
+    type,
     format,
     options,
     imageUrl: format === "image" ? resolveImageUrl(question) : null,
     explanation: question.explanation ?? null,
     payload: {
       question: question.question,
-      type: "mcq",
+      type,
       time_limit: 30,
       source_type: "ai",
+      image_url: format === "image" ? resolveRawImageUrl(question) : null,
       option: options.map((option) => ({
         option_text: option.text,
         is_correct: option.isCorrect,
