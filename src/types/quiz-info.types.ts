@@ -14,9 +14,18 @@ export type QuizInfoCategory = {
 export type WaitUnit = "hours" | "days" | "weeks" | "months" | "years";
 
 export type AttemptRuleTier = {
+  id?: number;
   attempt_number: number;
   duration: number;
   unit: WaitUnit;
+  is_active?: boolean;
+  cooldown_hours?: number;
+};
+
+export type QuizInfoTrade = {
+  id: number;
+  title: string;
+  detail?: string | null;
 };
 
 export type QuizInfoListItem = {
@@ -30,11 +39,13 @@ export type QuizInfoListItem = {
   min_attempt?: number;
   display_count?: number | null;
   attempt_rules?: AttemptRuleTier[] | null;
+  attempt_rules_source?: string | null;
   shuffle_questions?: boolean;
   is_negative_marking?: boolean;
   negative_marking_value?: number;
   is_active?: boolean;
   image_url?: string | null;
+  trade?: QuizInfoTrade | null;
   category?: QuizInfoCategory | null;
   total_questions?: number;
   total_duration?: number;
