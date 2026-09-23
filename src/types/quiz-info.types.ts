@@ -38,6 +38,10 @@ export type QuizInfoListItem = {
   passing_score?: number;
   min_attempt?: number;
   display_count?: number | null;
+  easy_percentage?: number | null;
+  medium_percentage?: number | null;
+  hard_percentage?: number | null;
+  repeat_percentage?: number | null;
   attempt_rules?: AttemptRuleTier[] | null;
   attempt_rules_source?: string | null;
   shuffle_questions?: boolean;
@@ -71,6 +75,10 @@ export type QuizInfoCreatePayload = {
   passing_score: number;
   min_attempt: number;
   display_count?: number | null;
+  easy_percentage?: number | null;
+  medium_percentage?: number | null;
+  hard_percentage?: number | null;
+  repeat_percentage?: number | null;
   attempt_rules?: AttemptRuleTier[] | null;
   shuffle_questions: boolean;
   is_negative_marking: boolean;

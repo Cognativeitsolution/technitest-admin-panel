@@ -19,7 +19,6 @@ const inputClassName =
 const typeOptions: { value: QuizQuestionType; label: string }[] = [
   { value: "mcq", label: "MCQs" },
   { value: "tf", label: "True/False" },
-  { value: "blanks", label: "Fill in the blanks" },
   { value: "image_mcq", label: "Image" },
 ];
 

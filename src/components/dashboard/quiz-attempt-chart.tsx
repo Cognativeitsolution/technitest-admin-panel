@@ -165,9 +165,9 @@ export function QuizAttemptChart({ data }: QuizAttemptChartProps) {
       />
 
       {!hasData || chartData.length === 0 ? (
-        <div className={cn(dashboardEmptyStateClass, "min-h-[280px] flex-1")}>No data found</div>
+        <div className={cn(dashboardEmptyStateClass, "min-h-70 flex-1")}>No data found</div>
       ) : (
-        <div className={cn(dashboardChartShellClass, "min-h-[280px] flex-1")}>
+        <div className={cn(dashboardChartShellClass, "min-h-70 flex-1")}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 8, right: 4, left: -18, bottom: 0 }}>
               <CartesianGrid stroke="#eef2f7" vertical={false} />

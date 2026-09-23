@@ -202,9 +202,9 @@ export function UserGrowthChart({ data }: UserGrowthChartProps) {
       </div>
 
       {!hasData || chartData.length === 0 ? (
-        <div className={cn(dashboardEmptyStateClass, "h-[280px]")}>No data found</div>
+        <div className={cn(dashboardEmptyStateClass, "h-70")}>No data found</div>
       ) : (
-        <div className={cn(dashboardChartShellClass, "h-[280px]")}>
+        <div className={cn(dashboardChartShellClass, "h-70")}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
               <CartesianGrid stroke="#eef2f7" vertical={false} />
