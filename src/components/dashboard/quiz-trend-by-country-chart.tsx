@@ -103,9 +103,9 @@ export function QuizTrendByCountryChart({
       />
 
       {!hasData || rows.length === 0 ? (
-        <div className={cn(dashboardEmptyStateClass, "min-h-[280px] flex-1")}>No data found</div>
+        <div className={cn(dashboardEmptyStateClass, "min-h-70 flex-1")}>No data found</div>
       ) : (
-        <div className={cn(dashboardChartShellClass, "min-h-[280px] w-full flex-1")}>
+        <div className={cn(dashboardChartShellClass, "min-h-70 w-full flex-1")}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={rows} margin={{ top: 8, right: 4, left: -18, bottom: 0 }}>
               <CartesianGrid stroke="#eef2f7" vertical={false} />
