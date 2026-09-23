@@ -23,6 +23,14 @@ import type {
 } from "@/types/quiz-info.types";
 
 function mapFromApi(quiz: QuizInfoListItem): QuizBasicInfoValues {
+  const easy = quiz.easy_percentage;
+  const medium = quiz.medium_percentage;
+  const hard = quiz.hard_percentage;
+  const repeat = quiz.repeat_percentage;
+  const hasConfiguredDifficulty =
+    [easy, medium, hard].some((value) => value != null && value !== 0) ||
+    (easy ?? 0) + (medium ?? 0) + (hard ?? 0) === 100;
+
   return {
     quizName: quiz.name ?? "",
     categoryId: quiz.category_id ?? quiz.category?.id ?? null,
@@ -31,6 +39,12 @@ function mapFromApi(quiz: QuizInfoListItem): QuizBasicInfoValues {
     passingScore: String(quiz.passing_score ?? 50),
     minAttempt: String(quiz.min_attempt ?? 1),
     displayCount: String(quiz.display_count ?? 1),
+    easyPercentage: String(hasConfiguredDifficulty ? (easy ?? 30) : 30),
+    mediumPercentage: String(hasConfiguredDifficulty ? (medium ?? 50) : 50),
+    hardPercentage: String(hasConfiguredDifficulty ? (hard ?? 20) : 20),
+    repeatPercentage: String(
+      repeat != null && repeat !== 0 ? repeat : 30,
+    ),
     description: quiz.description ?? "",
     imageUrl: quiz.image_url ?? "",
     negativeMarkingValue: String(quiz.negative_marking_value ?? 0),
@@ -86,6 +100,10 @@ export function QuizDetailView({
       passing_score: Number(values.passingScore) || 40,
       min_attempt: Math.max(1, Number(values.minAttempt) || 1),
       display_count: Math.max(1, Number(values.displayCount) || 1),
+      easy_percentage: Math.max(0, Number(values.easyPercentage) || 0),
+      medium_percentage: Math.max(0, Number(values.mediumPercentage) || 0),
+      hard_percentage: Math.max(0, Number(values.hardPercentage) || 0),
+      repeat_percentage: Math.max(0, Number(values.repeatPercentage) || 0),
       attempt_rules: values.attemptRules.map((rule) => ({
         attempt_number: rule.attempt_number,
         duration: Math.max(1, Number(rule.duration) || 1),
@@ -119,6 +137,31 @@ export function QuizDetailView({
     const displayCount = Number(values.displayCount);
     if (!Number.isFinite(displayCount) || displayCount < 1) {
       toast.error("Display count must be at least 1.");
+      return;
+    }
+
+    const easyPercentage = Number(values.easyPercentage);
+    const mediumPercentage = Number(values.mediumPercentage);
+    const hardPercentage = Number(values.hardPercentage);
+    const repeatPercentage = Number(values.repeatPercentage);
+    const difficultyPercents = [
+      easyPercentage,
+      mediumPercentage,
+      hardPercentage,
+      repeatPercentage,
+    ];
+
+    if (
+      difficultyPercents.some(
+        (value) => !Number.isFinite(value) || value < 0 || value > 100,
+      )
+    ) {
+      toast.error("Difficulty and repeat percentages must be between 0 and 100.");
+      return;
+    }
+
+    if (easyPercentage + mediumPercentage + hardPercentage !== 100) {
+      toast.error("Easy + Medium + Hard percentages must total 100.");
       return;
     }
 

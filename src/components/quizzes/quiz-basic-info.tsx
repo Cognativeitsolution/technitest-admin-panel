@@ -19,7 +19,7 @@ const readOnlyClassName =
 
 const levelOptions = [
   { value: "beginner", label: "Beginner" },
-  { value: "intermediate", label: "Skilled" },
+  { value: "intermediate", label: "Intermediate" },
   { value: "advance", label: "Advanced" },
 ];
 
@@ -36,6 +36,53 @@ const waitUnitOptions: { value: WaitUnit; label: string }[] = [
   { value: "years", label: "Years" },
 ];
 
+const percentageOptions = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+
+function normalizePercentage(value: string | null | undefined, fallback: number) {
+  if (value == null || value.trim() === "") return String(fallback);
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return String(fallback);
+  return String(parsed);
+}
+
+function PercentageSelect({
+  value,
+  onChange,
+  readonly,
+  fallback,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+  readonly?: boolean;
+  fallback: number;
+}) {
+  const selected = normalizePercentage(value, fallback);
+
+  return (
+    <div className="relative">
+      <select
+        value={selected}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={readonly}
+        className={cn(
+          readonly ? readOnlyClassName : inputClassName,
+          "appearance-none pr-10",
+        )}
+      >
+        {!percentageOptions.includes(Number(selected)) ? (
+          <option value={selected}>{selected}%</option>
+        ) : null}
+        {percentageOptions.map((option) => (
+          <option key={option} value={String(option)}>
+            {option}%
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-[#9ca3af]" />
+    </div>
+  );
+}
+
 export type QuizBasicInfoValues = {
   quizName: string;
   categoryId: number | null;
@@ -44,6 +91,10 @@ export type QuizBasicInfoValues = {
   passingScore: string;
   minAttempt: string;
   displayCount: string;
+  easyPercentage: string;
+  mediumPercentage: string;
+  hardPercentage: string;
+  repeatPercentage: string;
   description: string;
   imageUrl: string;
   negativeMarkingValue: string;
@@ -64,6 +115,10 @@ export const emptyQuizBasicInfoValues: QuizBasicInfoValues = {
   passingScore: "50",
   minAttempt: "1",
   displayCount: "1",
+  easyPercentage: "30",
+  mediumPercentage: "50",
+  hardPercentage: "20",
+  repeatPercentage: "30",
   description: "",
   imageUrl: "",
   negativeMarkingValue: "0",
@@ -359,6 +414,46 @@ export function QuizBasicInfo({
               readOnly={readonly}
               min={1}
               className={readonly ? readOnlyClassName : inputClassName}
+            />
+          </Field>
+          <Field
+            label="Easy (%)"
+            required
+            hint="Default 30%. Easy + Medium + Hard should total 100."
+          >
+            <PercentageSelect
+              value={value.easyPercentage}
+              onChange={(next) => patch({ easyPercentage: next })}
+              readonly={readonly}
+              fallback={30}
+            />
+          </Field>
+          <Field label="Medium (%)" required hint="Default 50%.">
+            <PercentageSelect
+              value={value.mediumPercentage}
+              onChange={(next) => patch({ mediumPercentage: next })}
+              readonly={readonly}
+              fallback={50}
+            />
+          </Field>
+          <Field label="Hard (%)" required hint="Default 20%.">
+            <PercentageSelect
+              value={value.hardPercentage}
+              onChange={(next) => patch({ hardPercentage: next })}
+              readonly={readonly}
+              fallback={20}
+            />
+          </Field>
+          <Field
+            label="Repeat (%)"
+            required
+            hint="Default 30%. How much question repeat is allowed across attempts."
+          >
+            <PercentageSelect
+              value={value.repeatPercentage}
+              onChange={(next) => patch({ repeatPercentage: next })}
+              readonly={readonly}
+              fallback={30}
             />
           </Field>
           <Field label="Description" required>
