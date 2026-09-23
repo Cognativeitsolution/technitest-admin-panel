@@ -11,6 +11,14 @@ export type QuizInfoCategory = {
   } | null;
 };
 
+export type WaitUnit = "hours" | "days" | "weeks" | "months" | "years";
+
+export type AttemptRuleTier = {
+  attempt_number: number;
+  duration: number;
+  unit: WaitUnit;
+};
+
 export type QuizInfoListItem = {
   id: number;
   name: string;
@@ -20,6 +28,8 @@ export type QuizInfoListItem = {
   category_id?: number;
   passing_score?: number;
   min_attempt?: number;
+  display_count?: number | null;
+  attempt_rules?: AttemptRuleTier[] | null;
   shuffle_questions?: boolean;
   is_negative_marking?: boolean;
   negative_marking_value?: number;
@@ -49,6 +59,8 @@ export type QuizInfoCreatePayload = {
   category_id: number;
   passing_score: number;
   min_attempt: number;
+  display_count?: number | null;
+  attempt_rules?: AttemptRuleTier[] | null;
   shuffle_questions: boolean;
   is_negative_marking: boolean;
   negative_marking_value: number | null;
