@@ -29,10 +29,16 @@ function mapFromApi(quiz: QuizInfoListItem): QuizBasicInfoValues {
     difficultyLevel: (quiz.difficulty_level ?? "beginner") as string,
     skillLevel: (quiz.skill_level ?? "student") as string,
     passingScore: String(quiz.passing_score ?? 50),
-    maxAttempts: String(quiz.min_attempt ?? 3),
+    minAttempt: String(quiz.min_attempt ?? 1),
+    displayCount: String(quiz.display_count ?? 1),
     description: quiz.description ?? "",
     imageUrl: quiz.image_url ?? "",
     negativeMarkingValue: String(quiz.negative_marking_value ?? 0),
+    attemptRules: (quiz.attempt_rules ?? []).map((rule) => ({
+      attempt_number: rule.attempt_number,
+      duration: rule.duration,
+      unit: rule.unit,
+    })),
     rules: {
       shuffleQuestions: quiz.shuffle_questions ?? false,
       allowNegativeMarking: quiz.is_negative_marking ?? false,
@@ -54,7 +60,7 @@ export function QuizDetailView({
   initialCategoryId,
 }: QuizDetailViewProps) {
   const router = useRouter();
-  const { quiz, loading, error, reload } = useQuizInfo(isNew ? null : (quizId ?? null));
+  const { quiz, loading, error } = useQuizInfo(isNew ? null : (quizId ?? null));
 
   const [values, setValues] = useState<QuizBasicInfoValues>(() =>
     isNew && initialCategoryId
@@ -72,13 +78,19 @@ export function QuizDetailView({
 
   function buildPayload(): QuizInfoCreatePayload {
     return {
-      name: values.quizName,
-      description: values.description,
+      name: values.quizName.trim(),
+      description: values.description.trim(),
       difficulty_level: values.difficultyLevel as QuizDifficultyLevel,
       skill_level: values.skillLevel as QuizSkillLevel,
       category_id: values.categoryId ?? 0,
       passing_score: Number(values.passingScore) || 40,
-      min_attempt: Number(values.maxAttempts) || 1,
+      min_attempt: Math.max(1, Number(values.minAttempt) || 1),
+      display_count: Math.max(1, Number(values.displayCount) || 1),
+      attempt_rules: values.attemptRules.map((rule) => ({
+        attempt_number: rule.attempt_number,
+        duration: Math.max(1, Number(rule.duration) || 1),
+        unit: rule.unit,
+      })),
       shuffle_questions: values.rules.shuffleQuestions,
       is_negative_marking: values.rules.allowNegativeMarking,
       negative_marking_value: values.rules.allowNegativeMarking
@@ -90,6 +102,34 @@ export function QuizDetailView({
   async function handleSave() {
     if (!values.quizName.trim() || values.categoryId === null) {
       toast.error("Quiz name and subcategory are required.");
+      return;
+    }
+
+    if (!values.description.trim()) {
+      toast.error("Description is required.");
+      return;
+    }
+
+    const minAttempt = Number(values.minAttempt);
+    if (!Number.isFinite(minAttempt) || minAttempt < 1) {
+      toast.error("Free attempts must be at least 1.");
+      return;
+    }
+
+    const displayCount = Number(values.displayCount);
+    if (!Number.isFinite(displayCount) || displayCount < 1) {
+      toast.error("Display count must be at least 1.");
+      return;
+    }
+
+    const invalidRule = values.attemptRules.find(
+      (rule) =>
+        !Number.isFinite(rule.duration) ||
+        rule.duration < 1 ||
+        rule.attempt_number < 2,
+    );
+    if (invalidRule) {
+      toast.error("Each attempt wait rule needs attempt # ≥ 2 and duration ≥ 1.");
       return;
     }
 
@@ -108,7 +148,7 @@ export function QuizDetailView({
       } else if (quizId) {
         await quizInfoService.update(quizId, buildPayload(), imageFile);
         toast.success("Quiz updated successfully");
-        reload();
+        router.push("/quizzes");
       }
     } catch (err) {
       toast.error(ApiError.fromAxiosError(err).message);

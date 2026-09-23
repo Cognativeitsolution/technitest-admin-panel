@@ -31,7 +31,7 @@ export function Header({ className }: HeaderProps) {
           <Menu className="size-5" />
         </button>
         <Image
-          src="/TechLogo2.png"
+          src="/Brown.png"
           alt="Technitest"
           width={160}
           height={120}

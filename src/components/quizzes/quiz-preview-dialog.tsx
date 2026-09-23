@@ -89,8 +89,22 @@ export function QuizPreviewDialog({ open, quizId, onClose }: QuizPreviewDialogPr
             <InfoRow label="Difficulty Level" value={capitalize(quiz.difficulty_level)} />
             <InfoRow label="Skill Level" value={capitalize(quiz.skill_level)} />
             <InfoRow label="Passing Score" value={`${quiz.passing_score ?? 0}%`} />
-            <InfoRow label="Max Attempts" value={quiz.min_attempt ?? 1} />
+            <InfoRow label="Free Attempts" value={quiz.min_attempt ?? 1} />
+            <InfoRow label="Display Count" value={quiz.display_count ?? "—"} />
             <InfoRow label="Total Questions" value={quiz.total_questions ?? questions.length ?? 0} />
+            <InfoRow
+              label="Attempt Wait Rules"
+              value={
+                quiz.attempt_rules?.length
+                  ? quiz.attempt_rules
+                      .map(
+                        (rule) =>
+                          `#${rule.attempt_number}: ${rule.duration} ${rule.unit}`,
+                      )
+                      .join(", ")
+                  : "None"
+              }
+            />
             <InfoRow
               label="Total Duration"
               value={
