@@ -145,7 +145,7 @@ export default function DashboardPage() {
         <TopCategories className="w-full" categories={stats.top_categories ?? []} />
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-3 xl:items-stretch">
+      <div className="grid gap-4 lg:grid-cols-3 lg:items-stretch">
         <QuizAttemptChart className="w-full" data={stats.quiz_trend.data} />
         <QuizTrendByCountryChart
           className="w-full"
