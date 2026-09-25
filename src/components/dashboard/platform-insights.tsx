@@ -130,10 +130,10 @@ export function PlatformInsights({ stats, className }: PlatformInsightsProps) {
       )}
     >
       <div className="mb-4 flex items-center gap-2.5">
-        <span className="flex size-8 items-center justify-center rounded-lg bg-[#dbeafe] text-[#2563eb]">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[#dbeafe] text-[#2563eb]">
           <LineChart className="size-4" />
         </span>
-        <h2 className="text-[18px] font-bold text-[#1e3a5f]">Platform Insights</h2>
+        <h2 className="text-[16px] font-bold text-[#1e3a5f]">Platform Insights</h2>
       </div>
 
       {insights.length === 0 ? (
@@ -145,11 +145,11 @@ export function PlatformInsights({ stats, className }: PlatformInsightsProps) {
           {insights.map((item) => {
             const Icon = item.icon;
             return (
-              <li key={item.id} className="flex items-start gap-3 py-3.5 first:pt-0 last:pb-0">
-                <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-[#e8f1ff] text-[#1e40af]">
-                  <Icon className="size-4" />
+              <li key={item.id} className="flex items-start gap-2.5 py-2.5 first:pt-0 last:pb-0">
+                <span className="inline-flex size-8 shrink-0 translate-y-px items-center justify-center self-start rounded-full bg-[#e8f1ff] text-[#1e40af]">
+                  <Icon className="size-3.5" />
                 </span>
-                <p className="text-[14px] leading-snug font-medium text-[#1e3a5f]">
+                <p className="min-w-0 flex-1 pt-1 text-[13px] leading-5 font-medium text-[#1e3a5f]">
                   {item.text}
                 </p>
               </li>
