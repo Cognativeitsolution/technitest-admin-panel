@@ -1,27 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  Activity,
-  Award,
-  BookOpen,
-  Check,
-  ChevronDown,
-  MessageSquare,
-  Sparkles,
-  Users,
-} from "lucide-react";
+import Image from "next/image";
+import { Check, ChevronDown } from "lucide-react";
 
 import type { RecentActivityItem } from "@/services/dashboard.service";
 import { ActivityFilter } from "@/types/dashboard.types";
-import { DashboardPanelHeader } from "@/components/dashboard/dashboard-panel-header";
-import {
-  ACTIVITY_THEMES,
-  dashboardCardClass,
-  dashboardEmptyStateClass,
-  dashboardScrollListClass,
-  dashboardScrollListHeightClass,
-} from "@/components/dashboard/dashboard-styles";
 import { cn } from "@/lib/utils";
 
 const FILTER_OPTIONS: { id: ActivityFilter; label: string }[] = [
@@ -51,32 +35,27 @@ function mapActivityCategory(type: string): ActivityCategory {
   return "other";
 }
 
-function getActivityIcon(category: ActivityCategory) {
-  switch (category) {
-    case "quizzes":
-      return BookOpen;
-    case "certificates":
-      return Award;
-    case "referrals":
-      return Users;
-    case "reviews":
-      return MessageSquare;
-    default:
-      return Sparkles;
-  }
-}
-
 function formatActivityTime(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
 
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
+  const day = date.getDate();
+  const month = date.getMonth() + 1;
+  const year = date.getFullYear();
+  return `${day}-${month}-${year}`;
+}
+
+function parseScorePercent(detail: string | null | undefined) {
+  if (!detail) return null;
+  const match = detail.match(/(-?\d+(?:\.\d+)?)\s*%/);
+  if (!match) return null;
+  return Number(match[1]);
+}
+
+function scoreBadgeClass(percent: number) {
+  if (percent >= 80) return "bg-[#dcfce7] text-[#15803d]";
+  if (percent >= 50) return "bg-[#fef3c7] text-[#b45309]";
+  return "bg-[#fee2e2] text-[#dc2626]";
 }
 
 function isToday(value: string) {
@@ -124,67 +103,71 @@ export function RecentActivity({ activities = [], className }: RecentActivityPro
     };
   }, [dropdownOpen]);
 
-  const filteredActivities = filterActivities(activities, filter);
-  const currentFilterLabel = FILTER_OPTIONS.find((f) => f.id === filter)?.label || "All Activities";
+  const filteredActivities = filterActivities(activities, filter).slice(0, 12);
+  const currentFilterLabel =
+    FILTER_OPTIONS.find((f) => f.id === filter)?.label || "All Activities";
 
   return (
-    <section className={cn("flex h-full min-w-0 flex-col", dashboardCardClass, className)}>
-      <DashboardPanelHeader
-        icon={Activity}
-        iconWrapClassName="bg-[#ede9fe]"
-        iconClassName="text-[#7c3aed]"
-        title="Recent User Activity"
-        subtitle="Latest platform events"
-        badge={{ label: "Showing", value: filteredActivities.length }}
-        wideBadge
-        actions={
-          <div className="relative w-full sm:w-auto" ref={dropdownRef}>
-            <button
-              type="button"
-              onClick={() => setDropdownOpen((prev) => !prev)}
-              className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-[#e5e7eb] bg-white px-3 text-xs font-semibold text-[#374151] shadow-xs transition hover:bg-[#f9fafb] sm:w-auto sm:justify-start"
-            >
-              <span>{currentFilterLabel}</span>
-              <ChevronDown
-                className={cn(
-                  "size-3.5 text-[#9ca3af] transition-transform",
-                  dropdownOpen && "rotate-180",
-                )}
-              />
-            </button>
+    <section
+      className={cn(
+        "flex h-[420px] min-w-0 flex-col rounded-[10px] border border-[#e5eaf2] bg-white p-5 shadow-[0_8px_24px_rgba(15,23,42,0.04)]",
+        className,
+      )}
+    >
+      <div className="mb-4 flex shrink-0 flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-[18px] font-bold text-[#1e293b]">Recent User Activity</h2>
+          <p className="mt-0.5 text-[12px] font-medium text-[#64748b]">
+            Latest quiz attempts, certificates, and platform events
+          </p>
+        </div>
 
-            {dropdownOpen ? (
-              <div className="absolute right-0 top-[calc(100%+6px)] z-30 w-full overflow-hidden rounded-xl border border-[#eef1f6] bg-white py-1 shadow-lg sm:w-48">
-                {FILTER_OPTIONS.map((opt) => {
-                  const isSelected = filter === opt.id;
-                  return (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => {
-                        setFilter(opt.id);
-                        setDropdownOpen(false);
-                      }}
-                      className={cn(
-                        "flex w-full items-center justify-between px-3.5 py-2 text-left text-xs font-medium transition",
-                        isSelected
-                          ? "bg-[#eff6ff] text-[#2563eb]"
-                          : "text-[#374151] hover:bg-[#f8fafc]",
-                      )}
-                    >
-                      <span>{opt.label}</span>
-                      {isSelected ? <Check className="size-3.5" /> : null}
-                    </button>
-                  );
-                })}
-              </div>
-            ) : null}
-          </div>
-        }
-      />
+        <div className="relative" ref={dropdownRef}>
+          <button
+            type="button"
+            onClick={() => setDropdownOpen((prev) => !prev)}
+            className="inline-flex h-8 items-center gap-1 rounded-md px-2 text-[13px] font-medium text-[#64748b] transition hover:bg-[#f8fafc] hover:text-[#1e293b]"
+          >
+            <span>{currentFilterLabel}</span>
+            <ChevronDown
+              className={cn(
+                "size-3.5 transition-transform",
+                dropdownOpen && "rotate-180",
+              )}
+            />
+          </button>
+
+          {dropdownOpen ? (
+            <div className="absolute right-0 top-[calc(100%+4px)] z-30 w-48 overflow-hidden rounded-lg border border-[#e5eaf2] bg-white py-1 shadow-lg">
+              {FILTER_OPTIONS.map((opt) => {
+                const isSelected = filter === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => {
+                      setFilter(opt.id);
+                      setDropdownOpen(false);
+                    }}
+                    className={cn(
+                      "flex w-full items-center justify-between px-3 py-2 text-left text-xs font-medium transition",
+                      isSelected
+                        ? "bg-[#eff6ff] text-[#2563eb]"
+                        : "text-[#334155] hover:bg-[#f8fafc]",
+                    )}
+                  >
+                    <span>{opt.label}</span>
+                    {isSelected ? <Check className="size-3" /> : null}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+        </div>
+      </div>
 
       {filteredActivities.length === 0 ? (
-        <div className={cn(dashboardEmptyStateClass, dashboardScrollListHeightClass)}>
+        <div className="flex min-h-0 flex-1 items-center justify-center rounded-xl border border-dashed border-[#e5e7eb] bg-[#fafbfc] text-sm font-medium text-[#64748b]">
           <div className="text-center">
             <p>No activities found for this filter.</p>
             {filter !== "all" ? (
@@ -199,38 +182,78 @@ export function RecentActivity({ activities = [], className }: RecentActivityPro
           </div>
         </div>
       ) : (
-        <ul className={dashboardScrollListClass}>
-          {filteredActivities.map((activity) => {
-            const category = mapActivityCategory(activity.type);
-            const theme = ACTIVITY_THEMES[category];
-            const Icon = getActivityIcon(category);
+        <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto pr-1">
+          <table className="w-full table-fixed border-collapse text-left">
+            <thead className="sticky top-0 z-10 bg-white">
+              <tr className="border-b border-[#eef2f7]">
+                <th className="w-10 pb-3 pr-2 text-[12px] font-semibold text-[#64748b]">#</th>
+                <th className="w-[28%] pb-3 pr-2 text-[12px] font-semibold text-[#64748b]">User</th>
+                <th className="w-[36%] pb-3 pr-2 text-[12px] font-semibold text-[#64748b]">Subject</th>
+                <th className="w-[16%] pb-3 pr-2 text-[12px] font-semibold text-[#64748b]">Score</th>
+                <th className="w-[20%] pb-3 text-[12px] font-semibold text-[#64748b]">Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredActivities.map((activity, index) => {
+                const scorePercent = parseScorePercent(activity.detail);
 
-            return (
-              <li
-                key={`${activity.type}-${activity.reference_id}`}
-                className={cn(
-                  "flex flex-col gap-2 rounded-xl border px-3 py-2.5 transition hover:brightness-[0.99] sm:flex-row sm:items-center sm:justify-between sm:gap-4",
-                  theme.card,
-                )}
-              >
-                <div className="flex min-w-0 items-center gap-3">
-                  <div
-                    className={cn(
-                      "flex size-9 shrink-0 items-center justify-center rounded-lg shadow-sm",
-                      theme.icon,
-                    )}
+                return (
+                  <tr
+                    key={`${activity.type}-${activity.reference_id}-${activity.created_at}`}
+                    className="border-b border-[#eef2f7] last:border-0"
                   >
-                    <Icon className="size-4" />
-                  </div>
-                  <p className="text-sm font-semibold text-[#111827]">{activity.description}</p>
-                </div>
-                <span className="shrink-0 pl-12 text-xs font-medium text-[#6b7280] sm:pl-0 sm:text-right">
-                  {formatActivityTime(activity.created_at)}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
+                    <td className="py-3 pr-2 align-middle text-[14px] font-bold text-[#1e293b]">
+                      {index + 1}
+                    </td>
+                    <td className="py-3 pr-2 align-middle">
+                      <div className="flex min-w-0 items-center gap-2">
+                        {activity.avatar_url ? (
+                          <Image
+                            src={activity.avatar_url}
+                            alt={activity.username}
+                            width={28}
+                            height={28}
+                            className="size-7 shrink-0 rounded-full object-cover"
+                          />
+                        ) : (
+                          <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#1e3a5f] text-[11px] font-bold text-white">
+                            {activity.username?.charAt(0).toUpperCase() || "U"}
+                          </span>
+                        )}
+                        <span className="truncate text-[13px] font-semibold text-[#1e293b]">
+                          {activity.username}
+                        </span>
+                      </div>
+                    </td>
+                    <td
+                      className="truncate py-3 pr-2 align-middle text-[13px] font-semibold text-[#1e293b]"
+                      title={activity.subject || undefined}
+                    >
+                      {activity.subject || "—"}
+                    </td>
+                    <td className="py-3 pr-2 align-middle">
+                      {scorePercent != null ? (
+                        <span
+                          className={cn(
+                            "inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold",
+                            scoreBadgeClass(scorePercent),
+                          )}
+                        >
+                          {Math.round(scorePercent)}%
+                        </span>
+                      ) : (
+                        <span className="text-[13px] font-medium text-[#94a3b8]">—</span>
+                      )}
+                    </td>
+                    <td className="whitespace-nowrap py-3 align-middle text-[12px] font-medium text-[#475569]">
+                      {formatActivityTime(activity.created_at)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
     </section>
   );

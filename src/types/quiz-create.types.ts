@@ -3,6 +3,8 @@ import type { PaginatedData } from "@/types/api.types";
 export type QuizQuestionType = "mcq" | "tf" | "blanks" | "image_mcq";
 export type QuizSourceType = "manual" | "ai";
 
+export type QuizQuestionDifficulty = "easy" | "medium" | "hard";
+
 export type QuizOptionCreate = {
   option_text: string;
   is_correct: boolean;
@@ -16,6 +18,8 @@ export type QuizQuestionCreatePayload = {
   source_type: QuizSourceType;
   option: QuizOptionCreate[];
   image_url?: string | null;
+  difficulty?: QuizQuestionDifficulty;
+  explanation?: string | null;
 };
 
 export type QuizQuestionsBulkCreatePayload = {
@@ -31,6 +35,8 @@ export type QuizQuestionUpdatePayload = {
   option?: QuizOptionCreate[] | null;
   is_active?: boolean | null;
   image_url?: string | null;
+  difficulty?: QuizQuestionDifficulty | null;
+  explanation?: string | null;
 };
 
 export type QuizAdminOption = QuizOptionCreate & {

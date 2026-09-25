@@ -70,19 +70,27 @@ function resolveRawImageUrl(question: AiGeneratedQuestion): string | null {
 export function toQuestionImageSrc(value?: string | null): string | null {
   const trimmed = value?.trim();
   if (!trimmed) return null;
-  if (trimmed.startsWith("/ai-uploads/") || trimmed.startsWith("/media/")) {
+  // Filenames used as upload placeholders are not displayable URLs.
+  if (!trimmed.includes("/") && !trimmed.includes("\\") && !isHttpUrl(trimmed)) {
+    return null;
+  }
+  if (trimmed.startsWith("/ai-uploads/")) {
     return trimmed;
   }
+  if (trimmed.startsWith("/media/")) {
+    return `${env.API_BASE_URL}${trimmed}`;
+  }
   if (trimmed.startsWith("media/")) {
-    return `/${trimmed}`;
+    return `${env.API_BASE_URL}/${trimmed}`;
   }
   if (isHttpUrl(trimmed)) {
     try {
       const url = new URL(trimmed);
       const uploadPath = extractUploadPath(url.pathname);
       if (uploadPath) return toProxiedUploadUrl(uploadPath);
+      // Keep absolute media URLs so images load from the API host.
       if (url.pathname.startsWith("/media/")) {
-        return `${url.pathname}${url.search}`;
+        return trimmed;
       }
     } catch {
       // keep the original URL
