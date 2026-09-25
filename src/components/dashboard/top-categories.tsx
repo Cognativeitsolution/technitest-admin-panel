@@ -1,18 +1,17 @@
 "use client";
 
-import Image from "next/image";
-import { BookOpen, FolderOpen, Layers } from "lucide-react";
+import { useMemo } from "react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 import type { TopCategoryItem } from "@/services/dashboard.service";
-import { DashboardPanelHeader } from "@/components/dashboard/dashboard-panel-header";
-import {
-  dashboardCardClass,
-  dashboardEmptyStateClass,
-  dashboardScrollListClass,
-  dashboardScrollListHeightClass,
-  getRankTheme,
-  RANK_COLORS,
-} from "@/components/dashboard/dashboard-styles";
 import { cn } from "@/lib/utils";
 
 type TopCategoriesProps = {
@@ -20,102 +19,126 @@ type TopCategoriesProps = {
   className?: string;
 };
 
+const ATTEMPTS_COLOR = "#38bdf8";
+const QUIZZES_COLOR = "#14b8a6";
+const AVG_COLOR = "#8b5cf6";
+
+function shortLabel(title: string) {
+  if (title.length <= 14) return title;
+  return `${title.slice(0, 12)}…`;
+}
+
 export function TopCategories({ categories = [], className }: TopCategoriesProps) {
-  const maxAttempts = Math.max(...categories.map((item) => item.attempt_count), 1);
-  const totalAttempts = categories.reduce((sum, item) => sum + item.attempt_count, 0);
+  const chartData = useMemo(() => {
+    return categories.slice(0, 6).map((category) => {
+      const attempts = Number(category.attempt_count) || 0;
+      const quizzes = Number(category.quiz_count) || 0;
+      const avg = quizzes > 0 ? Number((attempts / quizzes).toFixed(1)) : 0;
+      return {
+        name: shortLabel(category.title),
+        fullName: category.title,
+        attempts,
+        quizzes,
+        avg,
+      };
+    });
+  }, [categories]);
 
   return (
-    <section className={cn("flex h-full min-w-0 flex-col", dashboardCardClass, className)}>
-      <DashboardPanelHeader
-        icon={FolderOpen}
-        iconWrapClassName="bg-[#ffedd5]"
-        iconClassName="text-[#ea580c]"
-        title="Top Categories"
-        subtitle="Ranked by quiz attempts"
-        badge={categories.length > 0 ? { label: "Total", value: totalAttempts } : undefined}
-      />
+    <section
+      className={cn(
+        "flex h-full min-w-0 flex-col rounded-[10px] border border-[#e5eaf2] bg-white p-5 shadow-[0_8px_24px_rgba(15,23,42,0.04)]",
+        className,
+      )}
+    >
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-[18px] font-bold text-[#1e293b]">Top Categories</h2>
+        <div className="flex flex-wrap items-center gap-4 text-[12px] font-medium text-[#64748b]">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="size-2.5 rounded-full" style={{ backgroundColor: ATTEMPTS_COLOR }} />
+            Attempts
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="size-2.5 rounded-full" style={{ backgroundColor: QUIZZES_COLOR }} />
+            Quizzes
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="size-2.5 rounded-full" style={{ backgroundColor: AVG_COLOR }} />
+            Avg / Quiz
+          </span>
+        </div>
+      </div>
 
-      {categories.length === 0 ? (
-        <div className={cn(dashboardEmptyStateClass, dashboardScrollListHeightClass)}>
+      {chartData.length === 0 ? (
+        <div className="flex min-h-70 flex-1 items-center justify-center rounded-xl border border-dashed border-[#e5e7eb] bg-[#fafbfc] text-sm font-medium text-[#64748b]">
           No data found
         </div>
       ) : (
-        <ul className={dashboardScrollListClass}>
-          {categories.map((category, index) => {
-            const theme = getRankTheme(index);
-            const progress = (category.attempt_count / maxAttempts) * 100;
-
-            return (
-              <li
-                key={category.category_id}
-                className={cn(
-                  "shrink-0 overflow-hidden rounded-xl border px-2.5 py-2.5 sm:px-3",
-                  theme.card,
-                )}
-              >
-                <div className="flex items-start gap-2 sm:items-center sm:gap-3">
-                  <span
-                    className="flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-extrabold text-white shadow-sm sm:size-8 sm:text-xs"
-                    style={{ backgroundColor: RANK_COLORS[index] ?? RANK_COLORS[3] }}
-                  >
-                    {index + 1}
-                  </span>
-
-                  {category.image_url ? (
-                    <Image
-                      src={category.image_url}
-                      alt={category.title}
-                      width={40}
-                      height={40}
-                      className="size-9 shrink-0 rounded-lg border border-white/80 object-cover shadow-sm sm:size-10"
-                    />
-                  ) : (
-                    <div
-                      className={cn(
-                        "flex size-9 shrink-0 items-center justify-center rounded-lg shadow-sm sm:size-10",
-                        theme.icon,
-                      )}
-                    >
-                      <Layers className="size-4" />
-                    </div>
-                  )}
-
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-bold text-[#111827]">{category.title}</p>
-                    <div className="mt-1">
-                      <span
-                        className={cn(
-                          "inline-flex max-w-full items-center gap-1 truncate rounded-md px-2 py-0.5 text-[10px] font-semibold",
-                          theme.pill,
-                        )}
-                      >
-                        <BookOpen className="size-3 shrink-0" />
-                        {category.quiz_count}{" "}
-                        {category.quiz_count === 1 ? "Quiz" : "Quizzes"}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="shrink-0 text-right">
-                    <p className="text-[10px] font-medium uppercase tracking-wide text-[#9ca3af]">
-                      Attempts
-                    </p>
-                    <p className={cn("text-base font-extrabold leading-none sm:text-lg", theme.accent)}>
-                      {category.attempt_count.toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-white/70">
-                  <div
-                    className={cn("h-full max-w-full rounded-full transition-all duration-500", theme.bar)}
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+        <div className="min-h-70 w-full flex-1">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={chartData}
+              margin={{ top: 8, right: 8, left: -8, bottom: 4 }}
+              barCategoryGap="26%"
+              barGap={3}
+            >
+              <CartesianGrid stroke="#eef2f7" vertical={false} />
+              <XAxis
+                dataKey="name"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "#64748b", fontSize: 12, fontWeight: 500 }}
+              />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "#94a3b8", fontSize: 12 }}
+                allowDecimals={false}
+              />
+              <Tooltip
+                cursor={{ fill: "rgba(148,163,184,0.08)" }}
+                contentStyle={{
+                  borderRadius: 12,
+                  border: "1px solid #e5e7eb",
+                  boxShadow: "0 8px 20px rgba(0,0,0,0.06)",
+                }}
+                labelFormatter={(_, payload) =>
+                  String(payload?.[0]?.payload?.fullName ?? "")
+                }
+                formatter={(value, name) => {
+                  const label =
+                    name === "attempts"
+                      ? "Attempts"
+                      : name === "quizzes"
+                        ? "Quizzes"
+                        : "Avg / Quiz";
+                  return [value, label];
+                }}
+              />
+              <Bar
+                dataKey="attempts"
+                fill={ATTEMPTS_COLOR}
+                radius={[10, 10, 0, 0]}
+                barSize={16}
+                background={{ fill: "#e0f2fe" }}
+              />
+              <Bar
+                dataKey="quizzes"
+                fill={QUIZZES_COLOR}
+                radius={[10, 10, 0, 0]}
+                barSize={16}
+                background={{ fill: "#ccfbf1" }}
+              />
+              <Bar
+                dataKey="avg"
+                fill={AVG_COLOR}
+                radius={[10, 10, 0, 0]}
+                barSize={16}
+                background={{ fill: "#ede9fe" }}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       )}
     </section>
   );

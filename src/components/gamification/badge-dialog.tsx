@@ -28,10 +28,17 @@ export function BadgeDialog({ open, onClose, mode, badge, submitting, onSubmit }
   const [difficultyLevel, setDifficultyLevel] = useState(badge?.difficulty_level ?? difficultyLevelOptions[0]);
   const [type, setType] = useState(badge?.type ?? badgeTypeOptions[0]);
   const [price, setPrice] = useState(badge ? String(badge.price) : "0");
+  const [discountPercent, setDiscountPercent] = useState(
+    badge?.discount_percent != null ? String(badge.discount_percent) : "0",
+  );
   const [validityYears, setValidityYears] = useState(badge ? String(badge.validity_years) : "1");
   const [image, setImage] = useState<File | null>(null);
 
   const title = mode === "create" ? "Add Badge" : "Edit Badge";
+  const isPaid = type !== "free";
+  const priceValue = Number(price) || 0;
+  const discountValue = Math.min(100, Math.max(0, Number(discountPercent) || 0));
+  const finalPrice = Math.max(0, priceValue - (priceValue * discountValue) / 100);
 
   async function handleSave() {
     if (!name.trim()) {
@@ -41,7 +48,8 @@ export function BadgeDialog({ open, onClose, mode, badge, submitting, onSubmit }
       badge_name: name.trim(),
       difficulty_level: difficultyLevel,
       type,
-      price: type === "free" ? 0 : Number(price) || 0,
+      price: isPaid ? priceValue : 0,
+      discount_percent: isPaid ? discountValue : 0,
       validity_years: Number(validityYears) || 1,
     };
     const success = await onSubmit(payload, image);
@@ -92,19 +100,41 @@ export function BadgeDialog({ open, onClose, mode, badge, submitting, onSubmit }
           />
         </div>
 
-        {type !== "free" && <div className="flex flex-col gap-2.5">
-          <label className="text-[14px] font-medium text-[#111111]">Price ($)</label>
-          <input
-            type="number"
-            min={0}
-            step="0.01"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            disabled={type === "free"}
-            className={`${inputClassName} disabled:bg-[#f9fafb] disabled:text-[#6b7280]`}
-            placeholder="Enter price"
-          />
-        </div>}
+        {isPaid ? (
+          <>
+            <div className="flex flex-col gap-2.5">
+              <label className="text-[14px] font-medium text-[#111111]">Price ($)</label>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                className={inputClassName}
+                placeholder="Enter price"
+              />
+            </div>
+
+            <div className="flex flex-col gap-2.5">
+              <label className="text-[14px] font-medium text-[#111111]">
+                Discount (%)
+              </label>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                step="1"
+                value={discountPercent}
+                onChange={(e) => setDiscountPercent(e.target.value)}
+                className={inputClassName}
+                placeholder="e.g. 20"
+              />
+              <p className="text-[12px] text-[#6b7280]">
+                Final price: ${Number.isInteger(finalPrice) ? finalPrice : finalPrice.toFixed(2)}
+              </p>
+            </div>
+          </>
+        ) : null}
 
         <div className="flex flex-col gap-2.5">
           <label className="text-[14px] font-medium text-[#111111]">

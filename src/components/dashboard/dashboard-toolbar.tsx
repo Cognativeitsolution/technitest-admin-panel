@@ -22,15 +22,17 @@ export function DashboardToolbar({
   const isFiltered = Boolean(dateRange.start || dateRange.end);
 
   return (
-    <div className="mb-6 rounded-2xl border border-[#eef1f6] bg-linear-to-r from-white to-[#fafbfc] p-5 shadow-[0_1px_3px_rgba(16,24,40,0.04)]">
+    <div className="rounded-[10px] border border-[#e5eaf2] bg-white p-5 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-start gap-3">
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#dbeafe] shadow-sm">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#dbeafe]">
             <LayoutDashboard className="size-5 text-[#2563eb]" />
           </div>
           <div>
-            <h1 className="text-[28px] font-extrabold tracking-tight text-[#111827]">{title}</h1>
-            <p className="mt-0.5 text-sm text-[#6b7280]">
+            <h1 className="text-[22px] font-bold tracking-tight text-[#1e293b] sm:text-[24px]">
+              {title}
+            </h1>
+            <p className="mt-0.5 text-sm text-[#64748b]">
               Overview of platform metrics, user engagement, quizzes, and revenue.
             </p>
           </div>
@@ -49,7 +51,7 @@ export function DashboardToolbar({
               type="button"
               onClick={onResetFilters}
               title="Reset Filters"
-              className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-[#e5e7eb] bg-white px-3 text-xs font-semibold text-[#6b7280] shadow-sm transition hover:bg-[#f9fafb] hover:text-[#111827]"
+              className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-[#e5e7eb] bg-white px-3 text-xs font-semibold text-[#64748b] transition hover:bg-[#f8fafc] hover:text-[#1e293b]"
             >
               <RotateCcw className="size-3.5" />
               Reset

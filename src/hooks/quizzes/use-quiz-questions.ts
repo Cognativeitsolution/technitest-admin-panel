@@ -22,12 +22,34 @@ function normalizeQuestion(question: QuizQuestionAdmin): QuizQuestionAdmin {
     image?: unknown;
     imageUrl?: unknown;
     image_path?: unknown;
+    question_image?: unknown;
+    question_image_url?: unknown;
   };
   return {
     ...question,
     image_url:
-      firstString(question.image_url, extra.image, extra.imageUrl, extra.image_path) ??
-      question.image_url,
+      firstString(
+        question.image_url,
+        extra.image,
+        extra.imageUrl,
+        extra.image_path,
+        extra.question_image,
+        extra.question_image_url,
+      ) ?? question.image_url,
+    option: (question.option ?? []).map((opt) => {
+      const optExtra = opt as typeof opt & {
+        image?: unknown;
+        imageUrl?: unknown;
+        image_path?: unknown;
+      };
+      return {
+        ...opt,
+        // Keep option image_url for display fallback only; UI does not upload option images.
+        image_url:
+          firstString(opt.image_url, optExtra.image, optExtra.imageUrl, optExtra.image_path) ??
+          opt.image_url,
+      };
+    }),
   };
 }
 

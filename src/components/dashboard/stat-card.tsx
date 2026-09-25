@@ -1,4 +1,4 @@
-import { type LucideIcon, TrendingDown, TrendingUp } from "lucide-react";
+import { type LucideIcon, ArrowUpRight, ArrowDownRight } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -12,7 +12,7 @@ type StatCardProps = {
   };
   icon: LucideIcon;
   iconWrapClassName: string;
-  iconClassName: string;
+  iconClassName?: string;
   cardClassName?: string;
   trendClassName?: string;
 };
@@ -32,42 +32,45 @@ export function StatCard({
   return (
     <article
       className={cn(
-        "rounded-2xl border p-5 shadow-[0_1px_3px_rgba(16,24,40,0.04)] transition hover:brightness-[0.99]",
-        cardClassName ?? "border-[#eef1f6] bg-white",
+        "rounded-[10px] border border-[#e5eaf2] bg-white p-5",
+        cardClassName,
       )}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-base font-bold text-[#111827] sm:text-lg">{title}</p>
-          <p className="mt-2 text-[28px] font-extrabold tracking-tight text-[#111827]">
-            {value}
-          </p>
-        </div>
+      <div className="flex items-start gap-3.5">
         <div
           className={cn(
-            "flex size-11 items-center justify-center rounded-xl shadow-sm",
+            "flex size-12 shrink-0 items-center justify-center rounded-full",
             iconWrapClassName,
           )}
         >
-          <Icon className={cn("size-5", iconClassName)} />
+          <Icon className={cn("size-5 text-white", iconClassName)} />
         </div>
-      </div>
 
-      <div
-        className={cn(
-          "mt-4 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold",
-          isUp ? "bg-[#fffbeb] text-[#b45309]" : "bg-[#fef2f2] text-[#dc2626]",
-          trendClassName,
-        )}
-      >
-        {isUp ? (
-          <TrendingUp className="size-3.5" />
-        ) : (
-          <TrendingDown className="size-3.5" />
-        )}
-        <span>
-          {trend.value} {isUp ? "Up" : "Down"} {trend.label}
-        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[14px] font-semibold leading-5 text-[#1e293b]">
+            {title}
+          </p>
+          <p className="mt-1 text-[26px] font-extrabold leading-8 tracking-tight text-[#0f172a]">
+            {value}
+          </p>
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[13px]">
+            <span
+              className={cn(
+                "inline-flex items-center gap-0.5 font-semibold",
+                isUp ? "text-[#10b981]" : "text-[#ef4444]",
+                trendClassName,
+              )}
+            >
+              {isUp ? (
+                <ArrowUpRight className="size-3.5" strokeWidth={2.5} />
+              ) : (
+                <ArrowDownRight className="size-3.5" strokeWidth={2.5} />
+              )}
+              {trend.value}
+            </span>
+            <span className="font-medium text-[#64748b]">{trend.label}</span>
+          </div>
+        </div>
       </div>
     </article>
   );

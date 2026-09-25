@@ -5,6 +5,7 @@ import { Award, BookOpenCheck, Users, Wallet, Loader2 } from "lucide-react";
 
 import { DashboardToolbar } from "@/components/dashboard/dashboard-toolbar";
 import { GenerateReportModal } from "@/components/dashboard/generate-report-modal";
+import { PlatformInsights } from "@/components/dashboard/platform-insights";
 import { QuizAttemptChart } from "@/components/dashboard/quiz-attempt-chart";
 import { QuizTrendByCountryChart } from "@/components/dashboard/quiz-trend-by-country-chart";
 import { RecentActivity } from "@/components/dashboard/recent-activity";
@@ -65,63 +66,55 @@ export default function DashboardPage() {
   const statCardsData = [
     {
       title: "Verified Users",
-      value: stats.verified_users.count.toString(),
+      value: stats.verified_users.count.toLocaleString(),
       trend: {
-        value: Math.abs(stats.verified_users.daily_change_percent).toFixed(1) + "%",
+        value: `${Math.abs(stats.verified_users.daily_change_percent).toFixed(1)}%`,
         direction: (
           stats.verified_users.daily_change_percent >= 0 ? "up" : "down"
         ) as "up" | "down",
-        label: "from yesterday",
+        label: "vs. yesterday",
       },
       icon: Users,
-      iconWrapClassName: "bg-[#dbeafe]",
-      iconClassName: "text-[#2563eb]",
-      cardClassName: "border-[#bfdbfe] bg-white",
+      iconWrapClassName: "bg-[#3b82f6]",
     },
     {
       title: "Total Quizzes",
-      value: stats.total_quizzes.count.toString(),
+      value: stats.total_quizzes.count.toLocaleString(),
       trend: {
-        value: Math.abs(stats.total_quizzes.daily_change_percent).toFixed(1) + "%",
+        value: `${Math.abs(stats.total_quizzes.daily_change_percent).toFixed(1)}%`,
         direction: (
           stats.total_quizzes.daily_change_percent >= 0 ? "up" : "down"
         ) as "up" | "down",
-        label: "from yesterday",
+        label: "vs. yesterday",
       },
       icon: BookOpenCheck,
-      iconWrapClassName: "bg-[#ffedd5]",
-      iconClassName: "text-[#ea580c]",
-      cardClassName: "border-[#fed7aa] bg-white",
+      iconWrapClassName: "bg-[#2563eb]",
     },
     {
       title: "Certificates Issued",
-      value: stats.total_certificates.count.toString(),
+      value: stats.total_certificates.count.toLocaleString(),
       trend: {
-        value: Math.abs(stats.total_certificates.daily_change_percent).toFixed(1) + "%",
+        value: `${Math.abs(stats.total_certificates.daily_change_percent).toFixed(1)}%`,
         direction: (
           stats.total_certificates.daily_change_percent >= 0 ? "up" : "down"
         ) as "up" | "down",
-        label: "from yesterday",
+        label: "vs. yesterday",
       },
       icon: Award,
-      iconWrapClassName: "bg-[#dcfce7]",
-      iconClassName: "text-[#16a34a]",
-      cardClassName: "border-[#bbf7d0] bg-white",
+      iconWrapClassName: "bg-[#8b5cf6]",
     },
     {
       title: "Payments Received",
       value: `$${stats.total_payments.total_amount.toLocaleString()}`,
       trend: {
-        value: Math.abs(stats.total_payments.daily_change_percent).toFixed(1) + "%",
+        value: `${Math.abs(stats.total_payments.daily_change_percent).toFixed(1)}%`,
         direction: (
           stats.total_payments.daily_change_percent >= 0 ? "up" : "down"
         ) as "up" | "down",
-        label: "from yesterday",
+        label: "vs. yesterday",
       },
       icon: Wallet,
-      iconWrapClassName: "bg-[#e0f2fe]",
-      iconClassName: "text-[#0284c7]",
-      cardClassName: "border-[#bae6fd] bg-white",
+      iconWrapClassName: "bg-[#0ea5e9]",
     },
   ];
 
@@ -147,28 +140,25 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-3 xl:items-stretch">
-        <div className="xl:col-span-2">
-          <UserGrowthChart data={stats.user_growth.data} />
-        </div>
-        <QuizAttemptChart data={stats.quiz_trend.data} />
-      </div>
-
-      <div className="grid gap-4 xl:grid-cols-3 xl:items-stretch">
-        <div className="flex xl:col-span-2">
-          <QuizTrendByCountryChart
-            className="w-full"
-            data={stats.quiz_trend_by_country?.data ?? []}
-          />
-        </div>
+      <div className="grid gap-4 xl:grid-cols-2 xl:items-stretch">
+        <UserGrowthChart className="w-full" data={stats.user_growth.data} />
         <TopCategories className="w-full" categories={stats.top_categories ?? []} />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-3 xl:items-stretch">
-        <div className="flex">
+        <QuizAttemptChart className="w-full" data={stats.quiz_trend.data} />
+        <QuizTrendByCountryChart
+          className="w-full"
+          data={stats.quiz_trend_by_country?.data ?? []}
+        />
+        <PlatformInsights className="w-full" stats={stats} />
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-5 xl:items-stretch">
+        <div className="min-w-0 xl:col-span-3">
           <TopScorers className="w-full" scorers={stats.top_scorers ?? []} />
         </div>
-        <div className="flex xl:col-span-2">
+        <div className="min-w-0 xl:col-span-2">
           <RecentActivity className="w-full" activities={stats.recent_activity ?? []} />
         </div>
       </div>

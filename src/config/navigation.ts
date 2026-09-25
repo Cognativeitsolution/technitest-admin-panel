@@ -32,6 +32,7 @@ export type NavItem = {
 export const navItems: NavItem[] = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "User Management", href: "/users", icon: Users, modules: ["user"] },
+  { label: "Trades Management", href: "/categories", icon: Layers, modules: ["trade", "category"] },
   { label: "Quizzes Management", href: "/quizzes", icon: BookOpen, modules: ["quiz"] },
   { label: "Coins & Referrals", href: "/coins", icon: Coins, modules: ["reward_rule"] },
   { label: "Gamification", href: "/gamification", icon: Trophy, modules: ["badges", "stars"] },
@@ -40,7 +41,6 @@ export const navItems: NavItem[] = [
   { label: "Feedback & Reviews", href: "/feedback", icon: MessageSquare },
   { label: "Content Management CMS", href: "/cms", icon: FileText, modules: ["blog", "media"] },
   { label: "FAQ Management", href: "/faqs", icon: CircleHelp },
-  { label: "Trades Management", href: "/categories", icon: Layers, modules: ["trade", "category"] },
   { label: "Payment & Transactions", href: "/payments", icon: CreditCard, modules: ["payment"] },
   { label: "Notifications", href: "/notifications", icon: Bell, modules: ["notification"] },
   { label: "System Settings", href: "/settings", icon: Settings },

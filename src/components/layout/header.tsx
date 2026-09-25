@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { Bell, Menu } from "lucide-react";
 
 import { ProfileMenu } from "@/components/layout/profile-menu";
@@ -44,13 +45,13 @@ export function Header({ className }: HeaderProps) {
       </div>
 
       <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-        <button
-          type="button"
+        <Link
+          href="/notifications"
           className="inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium text-[#4b5563] transition hover:bg-[#f3f4f6]"
         >
           <Bell className="size-[18px]" />
           <span className="hidden sm:inline">Notifications</span>
-        </button>
+        </Link>
 
         <ProfileMenu />
       </div>

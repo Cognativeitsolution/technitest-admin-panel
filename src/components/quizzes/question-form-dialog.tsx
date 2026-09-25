@@ -28,6 +28,7 @@ type QuestionFormDialogProps = {
   open: boolean;
   onClose: () => void;
   question: QuizQuestionAdmin | null;
+  saving?: boolean;
   onSave: (payload: QuizQuestionCreatePayload, file?: File | null) => void;
 };
 
@@ -35,6 +36,7 @@ export function QuestionFormDialog({
   open,
   onClose,
   question,
+  saving = false,
   onSave,
 }: QuestionFormDialogProps) {
   const [type, setType] = useState<QuizQuestionType>("mcq");
@@ -117,10 +119,23 @@ export function QuestionFormDialog({
       return;
     }
 
-    if (type === "image_mcq" && !imageFile && !getQuestionImageUrl(question)) {
+    if (
+      type === "image_mcq" &&
+      !imageFile &&
+      !question?.image_url &&
+      !getQuestionImageUrl(question)
+    ) {
       setFormError("Please upload an image for this question.");
       return;
     }
+
+    // API expects image_url to be the uploaded filename (matched to multipart `files`).
+    const questionImageUrl =
+      type === "image_mcq"
+        ? imageFile
+          ? imageFile.name
+          : (question?.image_url ?? null)
+        : null;
 
     setFormError(null);
     onSave(
@@ -129,14 +144,14 @@ export function QuestionFormDialog({
         type,
         time_limit: timeLimit,
         source_type: question?.source_type ?? "manual",
-        option: optionPayload,
-        ...(type === "image_mcq"
-          ? imageFile
-            ? {}
-            : { image_url: question?.image_url ?? null }
-          : { image_url: null }),
+        difficulty: "easy",
+        image_url: questionImageUrl,
+        option: optionPayload.map((opt) => ({
+          option_text: opt.option_text,
+          is_correct: opt.is_correct,
+        })),
       },
-      imageFile,
+      type === "image_mcq" ? imageFile : null,
     );
   }
 
@@ -259,10 +274,10 @@ export function QuestionFormDialog({
         <button
           type="button"
           onClick={handleSave}
-          disabled={!text.trim()}
+          disabled={!text.trim() || saving}
           className="inline-flex h-10 items-center justify-center rounded-xl bg-[#f0a500] px-6 text-sm font-semibold text-white transition hover:bg-[#d99400] disabled:opacity-50"
         >
-          Save Changes
+          {saving ? "Saving..." : "Save Changes"}
         </button>
       </div>
     </Dialog>

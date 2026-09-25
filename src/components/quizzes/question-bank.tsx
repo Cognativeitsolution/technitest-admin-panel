@@ -49,32 +49,43 @@ export function QuestionBank({
   const [aiOpen, setAiOpen] = useState(false);
   const [editQuestion, setEditQuestion] = useState<QuizQuestionAdmin | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<QuizQuestionAdmin | null>(null);
+  const [savingQuestion, setSavingQuestion] = useState(false);
 
   async function handleSaveQuestion(
     payload: QuizQuestionCreatePayload,
     file?: File | null,
   ) {
-    const files = file ? [file] : undefined;
-    if (editQuestion) {
-      const result = await updateOne(editQuestion.id, payload, files);
-      if (result.ok) {
-        toast.success("Question updated successfully");
-        setEditQuestion(null);
-        setQuestionFormOpen(false);
+    setSavingQuestion(true);
+    try {
+      // Manual image questions: image_url = filename, binary in multipart `files`.
+      const files = file ? [file] : undefined;
+
+      if (editQuestion) {
+        const result = await updateOne(editQuestion.id, payload, files);
+        if (result.ok) {
+          toast.success("Question updated successfully");
+          setEditQuestion(null);
+          setQuestionFormOpen(false);
+        } else {
+          toast.error(result.message || "Failed to update question");
+        }
       } else {
-        toast.error(result.message || "Failed to update question");
+        const result = await addMany(
+          {
+            source_type: payload.source_type ?? "manual",
+            question: [payload],
+          },
+          files,
+        );
+        if (result.ok) {
+          toast.success("Question added successfully");
+          setQuestionFormOpen(false);
+        } else {
+          toast.error(result.message || "Failed to add question");
+        }
       }
-    } else {
-      const result = await addMany(
-        { source_type: payload.source_type ?? "manual", question: [payload] },
-        files,
-      );
-      if (result.ok) {
-        toast.success("Question added successfully");
-        setQuestionFormOpen(false);
-      } else {
-        toast.error(result.message || "Failed to add question");
-      }
+    } finally {
+      setSavingQuestion(false);
     }
   }
 
@@ -242,10 +253,12 @@ export function QuestionBank({
       <QuestionFormDialog
         open={questionFormOpen}
         onClose={() => {
+          if (savingQuestion) return;
           setQuestionFormOpen(false);
           setEditQuestion(null);
         }}
         question={editQuestion}
+        saving={savingQuestion || mutating}
         onSave={handleSaveQuestion}
       />
 

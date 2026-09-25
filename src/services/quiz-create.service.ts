@@ -10,6 +10,13 @@ import type {
 
 const BASE_PATH = "/api/v1/quiz-create";
 
+function appendQuestionFiles(formData: FormData, files?: File[] | null) {
+  if (!files?.length) return;
+  for (const file of files) {
+    formData.append("files", file, file.name);
+  }
+}
+
 function buildQuestionsFormData(
   payload: QuizQuestionsBulkCreatePayload,
   files?: File[] | null,
@@ -23,13 +30,7 @@ function buildQuestionsFormData(
       question: payload.question,
     }),
   );
-
-  if (files?.length) {
-    for (const file of files) {
-      formData.append("files", file);
-    }
-  }
-
+  appendQuestionFiles(formData, files);
   return formData;
 }
 
@@ -39,13 +40,7 @@ function buildQuestionUpdateFormData(
 ) {
   const formData = new FormData();
   formData.append("data", JSON.stringify(payload));
-
-  if (files?.length) {
-    for (const file of files) {
-      formData.append("files", file);
-    }
-  }
-
+  appendQuestionFiles(formData, files);
   return formData;
 }
 
@@ -66,11 +61,6 @@ export const quizCreateService = {
     const { data } = await apiClient.post<ApiEnvelope<unknown>>(
       `${BASE_PATH}/${quizId}/questions`,
       buildQuestionsFormData(payload, files),
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      },
     );
     return data.response.data;
   },
@@ -84,11 +74,6 @@ export const quizCreateService = {
     const { data } = await apiClient.put<ApiEnvelope<QuizQuestionAdmin>>(
       `${BASE_PATH}/${quizId}/questions/${questionId}`,
       buildQuestionUpdateFormData(payload, files),
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      },
     );
     return data.response.data;
   },
