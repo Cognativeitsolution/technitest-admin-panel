@@ -10,6 +10,8 @@ export type BadgeRule = {
   difficulty_level: string;
   type: string;
   price: number;
+  discount_percent?: number | null;
+  final_price?: number | null;
   validity_years: number;
   image_url: string | null;
   created_at: string;
@@ -21,6 +23,7 @@ export type BadgePayload = {
   difficulty_level: string;
   type: string;
   price: number;
+  discount_percent: number;
   validity_years: number;
 };
 

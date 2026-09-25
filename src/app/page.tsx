@@ -5,6 +5,7 @@ import { Award, BookOpenCheck, Users, Wallet, Loader2 } from "lucide-react";
 
 import { DashboardToolbar } from "@/components/dashboard/dashboard-toolbar";
 import { GenerateReportModal } from "@/components/dashboard/generate-report-modal";
+import { PlatformInsights } from "@/components/dashboard/platform-insights";
 import { QuizAttemptChart } from "@/components/dashboard/quiz-attempt-chart";
 import { QuizTrendByCountryChart } from "@/components/dashboard/quiz-trend-by-country-chart";
 import { RecentActivity } from "@/components/dashboard/recent-activity";
@@ -139,23 +140,18 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-3 xl:items-stretch">
-        <div className="xl:col-span-2">
-          <UserGrowthChart data={stats.user_growth.data} />
-        </div>
-        <QuizAttemptChart data={stats.quiz_trend.data} />
+      <div className="grid gap-4 xl:grid-cols-2 xl:items-stretch">
+        <UserGrowthChart className="w-full" data={stats.user_growth.data} />
+        <TopCategories className="w-full" categories={stats.top_categories ?? []} />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-3 xl:items-stretch">
-        <div className="flex xl:col-span-2">
-          <TopCategories className="w-full" categories={stats.top_categories ?? []} />
-        </div>
-        <div className="flex">
-          <QuizTrendByCountryChart
-            className="w-full"
-            data={stats.quiz_trend_by_country?.data ?? []}
-          />
-        </div>
+        <QuizAttemptChart className="w-full" data={stats.quiz_trend.data} />
+        <QuizTrendByCountryChart
+          className="w-full"
+          data={stats.quiz_trend_by_country?.data ?? []}
+        />
+        <PlatformInsights className="w-full" stats={stats} />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-5 xl:items-stretch">

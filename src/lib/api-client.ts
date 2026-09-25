@@ -9,8 +9,10 @@ declare module "axios" {
   }
 }
 
+// Browser: same-origin `/api/...` → Next rewrite (avoids CORS / bad redirects).
+// Server: call the API host directly.
 const apiClient = axios.create({
-  baseURL: env.API_BASE_URL,
+  baseURL: typeof window === "undefined" ? env.API_BASE_URL : "",
   headers: { "Content-Type": "application/json" },
   timeout: 30000,
 });

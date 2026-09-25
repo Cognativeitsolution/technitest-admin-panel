@@ -1,5 +1,4 @@
-const DEFAULT_API_BASE_URL =
-  "https://technitest-user-env-staging-soft-tech-cubes-projects.vercel.app";
+const DEFAULT_API_BASE_URL = "https://tech-ni-test-staging.efinder24.com";
 const DEFAULT_AI_API_BASE_URL = "https://tech-ni-test-ai.naveedkhangroup.com";
 
 function readPublicUrl(value: string | undefined, fallback: string): string {

@@ -31,6 +31,7 @@ export function BadgesTable({ badges, loading = false, onEdit }: BadgesTableProp
               <th className="px-5 py-3.5">Difficulty Level</th>
               <th className="px-5 py-3.5">Type</th>
               <th className="px-5 py-3.5">Price</th>
+              <th className="px-5 py-3.5">Discount</th>
               <th className="px-5 py-3.5">Validity</th>
               <th className="px-5 py-3.5">Last Updated</th>
               <th className="px-5 py-3.5">Actions</th>
@@ -38,7 +39,7 @@ export function BadgesTable({ badges, loading = false, onEdit }: BadgesTableProp
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={8} className="px-5 py-10 text-center text-sm text-[#6b7280]">Loading badges...</td></tr>
+              <tr><td colSpan={9} className="px-5 py-10 text-center text-sm text-[#6b7280]">Loading badges...</td></tr>
             ) : (
               <>
                 {badges.map((badge) => (
@@ -67,7 +68,25 @@ export function BadgesTable({ badges, loading = false, onEdit }: BadgesTableProp
                         {badge.type}
                       </span>
                     </td>
-                    <td className="px-5 py-4 text-sm font-semibold text-[#111827]">${badge.price}</td>
+                    <td className="px-5 py-4 text-sm font-semibold text-[#111827]">
+                      {badge.type?.toLowerCase() === "paid" && badge.final_price != null
+                        ? `$${badge.final_price}`
+                        : `$${badge.price}`}
+                      {badge.type?.toLowerCase() === "paid" &&
+                      badge.discount_percent != null &&
+                      badge.discount_percent > 0 &&
+                      badge.final_price != null &&
+                      badge.final_price !== badge.price ? (
+                        <span className="ml-1 text-xs font-normal text-[#9ca3af] line-through">
+                          ${badge.price}
+                        </span>
+                      ) : null}
+                    </td>
+                    <td className="px-5 py-4 text-sm text-[#374151]">
+                      {badge.type?.toLowerCase() === "paid" && badge.discount_percent != null
+                        ? `${badge.discount_percent}%`
+                        : "—"}
+                    </td>
                     <td className="px-5 py-4 text-sm text-[#374151]">{badge.validity_years} year{badge.validity_years === 1 ? "" : "s"}</td>
                     <td className="px-5 py-4 text-sm text-[#6b7280]">{formatDateTime(badge.updated_at)}</td>
                     <td className="px-5 py-4">
@@ -80,7 +99,7 @@ export function BadgesTable({ badges, loading = false, onEdit }: BadgesTableProp
                   </tr>
                 ))}
                 {badges.length === 0 ? (
-                  <tr><td colSpan={8} className="px-5 py-10 text-center text-sm text-[#6b7280]">No badges found.</td></tr>
+                  <tr><td colSpan={9} className="px-5 py-10 text-center text-sm text-[#6b7280]">No badges found.</td></tr>
                 ) : null}
               </>
             )}
