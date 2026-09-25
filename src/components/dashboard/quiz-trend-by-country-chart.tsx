@@ -29,6 +29,7 @@ const FLAG_BY_COUNTRY: Record<string, string> = {
   France: "🇫🇷",
   Saudi: "🇸🇦",
   "Saudi Arabia": "🇸🇦",
+  Portugal: "🇵🇹",
 };
 
 function percentColor(value: number) {
@@ -55,7 +56,6 @@ function aggregateCountries(data: QuizTrendByCountryItem[]) {
   const top = sorted.slice(0, 5);
   const rest = sorted.slice(5);
   const othersCount = rest.reduce((sum, row) => sum + row.count, 0);
-
   const toScore = (count: number) => Math.round((count / maxCount) * 100);
 
   const rows = [
@@ -97,25 +97,24 @@ export function QuizTrendByCountryChart({
   );
 
   return (
-    <section className={cn("flex h-full flex-col", dashboardCardClass, className)}>
-      <h2 className="mb-4 text-[18px] font-bold text-[#1e293b]">Quiz Trends by Country</h2>
+    <section className={cn("flex h-full min-w-0 flex-col", dashboardCardClass, className)}>
+      <h2 className="mb-4 text-[16px] font-bold text-[#1e293b]">Quiz Trends by Country</h2>
 
       {rows.length === 0 ? (
-        <div className={cn(dashboardEmptyStateClass, "min-h-70 flex-1")}>No data found</div>
+        <div className={cn(dashboardEmptyStateClass, "min-h-56 flex-1")}>No data found</div>
       ) : (
-        <div className="flex min-h-70 flex-1 flex-col gap-5 lg:flex-row lg:items-center">
-          <div className="relative mx-auto h-44 w-44 shrink-0 sm:h-48 sm:w-48">
+        <div className="flex min-h-56 min-w-0 flex-1 items-center gap-4">
+          <div className="relative h-44 w-44 shrink-0">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={donutData}
                   dataKey="value"
                   innerRadius="72%"
-                  outerRadius="92%"
+                  outerRadius="94%"
                   startAngle={90}
                   endAngle={-270}
                   stroke="none"
-                  paddingAngle={0}
                 >
                   <Cell fill="#22c55e" />
                   <Cell fill="#e8eef5" />
@@ -123,12 +122,8 @@ export function QuizTrendByCountryChart({
               </PieChart>
             </ResponsiveContainer>
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-              <p className="text-[28px] font-bold leading-none text-[#1e3a5f] sm:text-[32px]">
-                {overall}%
-              </p>
-              <p className="mt-1 max-w-24 text-[11px] font-medium leading-tight text-[#64748b]">
-                Overall Readiness
-              </p>
+              <p className="text-[28px] font-bold leading-none text-[#1e3a5f]">{overall}%</p>
+              <p className="mt-1 text-[11px] font-medium text-[#64748b]">Overall</p>
             </div>
           </div>
 
@@ -137,32 +132,32 @@ export function QuizTrendByCountryChart({
               {rows.map((row) => (
                 <li
                   key={row.name}
-                  className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0"
+                  className="flex items-center justify-between gap-2 py-2 first:pt-0 last:pb-0"
                 >
-                  <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#f1f5f9] text-lg">
-                    {row.isOthers ? (
-                      <MoreHorizontal className="size-4 text-[#64748b]" />
-                    ) : FLAG_BY_COUNTRY[row.name] ? (
-                      <span aria-hidden>{FLAG_BY_COUNTRY[row.name]}</span>
-                    ) : (
-                      <Globe2 className="size-4 text-[#64748b]" />
-                    )}
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[#f1f5f9] text-xs">
+                      {row.isOthers ? (
+                        <MoreHorizontal className="size-3 text-[#64748b]" />
+                      ) : FLAG_BY_COUNTRY[row.name] ? (
+                        <span aria-hidden>{FLAG_BY_COUNTRY[row.name]}</span>
+                      ) : (
+                        <Globe2 className="size-3 text-[#64748b]" />
+                      )}
+                    </span>
+                    <span className="truncate text-[13px] font-semibold text-[#1e293b]">
+                      {row.name}
+                    </span>
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-sm font-semibold text-[#1e293b]">
-                    {row.name}
-                  </span>
-                  <span
-                    className={cn(
-                      "shrink-0 text-sm font-bold tabular-nums",
-                      percentColor(row.percent),
-                    )}
-                  >
-                    {row.percent}%
+                  <span className="shrink-0 text-[12px] font-medium text-[#64748b]">
+                    {row.count}
+                    <span className={cn("ml-1.5 font-bold", percentColor(row.percent))}>
+                      {row.percent}%
+                    </span>
                   </span>
                 </li>
               ))}
             </ul>
-            <p className="mt-3 text-xs font-medium text-[#94a3b8]">
+            <p className="mt-2 text-[11px] font-medium text-[#94a3b8]">
               {total.toLocaleString()} total attempts
             </p>
           </div>
