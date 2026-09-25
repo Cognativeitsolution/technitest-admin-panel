@@ -60,7 +60,7 @@ export function Sidebar() {
                 alt="Technitest"
                 width={240}
                 height={80}
-                className="h-[4.75rem] w-auto max-w-full object-contain object-left"
+                className="h-19 w-auto max-w-full object-contain object-left"
                 priority
               />
             </Link>
