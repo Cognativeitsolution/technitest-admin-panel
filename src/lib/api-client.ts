@@ -9,12 +9,13 @@ declare module "axios" {
   }
 }
 
-// Browser: same-origin `/api/...` → Next rewrite (avoids CORS / bad redirects).
-// Server: call the API host directly.
+// Always hit the configured API host (from NEXT_PUBLIC_API_BASE_URL).
+// Same-origin `/api` rewrites can surface upstream 307s to 127.0.0.1 on Vercel.
 const apiClient = axios.create({
-  baseURL: typeof window === "undefined" ? env.API_BASE_URL : "",
+  baseURL: env.API_BASE_URL,
   headers: { "Content-Type": "application/json" },
   timeout: 30000,
+  maxRedirects: 0,
 });
 
 apiClient.interceptors.request.use((config) => {
