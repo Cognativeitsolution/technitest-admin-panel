@@ -28,12 +28,6 @@ function formatDayLabel(date: string) {
   });
 }
 
-function dayInitial(date: string) {
-  const parsed = new Date(date);
-  if (Number.isNaN(parsed.getTime())) return "?";
-  return String(parsed.getDate());
-}
-
 function buildDayRows(data: QuizTrendItem[]) {
   const sorted = [...data]
     .map((item) => ({
@@ -47,11 +41,9 @@ function buildDayRows(data: QuizTrendItem[]) {
   const maxCount = sorted[0]?.count ?? 0;
   if (total <= 0 || maxCount <= 0) return { rows: [], total: 0, overall: 0 };
 
-  const top = sorted.slice(0, 6);
-  const rows = top.map((row) => ({
+  const rows = sorted.slice(0, 5).map((row) => ({
     date: row.date,
     label: formatDayLabel(row.date),
-    initial: dayInitial(row.date),
     count: row.count,
     percent: Math.round((row.count / maxCount) * 100),
   }));
@@ -74,25 +66,24 @@ export function QuizAttemptChart({ data = [], className }: QuizAttemptChartProps
   );
 
   return (
-    <section className={cn("flex h-full flex-col", dashboardCardClass, className)}>
-      <h2 className="mb-4 text-[18px] font-bold text-[#1e293b]">Quiz Attempt Trends</h2>
+    <section className={cn("flex h-full min-w-0 flex-col", dashboardCardClass, className)}>
+      <h2 className="mb-4 text-[16px] font-bold text-[#1e293b]">Quiz Attempt Trends</h2>
 
       {rows.length === 0 ? (
-        <div className={cn(dashboardEmptyStateClass, "min-h-70 flex-1")}>No data found</div>
+        <div className={cn(dashboardEmptyStateClass, "min-h-56 flex-1")}>No data found</div>
       ) : (
-        <div className="flex min-h-70 flex-1 flex-col gap-5 lg:flex-row lg:items-center">
-          <div className="relative mx-auto h-44 w-44 shrink-0 sm:h-48 sm:w-48">
+        <div className="flex min-h-56 min-w-0 flex-1 items-center gap-4">
+          <div className="relative h-44 w-44 shrink-0">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={donutData}
                   dataKey="value"
                   innerRadius="72%"
-                  outerRadius="92%"
+                  outerRadius="94%"
                   startAngle={90}
                   endAngle={-270}
                   stroke="none"
-                  paddingAngle={0}
                 >
                   <Cell fill="#22c55e" />
                   <Cell fill="#e8eef5" />
@@ -100,12 +91,8 @@ export function QuizAttemptChart({ data = [], className }: QuizAttemptChartProps
               </PieChart>
             </ResponsiveContainer>
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-              <p className="text-[28px] font-bold leading-none text-[#1e3a5f] sm:text-[32px]">
-                {overall}%
-              </p>
-              <p className="mt-1 max-w-24 text-[11px] font-medium leading-tight text-[#64748b]">
-                Overall Readiness
-              </p>
+              <p className="text-[28px] font-bold leading-none text-[#1e3a5f]">{overall}%</p>
+              <p className="mt-1 text-[11px] font-medium text-[#64748b]">Overall</p>
             </div>
           </div>
 
@@ -114,26 +101,21 @@ export function QuizAttemptChart({ data = [], className }: QuizAttemptChartProps
               {rows.map((row) => (
                 <li
                   key={row.date}
-                  className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0"
+                  className="flex items-center justify-between gap-2 py-2 first:pt-0 last:pb-0"
                 >
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#eef2ff] text-xs font-bold text-[#4338ca]">
-                    {row.initial}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-sm font-semibold text-[#1e293b]">
+                  <span className="min-w-0 truncate text-[13px] font-semibold text-[#1e293b]">
                     {row.label}
                   </span>
-                  <span
-                    className={cn(
-                      "shrink-0 text-sm font-bold tabular-nums",
-                      percentColor(row.percent),
-                    )}
-                  >
-                    {row.percent}%
+                  <span className="shrink-0 text-[12px] font-medium text-[#64748b]">
+                    {row.count}
+                    <span className={cn("ml-1.5 font-bold", percentColor(row.percent))}>
+                      {row.percent}%
+                    </span>
                   </span>
                 </li>
               ))}
             </ul>
-            <p className="mt-3 text-xs font-medium text-[#94a3b8]">
+            <p className="mt-2 text-[11px] font-medium text-[#94a3b8]">
               {total.toLocaleString()} total attempts
             </p>
           </div>
